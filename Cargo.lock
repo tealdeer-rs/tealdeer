@@ -1,0 +1,12 @@
+[root]
+name = "tldr"
+version = "0.1.0"
+dependencies = [
+ "ansi_term 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "ansi_term"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
