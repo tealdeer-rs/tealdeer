@@ -1,63 +1,14 @@
 extern crate ansi_term;
 
-use std::io::{BufRead, BufReader};
+use std::io::BufReader;
 use std::fs::File;
 use std::{env, process};
-use std::convert::From;
 
+mod types;
+mod tokenizer;
 
-#[derive(Debug, Eq, PartialEq)]
-enum LineType {
-    Empty,
-    Title(String),
-    Description(String),
-    ExampleText(String),
-    ExampleCode(String),
-    Other(String),
-}
+use tokenizer::Tokenizer;
 
-impl<'a> From<&'a str> for LineType {
-    /// Convert a string slice to a LineType. Newlines and whitespace are trimmed.
-    fn from(line: &'a str) -> LineType {
-        let trimmed = line.trim();
-        let mut chars = trimmed.chars();
-        match chars.next() {
-            None => LineType::Empty,
-            Some('#') => LineType::Title(trimmed.trim_left_matches(|chr: char| chr == '#' || chr.is_whitespace()).into()),
-            Some('>') => LineType::Description(trimmed.trim_left_matches(|chr: char| chr == '>' || chr.is_whitespace()).into()),
-            Some('-') => LineType::ExampleText(trimmed.trim_left_matches(|chr: char| chr == '-' || chr.is_whitespace()).into()),
-            Some('`') if chars.last() == Some('`') => LineType::ExampleCode(trimmed.trim_matches(|chr: char| chr == '`' || chr.is_whitespace()).into()),
-            _ => LineType::Other(trimmed.into()),
-        }
-    }
-}
-
-
-#[derive(Debug)]
-struct Tokenizer<R: BufRead> {
-    reader: R,
-    current_line: String,
-}
-
-impl<R> Tokenizer<R> where R: BufRead {
-
-    fn new(reader: R) -> Tokenizer<R> {
-        Tokenizer {
-            reader: reader,
-            current_line: String::new(),
-        }
-    }
-
-    fn next(&mut self) -> Option<LineType> {
-        self.current_line.clear();
-        let bytes_read = self.reader.read_line(&mut self.current_line).unwrap();
-        match bytes_read {
-            0 => None,
-            _ => Some(LineType::from(&self.current_line[..])),
-        }
-    }
-
-}
 
 /// Open file, return a `BufRead` instance
 fn get_file_reader(filepath: &str) -> Result<BufReader<File>, String> {
@@ -97,7 +48,7 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use super::LineType;
+    use types::LineType;
 
     #[test]
     fn test_linetype_from_str() {
