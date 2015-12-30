@@ -8,6 +8,8 @@ use std::io::{BufRead, BufReader};
 use std::fs::File;
 use std::{env, process};
 
+use ansi_term::Colour;
+
 mod types;
 mod tokenizer;
 
@@ -32,8 +34,8 @@ fn print_lines<R>(tokenizer: &mut Tokenizer<R>) where R: BufRead {
             LineType::Empty => println!(""),
             LineType::Title(_) => debug!("Ignoring title"),
             LineType::Description(text) => println!("  {}", text),
-            LineType::ExampleText(text) => println!("  - {}", text),
-            LineType::ExampleCode(text) => println!("    {}", text),
+            LineType::ExampleText(text) => println!("  {}", Colour::Green.paint(format!("- {}", text))),
+            LineType::ExampleCode(text) => println!("  {}", Colour::Cyan.paint(format!("  {}", text))),
             LineType::Other(text) => debug!("Unknown line type: {:?}", text),
         }
     }
@@ -72,6 +74,7 @@ fn main() {
 
     // Print output
     print_lines(&mut tokenizer);
+    println!("");
 
 }
 
