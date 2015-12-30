@@ -4,13 +4,14 @@
 #[cfg(feature = "logging")]extern crate env_logger;
 extern crate ansi_term;
 
-use std::io::BufReader;
+use std::io::{BufRead, BufReader};
 use std::fs::File;
 use std::{env, process};
 
 mod types;
 mod tokenizer;
 
+use types::LineType;
 use tokenizer::Tokenizer;
 
 
@@ -21,6 +22,21 @@ fn get_file_reader(filepath: &str) -> Result<BufReader<File>, String> {
             .map_err(|msg| format!("Could not open file: {}", msg))
     );
     Ok(BufReader::new(file))
+}
+
+
+/// Print a token stream to an ANSI terminal.
+fn print_lines<R>(tokenizer: &mut Tokenizer<R>) where R: BufRead {
+    while let Some(token) = tokenizer.next() {
+        match token {
+            LineType::Empty => println!(""),
+            LineType::Title(_) => debug!("Ignoring title"),
+            LineType::Description(text) => println!("  {}", text),
+            LineType::ExampleText(text) => println!("  - {}", text),
+            LineType::ExampleCode(text) => println!("    {}", text),
+            LineType::Other(text) => debug!("Unknown line type: {:?}", text),
+        }
+    }
 }
 
 
@@ -54,10 +70,8 @@ fn main() {
     // Create tokenizer
     let mut tokenizer = Tokenizer::new(reader);
 
-    // Tokenize and print output
-    while let Some(token) = tokenizer.next() {
-        println!("{:?}", token);
-    }
+    // Print output
+    print_lines(&mut tokenizer);
 
 }
 
@@ -75,6 +89,6 @@ mod test {
         assert_eq!(LineType::from("- some command"), LineType::ExampleText("some command".into()));
         assert_eq!(LineType::from("`$ cargo run`"), LineType::ExampleCode("$ cargo run".into()));
         assert_eq!(LineType::from("`$ cargo run"), LineType::Other("`$ cargo run".into()));
-        assert_eq!(LineType::from("asdf"), LineType::Other("asdf".into()));
+        assert_eq!(LineType::from("jklö"), LineType::Other("jklö".into()));
     }
 }
