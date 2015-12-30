@@ -1,3 +1,7 @@
+//! An implementation of [tldr](https://github.com/tldr-pages/tldr) in Rust.
+
+#[macro_use] extern crate log;
+#[cfg(feature = "logging")]extern crate env_logger;
 extern crate ansi_term;
 
 use std::io::BufReader;
@@ -20,7 +24,19 @@ fn get_file_reader(filepath: &str) -> Result<BufReader<File>, String> {
 }
 
 
+#[cfg(feature = "logging")]
+fn init_log() {
+    env_logger::init().unwrap();
+}
+
+#[cfg(not(feature = "logging"))]
+fn init_log() { }
+
+
 fn main() {
+
+    // Initialize logger
+    init_log();
 
     // Parse arguments
     let args: Vec<_> = env::args().collect();

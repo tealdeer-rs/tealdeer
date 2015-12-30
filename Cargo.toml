@@ -3,5 +3,10 @@ name = "tldr"
 version = "0.1.0"
 authors = ["Danilo Bargen <mail@dbrgn.ch>"]
 
+[features]
+logging = ["env_logger"]
+
 [dependencies]
 ansi_term = "^0.7"
+log = "^0.3"
+env_logger = { version = "^0.3", optional = true }
