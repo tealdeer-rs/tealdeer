@@ -3,6 +3,11 @@
 #[macro_use] extern crate log;
 #[cfg(feature = "logging")]extern crate env_logger;
 extern crate ansi_term;
+extern crate flate2;
+extern crate tar;
+extern crate tempdir;
+extern crate curl;
+extern crate rustc_serialize;
 
 use std::io::{BufRead, BufReader};
 use std::fs::File;
@@ -12,9 +17,13 @@ use ansi_term::Colour;
 
 mod types;
 mod tokenizer;
+mod updater;
+mod error;
 
 use types::LineType;
 use tokenizer::Tokenizer;
+use updater::Updater;
+use error::TldrError;
 
 
 /// Open file, return a `BufRead` instance
@@ -75,6 +84,15 @@ fn main() {
     // Print output
     print_lines(&mut tokenizer);
     println!("");
+
+    let dl = Updater::new("https://github.com/tldr-pages/tldr/archive/master.tar.gz".into());
+    let copied = dl.update().unwrap_or_else(|e| {
+        match e {
+            TldrError::UpdateError(msg) => println!("Could not update cache: {}", msg),
+        };
+        process::exit(1);
+    });
+    println!("Cached {} tldr pages.", copied);
 
 }
 

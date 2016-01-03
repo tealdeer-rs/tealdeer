@@ -9,4 +9,9 @@ logging = ["env_logger"]
 [dependencies]
 ansi_term = "^0.7"
 log = "^0.3"
+tar = { git = "https://github.com/dbrgn/tar-rs", branch = "pax_header" }
+flate2 = "^0.2"
+tempdir = "^0.3"
+curl = "^0.2"
 env_logger = { version = "^0.3", optional = true }
+rustc-serialize = "^0.3"
