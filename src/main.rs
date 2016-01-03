@@ -7,6 +7,7 @@ extern crate flate2;
 extern crate tar;
 extern crate tempdir;
 extern crate curl;
+extern crate rustc_serialize;
 
 use std::io::{BufRead, BufReader};
 use std::fs::File;
@@ -85,12 +86,13 @@ fn main() {
     println!("");
 
     let dl = Updater::new("https://github.com/tldr-pages/tldr/archive/master.tar.gz".into());
-    dl.update().unwrap_or_else(|e| {
+    let copied = dl.update().unwrap_or_else(|e| {
         match e {
             TldrError::UpdateError(msg) => println!("Could not update cache: {}", msg),
         };
         process::exit(1);
     });
+    println!("Cached {} tldr pages.", copied);
 
 }
 

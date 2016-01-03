@@ -14,3 +14,4 @@ flate2 = "^0.2"
 tempdir = "^0.3"
 curl = "^0.2"
 env_logger = { version = "^0.3", optional = true }
+rustc-serialize = "^0.3"
