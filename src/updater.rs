@@ -68,12 +68,21 @@ impl Updater {
         }));
 
         // Get paths to pages and license
-        let (pages_path, license_path) = try!(self.extract(&mut archive, dir.path()));
+        let (pages_src, license_src) = try!(self.extract(&mut archive, dir.path()));
 
-        // Copy files
+        // Determine path to cache
         let home_dir = try!(env::home_dir().ok_or(UpdateError("Could not determine home directory".into())));
         let cache_dir = home_dir.join(".tldr").join("cache");
-        try!(fs::copy(license_path, cache_dir.join("LICENSE.md")).map_err(|e| {
+
+        // Make sure that cache dir exists
+        try!(fs::create_dir_all(&cache_dir).map_err(|e| {
+            UpdateError(format!("Could not create cache directory: {}", e))
+        }));
+
+        // Copy license file
+        let license_dst = &cache_dir.join("LICENSE.md");
+        debug!("Copy license from {:?} to {:?}", &license_src, &license_dst);
+        try!(fs::copy(&license_src, &license_dst).map_err(|e| {
             UpdateError(format!("Could not extract license file: {}", e))
         }));
         
