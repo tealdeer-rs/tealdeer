@@ -105,14 +105,25 @@ fn main() {
                             .unwrap_or_else(|e| e.exit());
     println!("{:#?}", args);
 
+    // Show version and exit
     if args.flag_version {
         println!("{} v{}", NAME, VERSION);
         process::exit(0);
     }
-    if args.flag_list {
-        println!("Flag --list not yet implemented.");
+
+    // Clear cache, pass through
+    if args.flag_clear_cache {
+        println!("Flag --clear-cache not yet implemented.");
         process::exit(1);
     }
+
+    // Update cache, pass through
+    if args.flag_update {
+        println!("Flag --update not yet implemented.");
+        process::exit(1);
+    }
+
+    // Render local file and exit
     if let Some(file) = args.flag_render {
         // Open file
         let reader = get_file_reader(&file).unwrap_or_else(|msg| {
@@ -126,17 +137,16 @@ fn main() {
 
         process::exit(0);
     }
+
+    // List cached commands and exit
+    if args.flag_list {
+        println!("Flag --list not yet implemented.");
+        process::exit(1);
+    }
+
+    // Override OS and exit
     if let Some(os) = args.flag_os {
         println!("Flag --os not yet implemented.");
-        process::exit(1);
-    }
-    if args.flag_update {
-        println!("Flag --update not yet implemented.");
-        process::exit(1);
-    }
-    if args.flag_clear_cache {
-        println!("Flag --clear-cache not yet implemented.");
-        process::exit(1);
     }
 
     let dl = Updater::new("https://github.com/tldr-pages/tldr/archive/master.tar.gz".into());
