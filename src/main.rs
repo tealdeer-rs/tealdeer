@@ -161,8 +161,11 @@ fn main() {
         process::exit(1);
     }
 
-    println!("{}", USAGE);
-    process::exit(1);
+    // Some flags can be run without a command.
+    if !args.flag_update {
+        println!("{}", USAGE);
+        process::exit(1);
+    }
 }
 
 
