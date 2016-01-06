@@ -1,12 +1,11 @@
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::fs;
 use std::env;
 
 use flate2::read::GzDecoder;
 use tar::Archive;
 use curl::http;
-use tempdir::TempDir;
 use rustc_serialize::json;
 
 use error::TldrError::{self, UpdateError};
@@ -66,15 +65,6 @@ impl Updater {
         Ok(Archive::new(decoder))
     }
 
-    /// Extract archive, return pages and license
-    fn extract<R: Read>(&self, archive: &mut Archive<R>, path: &Path) -> Result<(PathBuf, PathBuf), TldrError> {
-        try!(archive.unpack(path).map_err(|e| {
-            UpdateError(format!("Could not unpack compressed data: {}", e))
-        }));
-        let repodir = path.join("tldr-master");
-        Ok((repodir.join("pages"), repodir.join("LICENSE.md")))
-    }
-
     /// Given the path to the `pages` directory, return `TldrIndex` instances.
     fn get_index(&self, path: &Path) -> Result<TldrIndex, TldrError> {
         let mut buffer = String::new();
@@ -118,56 +108,29 @@ impl Updater {
     }
 
     /// Update the pages cache. Return the number of cached pages.
-    pub fn update(&self) -> Result<u64, TldrError> {
+    pub fn update(&self) -> Result<(), TldrError> {
         // First, download the compressed data
         let response = try!(self.download());
 
         // Decompress the response body into an `Archive`
         let mut archive = try!(self.decompress(response.get_body()));
 
-        // Create temporary directory
-        let dir = try!(TempDir::new("tldr").map_err(|e| {
-            UpdateError(format!("Could not create temporary directory: {}", e))
-        }));
-
-        // Extract archive and get paths to pages and license
-        let (pages_src, license_src) = try!(self.extract(&mut archive, dir.path()));
-
         // Determine paths
         let home_dir = try!(env::home_dir().ok_or(UpdateError("Could not determine home directory".into())));
-        let cache_dir = home_dir.join(".tldr").join("cache");
-        let pages_dir = &cache_dir.join("pages");
-        let license_dst = &cache_dir.join("LICENSE.md");
-        let index_dst = &pages_dir.join("index.json");
+        let cache_dir = home_dir.join(".cache").join("tldr-rs");
 
-        // Make sure that cache and pages directories exist
+        // Extract archive
+        try!(archive.unpack(&cache_dir).map_err(|e| {
+            UpdateError(format!("Could not unpack compressed data: {}", e))
+        }));
+
+        // Make sure that cache directory exists
         debug!("Ensure cache directory {:?} exists", &cache_dir);
         try!(fs::create_dir_all(&cache_dir).map_err(|e| {
             UpdateError(format!("Could not create cache directory: {}", e))
         }));
-        debug!("Ensure pages directory {:?} exists", &pages_dir);
-        try!(fs::create_dir_all(&pages_dir).map_err(|e| {
-            UpdateError(format!("Could not create pages directory: {}", e))
-        }));
 
-        // Copy license file
-        debug!("Copy license from {:?} to {:?}", &license_src, &license_dst);
-        try!(fs::copy(&license_src, &license_dst).map_err(|e| {
-            UpdateError(format!("Could not extract license file: {}", e))
-        }));
-
-        // Copy index file
-        let index_src = &pages_src.join("index.json");
-        debug!("Copy index from {:?} to {:?}", &index_src, &index_dst);
-        try!(fs::copy(&index_src, &index_dst).map_err(|e| {
-            UpdateError(format!("Could not extract index file: {}", e))
-        }));
-
-        // Copy pages
-        let index = try!(self.get_index(&pages_src));
-        let copied = try!(self.copy_pages(&pages_src, &pages_dir, &index));
-        
-        Ok(copied)
+        Ok(())
     }
 
 }
