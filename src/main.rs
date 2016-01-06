@@ -10,22 +10,22 @@ extern crate tempdir;
 extern crate curl;
 extern crate rustc_serialize;
 
-use std::io::{BufRead, BufReader};
+use std::io::BufReader;
 use std::fs::File;
 use std::process;
 
-use ansi_term::Colour;
 use docopt::Docopt;
 
 mod types;
 mod tokenizer;
+mod formatter;
 mod updater;
 mod error;
 
-use types::LineType;
 use tokenizer::Tokenizer;
 use updater::Updater;
 use error::TldrError;
+use formatter::print_lines;
 
 
 const USAGE: &'static str = "
@@ -80,21 +80,6 @@ fn get_file_reader(filepath: &str) -> Result<BufReader<File>, String> {
             .map_err(|msg| format!("Could not open file: {}", msg))
     );
     Ok(BufReader::new(file))
-}
-
-
-/// Print a token stream to an ANSI terminal.
-fn print_lines<R>(tokenizer: &mut Tokenizer<R>) where R: BufRead {
-    while let Some(token) = tokenizer.next() {
-        match token {
-            LineType::Empty => println!(""),
-            LineType::Title(_) => debug!("Ignoring title"),
-            LineType::Description(text) => println!("  {}", text),
-            LineType::ExampleText(text) => println!("  {}", Colour::Green.paint(format!("- {}", text))),
-            LineType::ExampleCode(text) => println!("  {}", Colour::Cyan.paint(format!("  {}", text))),
-            LineType::Other(text) => debug!("Unknown line type: {:?}", text),
-        }
-    }
 }
 
 
