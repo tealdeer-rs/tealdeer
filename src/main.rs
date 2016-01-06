@@ -2,6 +2,7 @@
 
 #[macro_use] extern crate log;
 #[cfg(feature = "logging")]extern crate env_logger;
+extern crate docopt;
 extern crate ansi_term;
 extern crate flate2;
 extern crate tar;
@@ -11,9 +12,10 @@ extern crate rustc_serialize;
 
 use std::io::{BufRead, BufReader};
 use std::fs::File;
-use std::{env, process};
+use std::process;
 
 use ansi_term::Colour;
+use docopt::Docopt;
 
 mod types;
 mod tokenizer;
@@ -24,6 +26,51 @@ use types::LineType;
 use tokenizer::Tokenizer;
 use updater::Updater;
 use error::TldrError;
+
+
+const USAGE: &'static str = "
+Usage:
+
+    tldr <command>
+    tldr [options]
+
+Options:
+
+    -h --help           Show this screen
+    -v --version        Show version information
+    -l --list           List all commands in the cache
+    -f --render <file>  Render a specific markdown file
+    -o --os <type>      Override the operating system [linux, osx, sunos]
+    -u --update         Update the local cache
+    -c --clear-cache    Clear the local cache
+
+Examples:
+
+    $ tldr tar
+    $ tldr --list
+
+To control the cache:
+
+    $ tldr --update
+    $ tldr --clear-cache
+
+To render a local file (for testing):
+
+    $ tldr --render /path/to/file.md
+";
+
+
+#[derive(Debug, RustcDecodable)]
+struct Args {
+    arg_command: Option<String>,
+    flag_help: bool,
+    flag_version: bool,
+    flag_list: bool,
+    flag_render: Option<String>,
+    flag_os: Option<String>,  // TODO enum
+    flag_update: bool,
+    flag_clear_cache: bool,
+}
 
 
 /// Open file, return a `BufRead` instance
@@ -66,14 +113,38 @@ fn main() {
     init_log();
 
     // Parse arguments
-    let args: Vec<_> = env::args().collect();
-    if args.len() != 2 {
-        println!("Usage: {} <command>", args[0]);
+    let args: Args = Docopt::new(USAGE)
+                            .and_then(|d| d.decode())
+                            .unwrap_or_else(|e| e.exit());
+    println!("{:#?}", args);
+
+    if args.flag_version {
+        println!("Flag --version not yet implemented.");
+        process::exit(1);
+    }
+    if args.flag_list {
+        println!("Flag --list not yet implemented.");
+        process::exit(1);
+    }
+    if let Some(file) = args.flag_render {
+        println!("Flag --render not yet implemented.");
+        process::exit(1);
+    }
+    if let Some(os) = args.flag_os {
+        println!("Flag --os not yet implemented.");
+        process::exit(1);
+    }
+    if args.flag_update {
+        println!("Flag --update not yet implemented.");
+        process::exit(1);
+    }
+    if args.flag_clear_cache {
+        println!("Flag --clear-cache not yet implemented.");
         process::exit(1);
     }
 
     // Open file
-    let reader = get_file_reader(&args[1]).unwrap_or_else(|msg| {
+    let reader = get_file_reader(&args.flag_render.unwrap()).unwrap_or_else(|msg| {
         println!("{}", msg);
         process::exit(1);
     });
