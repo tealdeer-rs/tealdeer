@@ -6,7 +6,6 @@ extern crate docopt;
 extern crate ansi_term;
 extern crate flate2;
 extern crate tar;
-extern crate tempdir;
 extern crate curl;
 extern crate rustc_serialize;
 
@@ -104,7 +103,6 @@ fn main() {
     let args: Args = Docopt::new(USAGE)
                             .and_then(|d| d.decode())
                             .unwrap_or_else(|e| e.exit());
-    println!("{:#?}", args);
 
     // Show version and exit
     if args.flag_version {
@@ -121,13 +119,13 @@ fn main() {
     // Update cache, pass through
     if args.flag_update {
         let dl = Updater::new(ARCHIVE_URL);
-        let copied = dl.update().unwrap_or_else(|e| {
+        dl.update().unwrap_or_else(|e| {
             match e {
                 TldrError::UpdateError(msg) => println!("Could not update cache: {}", msg),
             };
             process::exit(1);
         });
-        println!("Cached {} tldr pages.", copied);
+        println!("Successfully updated cache.");
     }
 
     // Render local file and exit
@@ -162,8 +160,11 @@ fn main() {
         process::exit(1);
     }
 
-    println!("{}", USAGE);
-    process::exit(1);
+    // Some flags can be run without a command.
+    if !args.flag_update {
+        println!("{}", USAGE);
+        process::exit(1);
+    }
 }
 
 
