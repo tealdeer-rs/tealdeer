@@ -4,13 +4,13 @@
 
 An implementation of [tldr](https://github.com/tldr-pages/tldr) in Rust.
 
-Project goals:
+High level project goals:
 
+- [x] Download and cache pages
 - [x] Don't require a network connection for anything besides updating the cache
-- [x] Render tldr pages to ANSI terminals
-- [x] Download and cache pages, compatible to the [NodeJS client][tldr-node-client]
-- [ ] Command line interface similar or equivalent to the [NodeJS client][tldr-node-client]
+- [x] Command line interface similar or equivalent to the [NodeJS client][tldr-node-client]
 - [x] Be fast
+- [ ] Support all major platforms
 
 ## Building
 

@@ -156,7 +156,7 @@ fn main() {
 
     // Show command from cache
     if let Some(command) = args.arg_command {
-        println!("Flag --os not yet implemented.");
+        println!("Page rendering from cache not yet implemented.");
         process::exit(1);
     }
 
