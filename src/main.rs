@@ -28,6 +28,8 @@ use error::TldrError;
 use formatter::print_lines;
 
 
+const NAME: &'static str = "tldr-rs";
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const USAGE: &'static str = "
 Usage:
 
@@ -104,8 +106,8 @@ fn main() {
     println!("{:#?}", args);
 
     if args.flag_version {
-        println!("Flag --version not yet implemented.");
-        process::exit(1);
+        println!("{} v{}", NAME, VERSION);
+        process::exit(0);
     }
     if args.flag_list {
         println!("Flag --list not yet implemented.");
