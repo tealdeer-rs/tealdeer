@@ -60,6 +60,7 @@ To render a local file (for testing):
 
     $ tldr --render /path/to/file.md
 ";
+const ARCHIVE_URL: &'static str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
 
 
 #[derive(Debug, RustcDecodable)]
@@ -119,8 +120,14 @@ fn main() {
 
     // Update cache, pass through
     if args.flag_update {
-        println!("Flag --update not yet implemented.");
-        process::exit(1);
+        let dl = Updater::new(ARCHIVE_URL);
+        let copied = dl.update().unwrap_or_else(|e| {
+            match e {
+                TldrError::UpdateError(msg) => println!("Could not update cache: {}", msg),
+            };
+            process::exit(1);
+        });
+        println!("Cached {} tldr pages.", copied);
     }
 
     // Render local file and exit
