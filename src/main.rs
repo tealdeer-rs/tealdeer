@@ -156,15 +156,14 @@ fn main() {
         println!("Flag --os not yet implemented.");
     }
 
-    let dl = Updater::new("https://github.com/tldr-pages/tldr/archive/master.tar.gz".into());
-    let copied = dl.update().unwrap_or_else(|e| {
-        match e {
-            TldrError::UpdateError(msg) => println!("Could not update cache: {}", msg),
-        };
+    // Show command from cache
+    if let Some(command) = args.arg_command {
+        println!("Flag --os not yet implemented.");
         process::exit(1);
-    });
-    println!("Cached {} tldr pages.", copied);
+    }
 
+    println!("{}", USAGE);
+    process::exit(1);
 }
 
 
