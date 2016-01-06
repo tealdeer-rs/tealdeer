@@ -114,8 +114,17 @@ fn main() {
         process::exit(1);
     }
     if let Some(file) = args.flag_render {
-        println!("Flag --render not yet implemented.");
-        process::exit(1);
+        // Open file
+        let reader = get_file_reader(&file).unwrap_or_else(|msg| {
+            println!("{}", msg);
+            process::exit(1);
+        });
+
+        // Create tokenizer and print output
+        let mut tokenizer = Tokenizer::new(reader);
+        print_lines(&mut tokenizer);
+
+        process::exit(0);
     }
     if let Some(os) = args.flag_os {
         println!("Flag --os not yet implemented.");
@@ -129,19 +138,6 @@ fn main() {
         println!("Flag --clear-cache not yet implemented.");
         process::exit(1);
     }
-
-    // Open file
-    let reader = get_file_reader(&args.flag_render.unwrap()).unwrap_or_else(|msg| {
-        println!("{}", msg);
-        process::exit(1);
-    });
-
-    // Create tokenizer
-    let mut tokenizer = Tokenizer::new(reader);
-
-    // Print output
-    print_lines(&mut tokenizer);
-    println!("");
 
     let dl = Updater::new("https://github.com/tldr-pages/tldr/archive/master.tar.gz".into());
     let copied = dl.update().unwrap_or_else(|e| {

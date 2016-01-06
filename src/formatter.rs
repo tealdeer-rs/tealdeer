@@ -19,4 +19,5 @@ pub fn print_lines<R>(tokenizer: &mut Tokenizer<R>) where R: BufRead {
             LineType::Other(text) => debug!("Unknown line type: {:?}", text),
         }
     }
+    println!("");
 }
