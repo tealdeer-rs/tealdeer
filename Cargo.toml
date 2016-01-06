@@ -15,3 +15,4 @@ tempdir = "^0.3"
 curl = "^0.2"
 env_logger = { version = "^0.3", optional = true }
 rustc-serialize = "^0.3"
+docopt = "^0.6"

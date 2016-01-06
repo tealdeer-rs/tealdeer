@@ -43,9 +43,9 @@ pub struct Updater {
 
 impl Updater {
 
-    pub fn new(url: String) -> Updater {
+    pub fn new<S>(url: S) -> Updater where S: Into<String> {
         Updater {
-            url: url,
+            url: url.into(),
         }
     }
 
