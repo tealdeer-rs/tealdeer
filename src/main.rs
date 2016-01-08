@@ -8,6 +8,7 @@ extern crate flate2;
 extern crate tar;
 extern crate curl;
 extern crate rustc_serialize;
+extern crate time;
 
 use std::io::BufReader;
 use std::fs::File;
