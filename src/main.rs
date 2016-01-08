@@ -8,6 +8,7 @@ extern crate flate2;
 extern crate tar;
 extern crate curl;
 extern crate rustc_serialize;
+extern crate time;
 
 use std::io::BufReader;
 use std::fs::File;
@@ -59,7 +60,8 @@ To render a local file (for testing):
 
     $ tldr --render /path/to/file.md
 ";
-const ARCHIVE_URL: &'static str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
+const ARCHIVE_URL: &'static str = "http://localhost:8001/master.tar.gz";
+const MAX_CACHE_AGE: i64 = 2592000; // 30 days
 
 
 #[derive(Debug, RustcDecodable)]
@@ -110,6 +112,9 @@ fn main() {
         process::exit(0);
     }
 
+    // Initialize updater
+    let dl = Updater::new(ARCHIVE_URL);
+
     // Clear cache, pass through
     if args.flag_clear_cache {
         println!("Flag --clear-cache not yet implemented.");
@@ -118,7 +123,6 @@ fn main() {
 
     // Update cache, pass through
     if args.flag_update {
-        let dl = Updater::new(ARCHIVE_URL);
         dl.update().unwrap_or_else(|e| {
             match e {
                 TldrError::UpdateError(msg) => println!("Could not update cache: {}", msg),
@@ -156,6 +160,19 @@ fn main() {
 
     // Show command from cache
     if let Some(command) = args.arg_command {
+        if !args.flag_update {
+            match dl.last_update() {
+                Some(ago) if ago > MAX_CACHE_AGE => {
+                    println!("Cache wasn't updated in {} days.", MAX_CACHE_AGE / 24 / 3600);
+                    println!("You should probably run `tldr --update` soon."); 
+                },
+                None => {
+                    println!("Cache not found. Please run `tldr --update`.");
+                    process::exit(1);
+                },
+                _ => {},
+            }
+        }
         println!("Page rendering from cache not yet implemented.");
         process::exit(1);
     }

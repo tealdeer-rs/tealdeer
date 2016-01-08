@@ -1,10 +1,14 @@
 use std::io::Read;
 use std::fs;
 use std::env;
+use std::path::PathBuf;
+
+#[cfg(unix)] use std::os::unix::fs::MetadataExt;
 
 use flate2::read::GzDecoder;
 use tar::Archive;
 use curl::http;
+use time;
 
 use error::TldrError::{self, UpdateError};
 
@@ -20,6 +24,12 @@ impl Updater {
         Updater {
             url: url.into(),
         }
+    }
+
+    /// Return the path to the cache directory.
+    fn get_cache_dir(&self) -> Result<PathBuf, TldrError> {
+        let home_dir = try!(env::home_dir().ok_or(UpdateError("Could not determine home directory".into())));
+        Ok(home_dir.join(".cache").join("tldr-rs"))
     }
 
     /// Download the archive
@@ -48,8 +58,7 @@ impl Updater {
         let mut archive = try!(self.decompress(response.get_body()));
 
         // Determine paths
-        let home_dir = try!(env::home_dir().ok_or(UpdateError("Could not determine home directory".into())));
-        let cache_dir = home_dir.join(".cache").join("tldr-rs");
+        let cache_dir = try!(self.get_cache_dir());
 
         // Extract archive
         try!(archive.unpack(&cache_dir).map_err(|e| {
@@ -63,6 +72,19 @@ impl Updater {
         }));
 
         Ok(())
+    }
+
+    /// Return the number of seconds since the cache directory was last modified.
+    #[cfg(unix)]
+    pub fn last_update(&self) -> Option<i64> {
+        if let Ok(cache_dir) = self.get_cache_dir() {
+            if let Ok(metadata) = fs::metadata(cache_dir) {
+                let mtime = metadata.mtime();
+                let now = time::now_utc().to_timespec();
+                return Some(now.sec - mtime)
+            };
+        };
+        None
     }
 
 }
