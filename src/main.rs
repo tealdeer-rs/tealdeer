@@ -60,7 +60,7 @@ To render a local file (for testing):
 
     $ tldr --render /path/to/file.md
 ";
-const ARCHIVE_URL: &'static str = "http://localhost:8001/master.tar.gz";
+const ARCHIVE_URL: &'static str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
 const MAX_CACHE_AGE: i64 = 2592000; // 30 days
 
 
