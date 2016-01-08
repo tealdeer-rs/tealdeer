@@ -76,12 +76,12 @@ impl Updater {
 
     /// Return the number of seconds since the cache directory was last modified.
     #[cfg(unix)]
-    pub fn last_update(&self) -> Option<u64> {
+    pub fn last_update(&self) -> Option<i64> {
         if let Ok(cache_dir) = self.get_cache_dir() {
             if let Ok(metadata) = fs::metadata(cache_dir) {
                 let mtime = metadata.mtime();
                 let now = time::now_utc().to_timespec();
-                println!("Changed {} seconds ago", now.sec - mtime);
+                return Some(now.sec - mtime)
             };
         };
         None
