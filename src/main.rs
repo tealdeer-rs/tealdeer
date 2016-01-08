@@ -19,12 +19,12 @@ use docopt::Docopt;
 mod types;
 mod tokenizer;
 mod formatter;
-mod updater;
+mod cache;
 mod error;
 
 use tokenizer::Tokenizer;
-use updater::Updater;
-use error::TldrError;
+use cache::Cache;
+use error::TldrError::{UpdateError, CacheError};
 use formatter::print_lines;
 
 
@@ -112,8 +112,8 @@ fn main() {
         process::exit(0);
     }
 
-    // Initialize updater
-    let dl = Updater::new(ARCHIVE_URL);
+    // Initialize cache
+    let cache = Cache::new(ARCHIVE_URL);
 
     // Clear cache, pass through
     if args.flag_clear_cache {
@@ -123,9 +123,9 @@ fn main() {
 
     // Update cache, pass through
     if args.flag_update {
-        dl.update().unwrap_or_else(|e| {
+        cache.update().unwrap_or_else(|e| {
             match e {
-                TldrError::UpdateError(msg) => println!("Could not update cache: {}", msg),
+                UpdateError(msg) | CacheError(msg) => println!("Could not update cache: {}", msg),
             };
             process::exit(1);
         });
@@ -160,8 +160,10 @@ fn main() {
 
     // Show command from cache
     if let Some(command) = args.arg_command {
+
+        // Check cache
         if !args.flag_update {
-            match dl.last_update() {
+            match cache.last_update() {
                 Some(ago) if ago > MAX_CACHE_AGE => {
                     println!("Cache wasn't updated in {} days.", MAX_CACHE_AGE / 24 / 3600);
                     println!("You should probably run `tldr --update` soon."); 
@@ -173,6 +175,8 @@ fn main() {
                 _ => {},
             }
         }
+
+        // Search for command in cache
         println!("Page rendering from cache not yet implemented.");
         process::exit(1);
     }

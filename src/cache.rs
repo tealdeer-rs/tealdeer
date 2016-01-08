@@ -10,25 +10,25 @@ use tar::Archive;
 use curl::http;
 use time;
 
-use error::TldrError::{self, UpdateError};
+use error::TldrError::{self, CacheError, UpdateError};
 
 
 #[derive(Debug)]
-pub struct Updater {
+pub struct Cache {
     url: String,
 }
 
-impl Updater {
+impl Cache {
 
-    pub fn new<S>(url: S) -> Updater where S: Into<String> {
-        Updater {
+    pub fn new<S>(url: S) -> Cache where S: Into<String> {
+        Cache {
             url: url.into(),
         }
     }
 
     /// Return the path to the cache directory.
     fn get_cache_dir(&self) -> Result<PathBuf, TldrError> {
-        let home_dir = try!(env::home_dir().ok_or(UpdateError("Could not determine home directory".into())));
+        let home_dir = try!(env::home_dir().ok_or(CacheError("Could not determine home directory".into())));
         Ok(home_dir.join(".cache").join("tldr-rs"))
     }
 
@@ -74,8 +74,8 @@ impl Updater {
         Ok(())
     }
 
-    /// Return the number of seconds since the cache directory was last modified.
     #[cfg(unix)]
+    /// Return the number of seconds since the cache directory was last modified.
     pub fn last_update(&self) -> Option<i64> {
         if let Ok(cache_dir) = self.get_cache_dir() {
             if let Ok(metadata) = fs::metadata(cache_dir) {
