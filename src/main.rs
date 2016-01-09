@@ -12,6 +12,7 @@ extern crate time;
 
 use std::io::BufReader;
 use std::fs::File;
+use std::path::{Path, PathBuf};
 use std::process;
 
 use docopt::Docopt;
@@ -77,13 +78,19 @@ struct Args {
 }
 
 
-/// Open file, return a `BufRead` instance
-fn get_file_reader(filepath: &str) -> Result<BufReader<File>, String> {
+/// Print page by path
+fn print_page(path: &Path) -> Result<(), String> {
+    // Open file
     let file = try!(
-        File::open(filepath)
-            .map_err(|msg| format!("Could not open file: {}", msg))
+        File::open(path).map_err(|msg| format!("Could not open file: {}", msg))
     );
-    Ok(BufReader::new(file))
+    let reader = BufReader::new(file);
+
+    // Create tokenizer and print output
+    let mut tokenizer = Tokenizer::new(reader);
+    print_lines(&mut tokenizer);
+
+    Ok(())
 }
 
 
@@ -134,17 +141,13 @@ fn main() {
 
     // Render local file and exit
     if let Some(file) = args.flag_render {
-        // Open file
-        let reader = get_file_reader(&file).unwrap_or_else(|msg| {
+        let path = PathBuf::from(file);
+        if let Err(msg) = print_page(&path) {
             println!("{}", msg);
             process::exit(1);
-        });
-
-        // Create tokenizer and print output
-        let mut tokenizer = Tokenizer::new(reader);
-        print_lines(&mut tokenizer);
-
-        process::exit(0);
+        } else {
+            process::exit(0);
+        };
     }
 
     // List cached commands and exit
@@ -166,7 +169,7 @@ fn main() {
             match cache.last_update() {
                 Some(ago) if ago > MAX_CACHE_AGE => {
                     println!("Cache wasn't updated in {} days.", MAX_CACHE_AGE / 24 / 3600);
-                    println!("You should probably run `tldr --update` soon."); 
+                    println!("You should probably run `tldr --update` soon.");
                 },
                 None => {
                     println!("Cache not found. Please run `tldr --update`.");
@@ -177,8 +180,19 @@ fn main() {
         }
 
         // Search for command in cache
-        println!("Page rendering from cache not yet implemented.");
-        process::exit(1);
+        if let Some(path) = cache.find_page(&command) {
+            if let Err(msg) = print_page(&path) {
+                println!("{}", msg);
+                process::exit(1);
+            } else {
+                process::exit(0);
+            }
+        } else {
+            println!("Page {} not found in cache", &command);
+            println!("Try updating with `tldr --update`, or submit a pull request to:");
+            println!("https://github.com/tldr-pages/tldr");
+            process::exit(1);
+        }
     }
 
     // Some flags can be run without a command.

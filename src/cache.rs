@@ -87,4 +87,44 @@ impl Cache {
         None
     }
 
+    pub fn find_page(&self, name: &str) -> Option<PathBuf> {
+        // Build page file name
+        let page_filename = format!("{}.md", name);
+
+        // Get platform dir
+        let cache_dir = match self.get_cache_dir() {
+            Ok(dir) => dir,
+            Err(_) => return None,
+        };
+        let platforms_dir = cache_dir.join("tldr-master").join("pages");
+
+        // Determine platform
+        let platform = if cfg!(target_os = "linux") {
+            Some("linux")
+        } else if cfg!(target_os = "macos") {
+            Some("osx")
+        } else {
+            None // TODO: Does rust support Sun OS?
+        };
+
+        // Search for the page in the platform specific directory
+        if let Some(pf) = platform {
+            let path = platforms_dir.join(&pf).join(&page_filename);
+            if path.exists() && path.is_file() {
+                return Some(path);
+            }
+        }
+
+        // If platform is not supported or if platform specific page does not exist,
+        // look up the page in the "common" directory.
+        let path = platforms_dir.join("common").join(&page_filename);
+
+        // Return it if it exists, otherwise give up and return `None`
+        if path.exists() && path.is_file() {
+            Some(path)
+        } else {
+            None
+        }
+    }
+
 }
