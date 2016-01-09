@@ -12,6 +12,7 @@ extern crate time;
 
 use std::io::BufReader;
 use std::fs::File;
+use std::path::{Path, PathBuf};
 use std::process;
 
 use docopt::Docopt;
@@ -19,12 +20,12 @@ use docopt::Docopt;
 mod types;
 mod tokenizer;
 mod formatter;
-mod updater;
+mod cache;
 mod error;
 
 use tokenizer::Tokenizer;
-use updater::Updater;
-use error::TldrError;
+use cache::Cache;
+use error::TldrError::{UpdateError, CacheError};
 use formatter::print_lines;
 
 
@@ -77,13 +78,19 @@ struct Args {
 }
 
 
-/// Open file, return a `BufRead` instance
-fn get_file_reader(filepath: &str) -> Result<BufReader<File>, String> {
+/// Print page by path
+fn print_page(path: &Path) -> Result<(), String> {
+    // Open file
     let file = try!(
-        File::open(filepath)
-            .map_err(|msg| format!("Could not open file: {}", msg))
+        File::open(path).map_err(|msg| format!("Could not open file: {}", msg))
     );
-    Ok(BufReader::new(file))
+    let reader = BufReader::new(file);
+
+    // Create tokenizer and print output
+    let mut tokenizer = Tokenizer::new(reader);
+    print_lines(&mut tokenizer);
+
+    Ok(())
 }
 
 
@@ -112,8 +119,8 @@ fn main() {
         process::exit(0);
     }
 
-    // Initialize updater
-    let dl = Updater::new(ARCHIVE_URL);
+    // Initialize cache
+    let cache = Cache::new(ARCHIVE_URL);
 
     // Clear cache, pass through
     if args.flag_clear_cache {
@@ -123,9 +130,9 @@ fn main() {
 
     // Update cache, pass through
     if args.flag_update {
-        dl.update().unwrap_or_else(|e| {
+        cache.update().unwrap_or_else(|e| {
             match e {
-                TldrError::UpdateError(msg) => println!("Could not update cache: {}", msg),
+                UpdateError(msg) | CacheError(msg) => println!("Could not update cache: {}", msg),
             };
             process::exit(1);
         });
@@ -134,17 +141,13 @@ fn main() {
 
     // Render local file and exit
     if let Some(file) = args.flag_render {
-        // Open file
-        let reader = get_file_reader(&file).unwrap_or_else(|msg| {
+        let path = PathBuf::from(file);
+        if let Err(msg) = print_page(&path) {
             println!("{}", msg);
             process::exit(1);
-        });
-
-        // Create tokenizer and print output
-        let mut tokenizer = Tokenizer::new(reader);
-        print_lines(&mut tokenizer);
-
-        process::exit(0);
+        } else {
+            process::exit(0);
+        };
     }
 
     // List cached commands and exit
@@ -160,11 +163,13 @@ fn main() {
 
     // Show command from cache
     if let Some(command) = args.arg_command {
+
+        // Check cache
         if !args.flag_update {
-            match dl.last_update() {
+            match cache.last_update() {
                 Some(ago) if ago > MAX_CACHE_AGE => {
                     println!("Cache wasn't updated in {} days.", MAX_CACHE_AGE / 24 / 3600);
-                    println!("You should probably run `tldr --update` soon."); 
+                    println!("You should probably run `tldr --update` soon.");
                 },
                 None => {
                     println!("Cache not found. Please run `tldr --update`.");
@@ -173,8 +178,21 @@ fn main() {
                 _ => {},
             }
         }
-        println!("Page rendering from cache not yet implemented.");
-        process::exit(1);
+
+        // Search for command in cache
+        if let Some(path) = cache.find_page(&command) {
+            if let Err(msg) = print_page(&path) {
+                println!("{}", msg);
+                process::exit(1);
+            } else {
+                process::exit(0);
+            }
+        } else {
+            println!("Page {} not found in cache", &command);
+            println!("Try updating with `tldr --update`, or submit a pull request to:");
+            println!("https://github.com/tldr-pages/tldr");
+            process::exit(1);
+        }
     }
 
     // Some flags can be run without a command.

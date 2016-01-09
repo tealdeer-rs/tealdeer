@@ -3,7 +3,8 @@ use curl::ErrCode;
 
 #[derive(Debug)]
 pub enum TldrError {
-    UpdateError(String)
+    CacheError(String),
+    UpdateError(String),
 }
 
 
