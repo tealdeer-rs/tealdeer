@@ -127,4 +127,19 @@ impl Cache {
         }
     }
 
+    /// Delete the cache directory.
+    pub fn clear(&self) -> Result<(), TldrError> {
+        let path = try!(self.get_cache_dir());
+        if path.exists() && path.is_dir() {
+            try!(fs::remove_dir_all(&path).map_err(|_| {
+                CacheError(format!("Could not remove cache directory ({}).", path.display()))
+            }));
+        } else if path.exists() {
+            return Err(CacheError(format!("Cache path ({}) is not a directory.", path.display())));
+        } else {
+            return Err(CacheError(format!("Cache path ({}) does not exist.", path.display())));
+        };
+        Ok(())
+    }
+
 }
