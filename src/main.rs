@@ -124,8 +124,13 @@ fn main() {
 
     // Clear cache, pass through
     if args.flag_clear_cache {
-        println!("Flag --clear-cache not yet implemented.");
-        process::exit(1);
+        cache.clear().unwrap_or_else(|e| {
+            match e {
+                UpdateError(msg) | CacheError(msg) => println!("Could not delete cache: {}", msg),
+            };
+            process::exit(1);
+        });
+        println!("Successfully deleted cache.");
     }
 
     // Update cache, pass through
@@ -196,7 +201,7 @@ fn main() {
     }
 
     // Some flags can be run without a command.
-    if !args.flag_update {
+    if !(args.flag_update || args.flag_clear_cache) {
         println!("{}", USAGE);
         process::exit(1);
     }
