@@ -8,6 +8,14 @@
 // option. All files in the project carrying such notice may not be
 // copied, modified, or distributed except according to those terms.
 
+#![deny(missing_docs, missing_debug_implementations,
+        unsafe_code,
+        unused_import_braces, unused_qualifications)]
+#![warn(trivial_casts, trivial_numeric_casts,
+        missing_copy_implementations,
+        unused_extern_crates, unused_results)]
+
+
 #[macro_use] extern crate log;
 #[cfg(feature = "logging")]extern crate env_logger;
 extern crate docopt;
