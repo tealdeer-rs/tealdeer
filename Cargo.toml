@@ -2,10 +2,15 @@
 name = "tldr"
 version = "0.1.0"
 authors = ["Danilo Bargen <mail@dbrgn.ch>"]
+repository = "https://github.com/dbrgn/tldr-rs/"
+homepage = "https://github.com/dbrgn/tldr-rs/"
 license = "MIT/Apache-2.0"
+readme = "README.md"
+description = "Fetch and show tldr help pages for many CLI commands."
 
 [features]
 logging = ["env_logger"]
+dev = ["clippy"]
 
 [dependencies]
 ansi_term = "^0.7"
@@ -13,8 +18,9 @@ log = "^0.3"
 tar = { git = "https://github.com/dbrgn/tar-rs", branch = "pax_header" }
 flate2 = "^0.2"
 curl = "^0.2"
-env_logger = { version = "^0.3", optional = true }
 rustc-serialize = "^0.3"
 docopt = "^0.6"
 time = "^0.1"
 walkdir = "^0.1"
+env_logger = { version = "^0.3", optional = true }
+clippy = {version = "0.0.37", optional = true}

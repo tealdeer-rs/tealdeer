@@ -15,6 +15,12 @@
         missing_copy_implementations,
         unused_extern_crates, unused_results)]
 
+#![cfg_attr(feature = "dev", feature(plugin))]
+#![cfg_attr(feature = "dev", plugin(clippy))]
+#![cfg_attr(feature = "dev", warn(cast_possible_truncation, cast_possible_wrap, cast_precision_loss, cast_sign_loss,
+                                  mut_mut, non_ascii_literal, option_unwrap_used, result_unwrap_used,
+                                  shadow_reuse, shadow_same, unicode_not_nfc,
+                                  wrong_self_convention, wrong_pub_self_convention))]
 
 #[macro_use] extern crate log;
 #[cfg(feature = "logging")]extern crate env_logger;
