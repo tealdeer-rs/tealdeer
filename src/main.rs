@@ -27,6 +27,7 @@ use tokenizer::Tokenizer;
 use cache::Cache;
 use error::TldrError::{UpdateError, CacheError};
 use formatter::print_lines;
+use types::OsType;
 
 
 const NAME: &'static str = "tldr-rs";
@@ -103,6 +104,16 @@ fn init_log() {
 fn init_log() { }
 
 
+#[cfg(target_os = "linux")]
+fn get_os() -> OsType { OsType::Linux }
+
+#[cfg(target_os = "macos")]
+fn get_os() -> OsType { OsType::OsX }
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+fn get_os() -> OsType { OsType::Other }
+
+
 fn main() {
 
     // Initialize logger
@@ -120,7 +131,8 @@ fn main() {
     }
 
     // Initialize cache
-    let cache = Cache::new(ARCHIVE_URL);
+    let os: OsType = get_os();
+    let cache = Cache::new(ARCHIVE_URL, os);
 
     // Clear cache, pass through
     if args.flag_clear_cache {

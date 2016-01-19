@@ -11,18 +11,21 @@ use curl::http;
 use time;
 
 use error::TldrError::{self, CacheError, UpdateError};
+use types::OsType;
 
 
 #[derive(Debug)]
 pub struct Cache {
     url: String,
+    os: OsType,
 }
 
 impl Cache {
 
-    pub fn new<S>(url: S) -> Cache where S: Into<String> {
+    pub fn new<S>(url: S, os: OsType) -> Cache where S: Into<String> {
         Cache {
             url: url.into(),
+            os: os,
         }
     }
 
@@ -99,12 +102,11 @@ impl Cache {
         let platforms_dir = cache_dir.join("tldr-master").join("pages");
 
         // Determine platform
-        let platform = if cfg!(target_os = "linux") {
-            Some("linux")
-        } else if cfg!(target_os = "macos") {
-            Some("osx")
-        } else {
-            None // TODO: Does rust support Sun OS?
+        let platform = match self.os {
+            OsType::Linux => Some("linux"),
+            OsType::OsX => Some("osx"),
+            OsType::SunOS => None, // TODO: Does Rust support SunOS
+            OsType::Other => None,
         };
 
         // Search for the page in the platform specific directory

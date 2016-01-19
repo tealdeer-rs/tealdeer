@@ -1,6 +1,16 @@
 //! Types used in the client.
 
 #[derive(Debug, Eq, PartialEq)]
+#[allow(dead_code)]
+pub enum OsType {
+    Linux,
+    OsX,
+    SunOS,
+    Other,
+}
+
+
+#[derive(Debug, Eq, PartialEq)]
 pub enum LineType {
     Empty,
     Title(String),
