@@ -14,6 +14,8 @@ High level project goals:
 
 ## Building
 
+tldr-rs requires at least Rust 1.5.
+
 Debug build with logging enabled:
 
     $ cargo build --features logging
