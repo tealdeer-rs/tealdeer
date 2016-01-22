@@ -35,7 +35,7 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const USAGE: &'static str = "
 Usage:
 
-    tldr <command>
+    tldr [options] <command>
     tldr [options]
 
 Options:
