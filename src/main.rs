@@ -27,6 +27,7 @@ use tokenizer::Tokenizer;
 use cache::Cache;
 use error::TldrError::{UpdateError, CacheError};
 use formatter::print_lines;
+use types::OsType;
 
 
 const NAME: &'static str = "tldr-rs";
@@ -34,7 +35,7 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const USAGE: &'static str = "
 Usage:
 
-    tldr <command>
+    tldr [options] <command>
     tldr [options]
 
 Options:
@@ -72,7 +73,7 @@ struct Args {
     flag_version: bool,
     flag_list: bool,
     flag_render: Option<String>,
-    flag_os: Option<String>,  // TODO enum
+    flag_os: Option<OsType>,
     flag_update: bool,
     flag_clear_cache: bool,
 }
@@ -103,6 +104,16 @@ fn init_log() {
 fn init_log() { }
 
 
+#[cfg(target_os = "linux")]
+fn get_os() -> OsType { OsType::Linux }
+
+#[cfg(target_os = "macos")]
+fn get_os() -> OsType { OsType::OsX }
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+fn get_os() -> OsType { OsType::Other }
+
+
 fn main() {
 
     // Initialize logger
@@ -119,8 +130,14 @@ fn main() {
         process::exit(0);
     }
 
+    // Specify target OS
+    let os: OsType = match args.flag_os {
+        Some(os) => os,
+        None => get_os(),
+    };
+
     // Initialize cache
-    let cache = Cache::new(ARCHIVE_URL);
+    let cache = Cache::new(ARCHIVE_URL, os);
 
     // Clear cache, pass through
     if args.flag_clear_cache {
@@ -159,11 +176,6 @@ fn main() {
     if args.flag_list {
         println!("Flag --list not yet implemented.");
         process::exit(1);
-    }
-
-    // Override OS and exit
-    if let Some(os) = args.flag_os {
-        println!("Flag --os not yet implemented.");
     }
 
     // Show command from cache
