@@ -73,7 +73,7 @@ struct Args {
     flag_version: bool,
     flag_list: bool,
     flag_render: Option<String>,
-    flag_os: Option<String>,  // TODO enum
+    flag_os: Option<OsType>,
     flag_update: bool,
     flag_clear_cache: bool,
 }
@@ -171,11 +171,6 @@ fn main() {
     if args.flag_list {
         println!("Flag --list not yet implemented.");
         process::exit(1);
-    }
-
-    // Override OS and exit
-    if let Some(os) = args.flag_os {
-        println!("Flag --os not yet implemented.");
     }
 
     // Show command from cache

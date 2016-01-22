@@ -105,7 +105,7 @@ impl Cache {
         let platform = match self.os {
             OsType::Linux => Some("linux"),
             OsType::OsX => Some("osx"),
-            OsType::SunOS => None, // TODO: Does Rust support SunOS
+            OsType::SunOs => None, // TODO: Does Rust support SunOS?
             OsType::Other => None,
         };
 
