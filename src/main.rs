@@ -130,8 +130,13 @@ fn main() {
         process::exit(0);
     }
 
+    // Specify target OS
+    let os: OsType = match args.flag_os {
+        Some(os) => os,
+        None => get_os(),
+    };
+
     // Initialize cache
-    let os: OsType = get_os();
     let cache = Cache::new(ARCHIVE_URL, os);
 
     // Clear cache, pass through
