@@ -277,6 +277,6 @@ mod test {
         assert_eq!(LineType::from("- some command"), LineType::ExampleText("some command".into()));
         assert_eq!(LineType::from("`$ cargo run`"), LineType::ExampleCode("$ cargo run".into()));
         assert_eq!(LineType::from("`$ cargo run"), LineType::Other("`$ cargo run".into()));
-        assert_eq!(LineType::from("jklö"), LineType::Other("jklö".into()));
+        assert_eq!(LineType::from("jkl\u{f6}"), LineType::Other("jkl\u{f6}".into()));
     }
 }

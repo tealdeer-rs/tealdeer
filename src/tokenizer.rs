@@ -20,7 +20,7 @@ impl<R> Tokenizer<R> where R: BufRead {
         }
     }
 
-    pub fn next(&mut self) -> Option<LineType> {
+    pub fn next_token(&mut self) -> Option<LineType> {
         self.current_line.clear();
         let bytes_read = self.reader.read_line(&mut self.current_line).unwrap();
         match bytes_read {

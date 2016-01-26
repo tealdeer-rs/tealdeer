@@ -17,7 +17,7 @@ pub enum OsType {
 /// directly into an `OsType` instance.
 impl Decodable for OsType {
     fn decode<D: Decoder>(d: &mut D) -> Result<Self, D::Error> {
-        return d.read_str().and_then(|input| {
+        d.read_str().and_then(|input| {
             let lowercase = input.to_lowercase();
             match &lowercase[..] {
                 "linux" => Ok(OsType::Linux),
@@ -27,7 +27,7 @@ impl Decodable for OsType {
                 _ => Err(d.error(&format!("Invalid OS type: '{}'. Choose one of 'linux', \
                                            'osx', 'sunos' or 'other'.", lowercase)))
             }
-        });
+        })
     }
 }
 
