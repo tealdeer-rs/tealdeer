@@ -22,10 +22,11 @@ impl<R> Tokenizer<R> where R: BufRead {
 
     pub fn next_token(&mut self) -> Option<LineType> {
         self.current_line.clear();
-        let bytes_read = self.reader.read_line(&mut self.current_line).unwrap();
+        let bytes_read = self.reader.read_line(&mut self.current_line);
         match bytes_read {
-            0 => None,
-            _ => Some(LineType::from(&self.current_line[..])),
+            Ok(0) => None,
+            Err(e) => { warn!("Could not read line from token reader: {:?}", e); None},
+            Ok(_) => Some(LineType::from(&self.current_line[..])),
         }
     }
 
