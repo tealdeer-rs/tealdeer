@@ -10,7 +10,44 @@ High level project goals:
 - [x] Don't require a network connection for anything besides updating the cache
 - [x] Command line interface similar or equivalent to the [NodeJS client][tldr-node-client]
 - [x] Be fast
-- [ ] Support all major platforms
+
+Usage:
+
+    tldr [options] <command>
+    tldr [options]
+
+    Options:
+
+        -h --help           Show this screen
+        -v --version        Show version information
+        -l --list           List all commands in the cache
+        -f --render <file>  Render a specific markdown file
+        -o --os <type>      Override the operating system [linux, osx, sunos]
+        -u --update         Update the local cache
+        -c --clear-cache    Clear the local cache
+
+    Examples:
+
+        $ tldr tar
+        $ tldr --list
+
+    To control the cache:
+
+        $ tldr --update
+        $ tldr --clear-cache
+
+    To render a local file (for testing):
+
+        $ tldr --render /path/to/file.md
+
+
+## Installing
+
+Build and install the tool from source (see section "Building" in this README).
+
+If you're an Arch Linux user, you can also install the package from the AUR:
+
+    $ yaourt -S tldr-rs-git
 
 
 ## Building
