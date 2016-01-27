@@ -90,6 +90,17 @@ impl Cache {
         None
     }
 
+    /// Return the platform directory.
+    fn get_platform_dir(&self) -> Option<&'static str> {
+        match self.os {
+            OsType::Linux => Some("linux"),
+            OsType::OsX => Some("osx"),
+            OsType::SunOs => None, // TODO: Does Rust support SunOS?
+            OsType::Other => None,
+        }
+    }
+
+    /// Search for a page and return the path to it.
     pub fn find_page(&self, name: &str) -> Option<PathBuf> {
         // Build page file name
         let page_filename = format!("{}.md", name);
@@ -102,12 +113,7 @@ impl Cache {
         let platforms_dir = cache_dir.join("tldr-master").join("pages");
 
         // Determine platform
-        let platform = match self.os {
-            OsType::Linux => Some("linux"),
-            OsType::OsX => Some("osx"),
-            OsType::SunOs => None, // TODO: Does Rust support SunOS?
-            OsType::Other => None,
-        };
+        let platform = self.get_platform_dir();
 
         // Search for the page in the platform specific directory
         if let Some(pf) = platform {
