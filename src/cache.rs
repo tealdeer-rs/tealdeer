@@ -106,11 +106,10 @@ impl Cache {
         let page_filename = format!("{}.md", name);
 
         // Get platform dir
-        let cache_dir = match self.get_cache_dir() {
-            Ok(dir) => dir,
-            Err(_) => return None,
+        let platforms_dir = match self.get_cache_dir() {
+            Ok(cache_dir) => cache_dir.join("tldr-master").join("pages"),
+            _ => return None,
         };
-        let platforms_dir = cache_dir.join("tldr-master").join("pages");
 
         // Determine platform
         let platform = self.get_platform_dir();
