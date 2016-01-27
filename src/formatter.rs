@@ -20,12 +20,12 @@ fn format_braces(text: &str) -> String {
                         }
                     })
                     .collect::<Vec<_>>();
-    return ANSIStrings(&parts).to_string()
+    ANSIStrings(&parts).to_string()
 }
 
 /// Print a token stream to an ANSI terminal.
 pub fn print_lines<R>(tokenizer: &mut Tokenizer<R>) where R: BufRead {
-    while let Some(token) = tokenizer.next() {
+    while let Some(token) = tokenizer.next_token() {
         match token {
             LineType::Empty => println!(""),
             LineType::Title(_) => debug!("Ignoring title"),
