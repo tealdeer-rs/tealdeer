@@ -3,7 +3,7 @@
 use rustc_serialize::{Decodable, Decoder};
 
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
 #[allow(dead_code)]
 pub enum OsType {
     Linux,

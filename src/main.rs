@@ -9,6 +9,7 @@ extern crate tar;
 extern crate curl;
 extern crate rustc_serialize;
 extern crate time;
+extern crate walkdir;
 
 use std::io::BufReader;
 use std::fs::File;
@@ -16,6 +17,7 @@ use std::path::{Path, PathBuf};
 use std::process;
 
 use docopt::Docopt;
+use ansi_term::Colour;
 
 mod types;
 mod tokenizer;
@@ -95,6 +97,27 @@ fn print_page(path: &Path) -> Result<(), String> {
 }
 
 
+/// Check the cache for freshness
+fn check_cache(args: &Args, cache: &Cache) {
+    if !args.flag_update {
+        match cache.last_update() {
+            Some(ago) if ago > MAX_CACHE_AGE => {
+                println!("{}", Colour::Red.paint(format!(
+                    "Cache wasn't updated in {} days.\n\
+                    You should probably run `tldr --update` soon.\n",
+                    MAX_CACHE_AGE / 24 / 3600
+                )));
+            },
+            None => {
+                println!("Cache not found. Please run `tldr --update`.");
+                process::exit(1);
+            },
+            _ => {},
+        }
+    };
+}
+
+
 #[cfg(feature = "logging")]
 fn init_log() {
     env_logger::init().unwrap();
@@ -162,7 +185,7 @@ fn main() {
     }
 
     // Render local file and exit
-    if let Some(file) = args.flag_render {
+    if let Some(ref file) = args.flag_render {
         let path = PathBuf::from(file);
         if let Err(msg) = print_page(&path) {
             println!("{}", msg);
@@ -174,27 +197,26 @@ fn main() {
 
     // List cached commands and exit
     if args.flag_list {
-        println!("Flag --list not yet implemented.");
-        process::exit(1);
+        // Check cache for freshness
+        check_cache(&args, &cache);
+
+        // Get list of pages
+        let pages = cache.list_pages().unwrap_or_else(|e| {
+            match e {
+                UpdateError(msg) | CacheError(msg) => println!("Could not get list of pages: {}", msg),
+            }
+            process::exit(1);
+        });
+
+        // Print pages
+        println!("{}", pages.join(", "));
+        process::exit(0);
     }
 
     // Show command from cache
-    if let Some(command) = args.arg_command {
-
-        // Check cache
-        if !args.flag_update {
-            match cache.last_update() {
-                Some(ago) if ago > MAX_CACHE_AGE => {
-                    println!("Cache wasn't updated in {} days.", MAX_CACHE_AGE / 24 / 3600);
-                    println!("You should probably run `tldr --update` soon.");
-                },
-                None => {
-                    println!("Cache not found. Please run `tldr --update`.");
-                    process::exit(1);
-                },
-                _ => {},
-            }
-        }
+    if let Some(ref command) = args.arg_command {
+        // Check cache for freshness
+        check_cache(&args, &cache);
 
         // Search for command in cache
         if let Some(path) = cache.find_page(&command) {

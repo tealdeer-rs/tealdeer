@@ -8,6 +8,7 @@ use std::path::PathBuf;
 use flate2::read::GzDecoder;
 use tar::Archive;
 use curl::http;
+use walkdir::{WalkDir, WalkDirIterator, DirEntry};
 use time;
 
 use error::TldrError::{self, CacheError, UpdateError};
@@ -90,24 +91,29 @@ impl Cache {
         None
     }
 
+    /// Return the platform directory.
+    fn get_platform_dir(&self) -> Option<&'static str> {
+        match self.os {
+            OsType::Linux => Some("linux"),
+            OsType::OsX => Some("osx"),
+            OsType::SunOs => None, // TODO: Does Rust support SunOS?
+            OsType::Other => None,
+        }
+    }
+
+    /// Search for a page and return the path to it.
     pub fn find_page(&self, name: &str) -> Option<PathBuf> {
         // Build page file name
         let page_filename = format!("{}.md", name);
 
         // Get platform dir
-        let cache_dir = match self.get_cache_dir() {
-            Ok(dir) => dir,
-            Err(_) => return None,
+        let platforms_dir = match self.get_cache_dir() {
+            Ok(cache_dir) => cache_dir.join("tldr-master").join("pages"),
+            _ => return None,
         };
-        let platforms_dir = cache_dir.join("tldr-master").join("pages");
 
         // Determine platform
-        let platform = match self.os {
-            OsType::Linux => Some("linux"),
-            OsType::OsX => Some("osx"),
-            OsType::SunOs => None, // TODO: Does Rust support SunOS?
-            OsType::Other => None,
-        };
+        let platform = self.get_platform_dir();
 
         // Search for the page in the platform specific directory
         if let Some(pf) = platform {
@@ -127,6 +133,56 @@ impl Cache {
         } else {
             None
         }
+    }
+
+    /// Return the available pages.
+    pub fn list_pages(&self) -> Result<Vec<String>, TldrError> {
+
+        // Determine platforms directory and platform
+        let cache_dir = try!(self.get_cache_dir());
+        let platforms_dir = cache_dir.join("tldr-master").join("pages");
+        let platform_dir = self.get_platform_dir();
+
+        // Closure that allows the WalkDir instance to traverse platform
+        // specific and common page directories, but not others.
+        let should_walk = |entry: &DirEntry| -> bool {
+            let file_type = entry.file_type();
+            let file_name = match entry.file_name().to_str() {
+                Some(name) => name,
+                None => return false,
+            };
+            if file_type.is_dir() {
+                if file_name == "common" {
+                    return true;
+                }
+                if let Some(platform) = platform_dir {
+                    return file_name == platform;
+                }
+            } else if file_type.is_file() {
+                return true
+            }
+            false
+        };
+
+        // Recursively walk through common and (if applicable) platform specific directory
+        let mut pages = WalkDir::new(platforms_dir)
+                                .min_depth(1) // Skip root directory
+                                .into_iter()
+                                .filter_entry(|e| should_walk(e)) // Filter out pages for other architectures
+                                .filter_map(|e| e.ok()) // Convert results to options, filter out errors
+                                .filter_map(|e| {
+                                    let path = e.path();
+                                    let extension = &path.extension().and_then(|s| s.to_str()).unwrap_or("");
+                                    if e.file_type().is_file() && extension == &"md" {
+                                        path.file_stem().and_then(|stem| stem.to_str().map(|s| s.into()))
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .collect::<Vec<String>>();
+        pages.sort();
+        pages.dedup();
+        Ok(pages)
     }
 
     /// Delete the cache directory.
