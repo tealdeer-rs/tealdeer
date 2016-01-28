@@ -11,13 +11,19 @@ rust:
   - stable
   - beta
   - nightly
+os:
+  - linux
+  - osx
 matrix:
   allow_failures:
     - rust: nightly
 before_script:
   - |
+    python --version &&
+    pip --version &&
     pip install 'travis-cargo<0.2' --user &&
-    export PATH=$HOME/.local/bin:$PATH
+    export PATH=$HOME/.local/bin:$PATH &&
+    export PATH=$HOME/Library/Python/2.7/bin:$PATH
 script:
   - |
     travis-cargo build &&
