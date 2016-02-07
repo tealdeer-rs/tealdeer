@@ -82,7 +82,7 @@ impl Cache {
     /// Return the number of seconds since the cache directory was last modified.
     pub fn last_update(&self) -> Option<i64> {
         if let Ok(cache_dir) = self.get_cache_dir() {
-            if let Ok(metadata) = fs::metadata(cache_dir) {
+            if let Ok(metadata) = fs::metadata(cache_dir.join("tldr-master")) {
                 let mtime = metadata.mtime();
                 let now = time::now_utc().to_timespec();
                 return Some(now.sec - mtime)
