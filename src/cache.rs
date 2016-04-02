@@ -53,7 +53,7 @@ impl Cache {
         Ok(Archive::new(decoder))
     }
 
-    /// Update the pages cache. Return the number of cached pages.
+    /// Update the pages cache.
     pub fn update(&self) -> Result<(), TldrError> {
         // First, download the compressed data
         let response = try!(self.download());
@@ -64,15 +64,17 @@ impl Cache {
         // Determine paths
         let cache_dir = try!(self.get_cache_dir());
 
+        // Clear cache directory
+        // Note: This is not the best solution. Ideally we would download the
+        // archive to a temporary directory and then swap the two directories.
+        // But renaming a directory doesn't work across filesystems and Rust
+        // does not yet offer a recursive directory copying function. So for
+        // now, we'll use this approach.
+        try!(self.clear());
+
         // Extract archive
         try!(archive.unpack(&cache_dir).map_err(|e| {
             UpdateError(format!("Could not unpack compressed data: {}", e))
-        }));
-
-        // Make sure that cache directory exists
-        debug!("Ensure cache directory {:?} exists", &cache_dir);
-        try!(fs::create_dir_all(&cache_dir).map_err(|e| {
-            UpdateError(format!("Could not create cache directory: {}", e))
         }));
 
         Ok(())
