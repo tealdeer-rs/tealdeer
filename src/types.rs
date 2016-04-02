@@ -80,7 +80,8 @@ mod test {
         assert_eq!(json::decode::<OsType>("\"Linux\"").unwrap(), Linux);
         assert_eq!(json::decode::<OsType>("\"LINUX\"").unwrap(), Linux);
     }
-#[test]
+
+    #[test]
     fn test_os_type_decoding_unknown() {
         assert!(json::decode::<OsType>("\"lindows\"").is_err());
     }
