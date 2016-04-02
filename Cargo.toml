@@ -6,7 +6,7 @@ repository = "https://github.com/dbrgn/tldr-rs/"
 homepage = "https://github.com/dbrgn/tldr-rs/"
 license = "MIT/Apache-2.0"
 readme = "README.md"
-description = "Fetch and show tldr help pages for many CLI commands."
+description = "Fetch and show tldr help pages for many CLI commands. Full featured offline client with caching support."
 
 [features]
 logging = ["env_logger"]
@@ -15,7 +15,7 @@ dev = ["clippy"]
 [dependencies]
 ansi_term = "^0.7"
 log = "^0.3"
-tar = { git = "https://github.com/dbrgn/tar-rs", branch = "pax_header" }
+tar = "^0.4"
 flate2 = "^0.2"
 curl = "^0.2"
 rustc-serialize = "^0.3"
