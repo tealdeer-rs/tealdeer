@@ -24,3 +24,6 @@ time = "^0.1"
 walkdir = "^0.1"
 env_logger = { version = "^0.3", optional = true }
 clippy = {version = "0.0.37", optional = true}
+
+[dev-dependencies]
+tempdir = "^0.3"
