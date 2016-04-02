@@ -15,7 +15,7 @@ dev = ["clippy"]
 [dependencies]
 ansi_term = "^0.7"
 log = "^0.3"
-tar = { git = "https://github.com/dbrgn/tar-rs", branch = "pax_header" }
+tar = "^0.4"
 flate2 = "^0.2"
 curl = "^0.2"
 rustc-serialize = "^0.3"
