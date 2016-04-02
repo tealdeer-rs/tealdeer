@@ -6,7 +6,7 @@ repository = "https://github.com/dbrgn/tldr-rs/"
 homepage = "https://github.com/dbrgn/tldr-rs/"
 license = "MIT/Apache-2.0"
 readme = "README.md"
-description = "Fetch and show tldr help pages for many CLI commands."
+description = "Fetch and show tldr help pages for many CLI commands. Full featured offline client with caching support."
 
 [features]
 logging = ["env_logger"]
