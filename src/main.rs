@@ -262,21 +262,3 @@ fn main() {
         process::exit(1);
     }
 }
-
-
-#[cfg(test)]
-mod test {
-    use types::LineType;
-
-    #[test]
-    fn test_linetype_from_str() {
-        assert_eq!(LineType::from(""), LineType::Empty);
-        assert_eq!(LineType::from(" \n \r"), LineType::Empty);
-        assert_eq!(LineType::from("# Hello there"), LineType::Title("Hello there".into()));
-        assert_eq!(LineType::from("> tis a description \n"), LineType::Description("tis a description".into()));
-        assert_eq!(LineType::from("- some command"), LineType::ExampleText("some command".into()));
-        assert_eq!(LineType::from("`$ cargo run`"), LineType::ExampleCode("$ cargo run".into()));
-        assert_eq!(LineType::from("`$ cargo run"), LineType::Other("`$ cargo run".into()));
-        assert_eq!(LineType::from("jkl\u{f6}"), LineType::Other("jkl\u{f6}".into()));
-    }
-}
