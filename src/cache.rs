@@ -32,7 +32,24 @@ impl Cache {
 
     /// Return the path to the cache directory.
     fn get_cache_dir(&self) -> Result<PathBuf, TldrError> {
-        let home_dir = try!(env::home_dir().ok_or(CacheError("Could not determine home directory".into())));
+        // Allow overriding the cache directory by setting the
+        // $TLDR_RS_CACHE_DIR env variable.
+        if let Ok(value) = env::var("TLDR_RS_CACHE_DIR") {
+            let path = PathBuf::from(value);
+            if path.exists() && path.is_dir() {
+                return Ok(path)
+            } else {
+                return Err(CacheError(
+                    "Path specified by $TLDR_RS_CACHE_DIR \
+                     does not exist or is not a directory.".into()
+                ));
+            }
+        };
+
+        // Otherwise, fall back to ~/.cache/tldr-rs
+        let home_dir = try!(env::home_dir().ok_or(
+            CacheError("Could not determine home directory".into())
+        ));
         Ok(home_dir.join(".cache").join("tldr-rs"))
     }
 
