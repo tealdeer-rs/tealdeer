@@ -81,6 +81,12 @@ impl Cache {
         // Determine paths
         let cache_dir = try!(self.get_cache_dir());
 
+        // Make sure that cache directory exists
+        debug!("Ensure cache directory {:?} exists", &cache_dir);
+        try!(fs::create_dir_all(&cache_dir).map_err(|e| {
+            UpdateError(format!("Could not create cache directory: {}", e))
+        }));
+
         // Clear cache directory
         // Note: This is not the best solution. Ideally we would download the
         // archive to a temporary directory and then swap the two directories.
