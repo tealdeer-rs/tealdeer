@@ -1,5 +1,7 @@
 # tealdeer
 
+![teal deer](deer.png)
+
 [![Build status](https://img.shields.io/travis/dbrgn/tealdeer/master.svg)](https://travis-ci.org/dbrgn/tealdeer)
 
 An implementation of [tldr](https://github.com/tldr-pages/tldr) in Rust.
