@@ -52,7 +52,7 @@ If you're an Arch Linux user, you can also install the package from the AUR:
 
 ## Building
 
-tldr-rs requires at least Rust 1.5.
+tldr-rs requires at least Rust 1.6.
 
 Debug build with logging enabled:
 
