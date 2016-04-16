@@ -1,6 +1,6 @@
 # tealdeer
 
-[![Build status](https://img.shields.io/travis/dbrgn/tldr-rs/master.svg)](https://travis-ci.org/dbrgn/tldr-rs)
+[![Build status](https://img.shields.io/travis/dbrgn/tealdeer/master.svg)](https://travis-ci.org/dbrgn/tealdeer)
 
 An implementation of [tldr](https://github.com/tldr-pages/tldr) in Rust.
 
@@ -51,7 +51,7 @@ Build and install the tool from source (see section "Building" in this README).
 
 If you're an Arch Linux user, you can also install the package from the AUR:
 
-    $ yaourt -S tldr-rs-git
+    $ yaourt -S tealdeer-git
 
 
 ## Building
