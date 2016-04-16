@@ -1,8 +1,12 @@
-# tldr-rs
+# tealdeer
 
 [![Build status](https://img.shields.io/travis/dbrgn/tldr-rs/master.svg)](https://travis-ci.org/dbrgn/tldr-rs)
 
 An implementation of [tldr](https://github.com/tldr-pages/tldr) in Rust.
+
+If you pronounce "tldr" in English, it sounds somewhat like "tealdeer". Hence the project name :)
+
+## Goals
 
 High level project goals:
 
@@ -11,7 +15,7 @@ High level project goals:
 - [x] Command line interface similar or equivalent to the [NodeJS client][tldr-node-client]
 - [x] Be fast
 
-Usage:
+## Usage
 
     tldr [options] <command>
     tldr [options]
@@ -52,7 +56,7 @@ If you're an Arch Linux user, you can also install the package from the AUR:
 
 ## Building
 
-tldr-rs requires at least Rust 1.6.
+tealdeer requires at least Rust 1.6.
 
 Debug build with logging enabled:
 
