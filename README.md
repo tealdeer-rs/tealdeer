@@ -49,7 +49,11 @@ High level project goals:
 
 ## Installing
 
-Build and install the tool from source (see section "Building" in this README).
+Build and install the tool via cargo...
+
+   $ cargo install tealdeer
+
+...or from source (see section "Building" in this README).
 
 If you're an Arch Linux user, you can also install the package from the AUR:
 
@@ -88,6 +92,8 @@ Licensed under either of
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 be dual licensed as above, without any additional terms or conditions.
+
+Thanks to @SShrike for coming up with the name "tealdeer"!
 
 
 [tldr-node-client]: https://github.com/tldr-pages/tldr-node-client
