@@ -1,12 +1,16 @@
 [package]
-name = "tldr"
-version = "0.1.0"
+name = "tealdeer"
+version = "0.2.0"
 authors = ["Danilo Bargen <mail@dbrgn.ch>"]
-repository = "https://github.com/dbrgn/tldr-rs/"
-homepage = "https://github.com/dbrgn/tldr-rs/"
+repository = "https://github.com/dbrgn/tealdeer/"
+homepage = "https://github.com/dbrgn/tealdeer/"
 license = "MIT/Apache-2.0"
 readme = "README.md"
 description = "Fetch and show tldr help pages for many CLI commands. Full featured offline client with caching support."
+
+[[bin]]
+name = "tldr"
+path = "src/main.rs"
 
 [features]
 logging = ["env_logger"]

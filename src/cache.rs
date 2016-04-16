@@ -46,11 +46,11 @@ impl Cache {
             }
         };
 
-        // Otherwise, fall back to ~/.cache/tldr-rs
+        // Otherwise, fall back to ~/.cache/tealdeer
         let home_dir = try!(env::home_dir().ok_or(
             CacheError("Could not determine home directory".into())
         ));
-        Ok(home_dir.join(".cache").join("tldr-rs"))
+        Ok(home_dir.join(".cache").join("tealdeer"))
     }
 
     /// Download the archive

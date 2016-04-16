@@ -1,6 +1,6 @@
 //! An implementation of [tldr](https://github.com/tldr-pages/tldr) in Rust.
 //
-// Copyright (c) 2015-2016 tldr-rs developers
+// Copyright (c) 2015-2016 tealdeer developers
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -54,7 +54,7 @@ use formatter::print_lines;
 use types::OsType;
 
 
-const NAME: &'static str = "tldr-rs";
+const NAME: &'static str = "tealdeer";
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const USAGE: &'static str = "
 Usage:
