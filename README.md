@@ -2,7 +2,9 @@
 
 ![teal deer](deer.png)
 
-[![Build status](https://img.shields.io/travis/dbrgn/tealdeer/master.svg)](https://travis-ci.org/dbrgn/tealdeer)
+[![Travis CI][travis-ci-badge]][travis-ci]
+[![Coveralls][coveralls-badge]][coveralls]
+[![Crates.io][crates-io-badge]][crates-io]
 
 An implementation of [tldr](https://github.com/tldr-pages/tldr) in Rust.
 
@@ -97,3 +99,11 @@ Thanks to @SShrike for coming up with the name "tealdeer"!
 
 
 [tldr-node-client]: https://github.com/tldr-pages/tldr-node-client
+
+<!-- Badges -->
+[travis-ci]: https://travis-ci.org/dbrgn/tealdeer
+[travis-ci-badge]: https://img.shields.io/travis/dbrgn/tealdeer.svg
+[coveralls]: https://coveralls.io/github/dbrgn/tealdeer
+[coveralls-badge]: https://img.shields.io/coveralls/dbrgn/tealdeer.svg
+[crates-io]: https://crates.io/crates/tealdeer
+[crates-io-badge]: https://img.shields.io/crates/v/tealdeer.svg
