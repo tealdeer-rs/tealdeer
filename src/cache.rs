@@ -47,7 +47,7 @@ impl Cache {
         };
 
         // Otherwise, fall back to $XDG_CACHE_HOME/tealdeer.
-        let xdg_dirs = match BaseDirectories::with_prefix("tealdeer") {
+        let xdg_dirs = match BaseDirectories::with_prefix(::NAME) {
             Ok(dirs) => dirs,
             Err(_) => return Err(CacheError("Could not determine XDG base directory.".into())),
         };
