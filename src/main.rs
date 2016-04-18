@@ -50,7 +50,7 @@ mod error;
 
 use tokenizer::Tokenizer;
 use cache::Cache;
-use error::TldrError::{UpdateError, CacheError};
+use error::TealdeerError::{UpdateError, CacheError};
 use formatter::print_lines;
 use types::OsType;
 
