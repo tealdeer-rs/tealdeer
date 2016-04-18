@@ -51,13 +51,17 @@ High level project goals:
 
 Build and install the tool via cargo...
 
-   $ cargo install tealdeer
+```bash
+$ cargo install tealdeer
+```
 
 ...or from source (see section "Building" in this README).
 
 If you're an Arch Linux user, you can also install the package from the AUR:
 
+```bash
     $ yaourt -S tealdeer-git
+```
 
 
 ## Building
