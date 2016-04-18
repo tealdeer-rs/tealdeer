@@ -7,7 +7,6 @@ use ansi_term::{Colour, ANSIStrings};
 use tokenizer::Tokenizer;
 use types::LineType;
 
-
 /// Provide formatting for {{ curly braces }} in ExampleCode lines
 fn format_braces(text: &str) -> String {
     let parts = text.split("{{").flat_map(|s| s.split("}}"))

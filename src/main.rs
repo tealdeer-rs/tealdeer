@@ -23,11 +23,12 @@
                                   wrong_self_convention, wrong_pub_self_convention))]
 
 #[macro_use] extern crate log;
-#[cfg(feature = "logging")]extern crate env_logger;
+#[cfg(feature = "logging")] extern crate env_logger;
 extern crate docopt;
 extern crate ansi_term;
 extern crate flate2;
 extern crate tar;
+extern crate xdg;
 extern crate curl;
 extern crate rustc_serialize;
 extern crate time;
@@ -52,7 +53,6 @@ use cache::Cache;
 use error::TldrError::{UpdateError, CacheError};
 use formatter::print_lines;
 use types::OsType;
-
 
 const NAME: &'static str = "tealdeer";
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -89,7 +89,6 @@ To render a local file (for testing):
 const ARCHIVE_URL: &'static str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
 const MAX_CACHE_AGE: i64 = 2592000; // 30 days
 
-
 #[derive(Debug, RustcDecodable)]
 struct Args {
     arg_command: Option<String>,
@@ -101,7 +100,6 @@ struct Args {
     flag_update: bool,
     flag_clear_cache: bool,
 }
-
 
 /// Print page by path
 fn print_page(path: &Path) -> Result<(), String> {
@@ -117,7 +115,6 @@ fn print_page(path: &Path) -> Result<(), String> {
 
     Ok(())
 }
-
 
 /// Check the cache for freshness
 fn check_cache(args: &Args, cache: &Cache) {
@@ -139,7 +136,6 @@ fn check_cache(args: &Args, cache: &Cache) {
     };
 }
 
-
 #[cfg(feature = "logging")]
 fn init_log() {
     env_logger::init().unwrap();
@@ -147,7 +143,6 @@ fn init_log() {
 
 #[cfg(not(feature = "logging"))]
 fn init_log() { }
-
 
 #[cfg(target_os = "linux")]
 fn get_os() -> OsType { OsType::Linux }
@@ -158,9 +153,7 @@ fn get_os() -> OsType { OsType::OsX }
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn get_os() -> OsType { OsType::Other }
 
-
 fn main() {
-
     // Initialize logger
     init_log();
 

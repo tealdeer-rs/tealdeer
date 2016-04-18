@@ -4,7 +4,6 @@ use std::io::BufRead;
 
 use types::LineType;
 
-
 #[derive(Debug)]
 pub struct Tokenizer<R: BufRead> {
     reader: R,
@@ -12,7 +11,6 @@ pub struct Tokenizer<R: BufRead> {
 }
 
 impl<R> Tokenizer<R> where R: BufRead {
-
     pub fn new(reader: R) -> Tokenizer<R> {
         Tokenizer {
             reader: reader,
@@ -29,5 +27,4 @@ impl<R> Tokenizer<R> where R: BufRead {
             Ok(_) => Some(LineType::from(&self.current_line[..])),
         }
     }
-
 }
