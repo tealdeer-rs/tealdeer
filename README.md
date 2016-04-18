@@ -53,7 +53,7 @@ High level project goals:
 
 Build and install the tool via cargo...
 
-   $ cargo install tealdeer
+    $ cargo install tealdeer
 
 ...or from source (see section "Building" in this README).
 
