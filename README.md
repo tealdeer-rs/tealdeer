@@ -60,7 +60,7 @@ $ cargo install tealdeer
 If you're an Arch Linux user, you can also install the package from the AUR:
 
 ```bash
-    $ yaourt -S tealdeer-git
+$ yaourt -S tealdeer-git
 ```
 
 
