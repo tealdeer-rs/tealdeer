@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 #[cfg(unix)] use std::os::unix::fs::MetadataExt;
 
+use xdg::BaseDirectories;
 use flate2::read::GzDecoder;
 use tar::Archive;
 use curl::http;
@@ -14,7 +15,6 @@ use time;
 use error::TldrError::{self, CacheError, UpdateError};
 use types::OsType;
 
-
 #[derive(Debug)]
 pub struct Cache {
     url: String,
@@ -22,7 +22,6 @@ pub struct Cache {
 }
 
 impl Cache {
-
     pub fn new<S>(url: S, os: OsType) -> Cache where S: Into<String> {
         Cache {
             url: url.into(),
@@ -36,6 +35,7 @@ impl Cache {
         // $TLDR_RS_CACHE_DIR env variable.
         if let Ok(value) = env::var("TLDR_RS_CACHE_DIR") {
             let path = PathBuf::from(value);
+
             if path.exists() && path.is_dir() {
                 return Ok(path)
             } else {
@@ -46,11 +46,12 @@ impl Cache {
             }
         };
 
-        // Otherwise, fall back to ~/.cache/tealdeer
-        let home_dir = try!(env::home_dir().ok_or(
-            CacheError("Could not determine home directory".into())
-        ));
-        Ok(home_dir.join(".cache").join("tealdeer"))
+        // Otherwise, fall back to $XDG_CACHE_HOME/tealdeer.
+        let xdg_dirs = match BaseDirectories::with_prefix("tealdeer") {
+            Ok(dirs) => dirs,
+            Err(_) => return Err(CacheError("$HOME does not exist or is not defined.".into())),
+        };
+        Ok(xdg_dirs.get_cache_home())
     }
 
     /// Download the archive
@@ -162,7 +163,6 @@ impl Cache {
 
     /// Return the available pages.
     pub fn list_pages(&self) -> Result<Vec<String>, TldrError> {
-
         // Determine platforms directory and platform
         let cache_dir = try!(self.get_cache_dir());
         let platforms_dir = cache_dir.join("tldr-master").join("pages");
@@ -224,5 +224,4 @@ impl Cache {
         };
         Ok(())
     }
-
 }
