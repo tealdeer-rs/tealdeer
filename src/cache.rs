@@ -12,7 +12,7 @@ use curl::http;
 use walkdir::{WalkDir, WalkDirIterator, DirEntry};
 use time;
 
-use error::TldrError::{self, CacheError, UpdateError};
+use error::TealdeerError::{self, CacheError, UpdateError};
 use types::OsType;
 
 #[derive(Debug)]
@@ -30,17 +30,17 @@ impl Cache {
     }
 
     /// Return the path to the cache directory.
-    fn get_cache_dir(&self) -> Result<PathBuf, TldrError> {
+    fn get_cache_dir(&self) -> Result<PathBuf, TealdeerError> {
         // Allow overriding the cache directory by setting the
-        // $TLDR_RS_CACHE_DIR env variable.
-        if let Ok(value) = env::var("TLDR_RS_CACHE_DIR") {
+        // $TEALDEER_CACHE_DIR env variable.
+        if let Ok(value) = env::var("TEALDEER_CACHE_DIR") {
             let path = PathBuf::from(value);
 
             if path.exists() && path.is_dir() {
                 return Ok(path)
             } else {
                 return Err(CacheError(
-                    "Path specified by $TLDR_RS_CACHE_DIR \
+                    "Path specified by $TEALDEER_CACHE_DIR \
                      does not exist or is not a directory.".into()
                 ));
             }
@@ -55,7 +55,7 @@ impl Cache {
     }
 
     /// Download the archive
-    fn download(&self) -> Result<http::Response, TldrError> {
+    fn download(&self) -> Result<http::Response, TealdeerError> {
         let resp = try!(
             http::handle()
                  .follow_location(1)
@@ -66,13 +66,13 @@ impl Cache {
     }
 
     /// Decompress and open the archive
-    fn decompress<R: Read>(&self, reader: R) -> Result<Archive<GzDecoder<R>>, TldrError> {
+    fn decompress<R: Read>(&self, reader: R) -> Result<Archive<GzDecoder<R>>, TealdeerError> {
         let decoder = try!(GzDecoder::new(reader).map_err(|_| UpdateError("Could not decode gzip data".into())));
         Ok(Archive::new(decoder))
     }
 
     /// Update the pages cache.
-    pub fn update(&self) -> Result<(), TldrError> {
+    pub fn update(&self) -> Result<(), TealdeerError> {
         // First, download the compressed data
         let response = try!(self.download());
 
@@ -162,7 +162,7 @@ impl Cache {
     }
 
     /// Return the available pages.
-    pub fn list_pages(&self) -> Result<Vec<String>, TldrError> {
+    pub fn list_pages(&self) -> Result<Vec<String>, TealdeerError> {
         // Determine platforms directory and platform
         let cache_dir = try!(self.get_cache_dir());
         let platforms_dir = cache_dir.join("tldr-master").join("pages");
@@ -211,7 +211,7 @@ impl Cache {
     }
 
     /// Delete the cache directory.
-    pub fn clear(&self) -> Result<(), TldrError> {
+    pub fn clear(&self) -> Result<(), TealdeerError> {
         let path = try!(self.get_cache_dir());
         if path.exists() && path.is_dir() {
             try!(fs::remove_dir_all(&path).map_err(|_| {
