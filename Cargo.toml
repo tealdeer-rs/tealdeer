@@ -25,7 +25,7 @@ time = "^0.1"
 flate2 = "^0.2"
 docopt = "^0.6"
 walkdir = "^0.1"
-ansi_term = "^0.7"
+ansi_term = "^0.8"
 rustc-serialize = "^0.3"
 clippy = {version = "~0.0.37", optional = true}
 env_logger = { version = "^0.3", optional = true }
