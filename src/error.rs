@@ -1,4 +1,4 @@
-use curl::ErrCode;
+use curl::Error as CurlError;
 
 #[derive(Debug)]
 pub enum TealdeerError {
@@ -6,8 +6,8 @@ pub enum TealdeerError {
     UpdateError(String),
 }
 
-impl From<ErrCode> for TealdeerError {
-    fn from(err: ErrCode) -> TealdeerError {
-        TealdeerError::UpdateError(err.to_string())
+impl From<CurlError> for TealdeerError {
+    fn from(err: CurlError) -> TealdeerError {
+        TealdeerError::UpdateError(format!("Curl error: {}", err.to_string()))
     }
 }

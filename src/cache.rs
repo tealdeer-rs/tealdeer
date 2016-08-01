@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use xdg::BaseDirectories;
 use flate2::read::GzDecoder;
 use tar::Archive;
-use curl::http;
+use curl::easy::Easy as CurlEasy;
 use walkdir::{WalkDir, WalkDirIterator, DirEntry};
 use time;
 
@@ -55,14 +55,21 @@ impl Cache {
     }
 
     /// Download the archive
-    fn download(&self) -> Result<http::Response, TealdeerError> {
-        let resp = try!(
-            http::handle()
-                 .follow_location(1)
-                 .get(&self.url[..])
-                 .exec()
-        );
-        Ok(resp)
+    fn download(&self) -> Result<Vec<u8>, TealdeerError> {
+        let mut handle = CurlEasy::new();
+        try!(handle.url(&self.url));
+        try!(handle.follow_location(true));
+        try!(handle.fail_on_error(true));
+        let mut buf = Vec::new();
+        {
+            let mut transfer = handle.transfer();
+            try!(transfer.write_function(|data| {
+                buf.extend_from_slice(data);
+                Ok(data.len())
+            }));
+            try!(transfer.perform());
+        }
+        Ok(buf)
     }
 
     /// Decompress and open the archive
@@ -74,10 +81,10 @@ impl Cache {
     /// Update the pages cache.
     pub fn update(&self) -> Result<(), TealdeerError> {
         // First, download the compressed data
-        let response = try!(self.download());
+        let bytes: Vec<u8> = try!(self.download());
 
         // Decompress the response body into an `Archive`
-        let mut archive = try!(self.decompress(response.get_body()));
+        let mut archive = try!(self.decompress(&bytes[..]));
 
         // Determine paths
         let cache_dir = try!(self.get_cache_dir());
