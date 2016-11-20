@@ -71,7 +71,11 @@ impl<R> Tokenizer<R> where R: BufRead {
                 }
 
                 // Convert line to a `LineType` instance
-                Some(LineType::from(&self.current_line[..]))
+                match self.format {
+                    TldrFormat::V1 => Some(LineType::from_v1(&self.current_line[..])),
+                    TldrFormat::V2 => Some(LineType::from(&self.current_line[..])),
+                    TldrFormat::Undecided => panic!("Could not determine page format version"),
+                }
             }
         }
     }

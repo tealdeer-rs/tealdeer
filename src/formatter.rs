@@ -31,6 +31,7 @@ pub fn print_lines<R>(tokenizer: &mut Tokenizer<R>) where R: BufRead {
             LineType::Description(text) => println!("  {}", text),
             LineType::ExampleText(text) => println!("  {}", Colour::Green.paint(text)),
             LineType::ExampleCode(text) => println!("      {}", &format_braces(&text)),
+            LineType::Other(text) => debug!("Unknown line type: {:?}", text),
         }
     }
     println!("");

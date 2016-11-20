@@ -40,6 +40,7 @@ pub enum LineType {
     Description(String),
     ExampleText(String),
     ExampleCode(String),
+    Other(String),
 }
 
 impl<'a> From<&'a str> for LineType {
@@ -53,6 +54,23 @@ impl<'a> From<&'a str> for LineType {
             Some('>') => LineType::Description(trimmed.trim_left_matches(|chr: char| chr == '>' || chr.is_whitespace()).into()),
             Some(' ') => LineType::ExampleCode(trimmed.trim_left_matches(|chr: char| chr.is_whitespace()).into()),
             _ => LineType::ExampleText(trimmed.into()),
+        }
+    }
+}
+
+impl LineType {
+    /// Support for old format.
+    /// TODO: Remove once old format has been phased out!
+    pub fn from_v1(line: &str) -> LineType {
+        let trimmed = line.trim();
+        let mut chars = trimmed.chars();
+        match chars.next() {
+            None => LineType::Empty,
+            Some('#') => LineType::Title(trimmed.trim_left_matches(|chr: char| chr == '#' || chr.is_whitespace()).into()),
+            Some('>') => LineType::Description(trimmed.trim_left_matches(|chr: char| chr == '>' || chr.is_whitespace()).into()),
+            Some('-') => LineType::ExampleText(trimmed.trim_left_matches(|chr: char| chr == '-' || chr.is_whitespace()).into()),
+            Some('`') if chars.last() == Some('`') => LineType::ExampleCode(trimmed.trim_matches(|chr: char| chr == '`' || chr.is_whitespace()).into()),
+            _ => LineType::Other(trimmed.into()),
         }
     }
 }
