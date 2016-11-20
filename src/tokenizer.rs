@@ -4,6 +4,16 @@ use std::io::BufRead;
 
 use types::LineType;
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum TldrFormat {
+    /// Not yet clear
+    Undecided,
+    /// The original format
+    V1,
+    /// The new format (see https://github.com/tldr-pages/tldr/pull/958)
+    V2,
+}
+
 /// A tokenizer is initialized with a BufReader instance that contains the
 /// entire Tldr page. It then returns tokens as `Option<LineType>`.
 #[derive(Debug)]
@@ -14,6 +24,8 @@ pub struct Tokenizer<R: BufRead> {
     first_line: bool,
     /// Buffer for the current line. Used internally.
     current_line: String,
+    /// The tldr page format.
+    format: TldrFormat,
 }
 
 impl<R> Tokenizer<R> where R: BufRead {
@@ -22,6 +34,7 @@ impl<R> Tokenizer<R> where R: BufRead {
             reader: reader,
             first_line: true,
             current_line: String::new(),
+            format: TldrFormat::Undecided,
         }
     }
 
@@ -45,11 +58,17 @@ impl<R> Tokenizer<R> where R: BufRead {
                         return None;
                     }
                     self.first_line = false;
+                    self.format = TldrFormat::V2;
                     return Some(LineType::Title(self.current_line.trim_right().to_string()));
                 }
 
-                // Clear `first_line` flag
-                self.first_line = false;
+                if self.first_line {
+                    // Clear `first_line` flag
+                    self.first_line = false;
+
+                    // It's the old format.
+                    self.format = TldrFormat::V1;
+                }
 
                 // Convert line to a `LineType` instance
                 Some(LineType::from(&self.current_line[..]))
