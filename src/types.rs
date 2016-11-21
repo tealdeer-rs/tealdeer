@@ -44,8 +44,24 @@ pub enum LineType {
 }
 
 impl<'a> From<&'a str> for LineType {
-    /// Convert a string slice to a LineType. Newlines and whitespace are trimmed.
+    /// Convert a string slice to a LineType. Newlines and trailing whitespace are trimmed.
     fn from(line: &'a str) -> LineType {
+        let trimmed: &str = line.trim_right();
+        let mut chars = trimmed.chars();
+        match chars.next() {
+            None => LineType::Empty,
+            Some('#') => LineType::Title(trimmed.trim_left_matches(|chr: char| chr == '#' || chr.is_whitespace()).into()),
+            Some('>') => LineType::Description(trimmed.trim_left_matches(|chr: char| chr == '>' || chr.is_whitespace()).into()),
+            Some(' ') => LineType::ExampleCode(trimmed.trim_left_matches(|chr: char| chr.is_whitespace()).into()),
+            _ => LineType::ExampleText(trimmed.into()),
+        }
+    }
+}
+
+impl LineType {
+    /// Support for old format.
+    /// TODO: Remove once old format has been phased out!
+    pub fn from_v1(line: &str) -> LineType {
         let trimmed = line.trim();
         let mut chars = trimmed.chars();
         match chars.next() {
@@ -93,9 +109,7 @@ mod test {
         assert_eq!(LineType::from(" \n \r"), LineType::Empty);
         assert_eq!(LineType::from("# Hello there"), LineType::Title("Hello there".into()));
         assert_eq!(LineType::from("> tis a description \n"), LineType::Description("tis a description".into()));
-        assert_eq!(LineType::from("- some command"), LineType::ExampleText("some command".into()));
-        assert_eq!(LineType::from("`$ cargo run`"), LineType::ExampleCode("$ cargo run".into()));
-        assert_eq!(LineType::from("`$ cargo run"), LineType::Other("`$ cargo run".into()));
-        assert_eq!(LineType::from("jkl\u{f6}"), LineType::Other("jkl\u{f6}".into()));
+        assert_eq!(LineType::from("some command "), LineType::ExampleText("some command".into()));
+        assert_eq!(LineType::from("    $ cargo run "), LineType::ExampleCode("$ cargo run".into()));
     }
 }
