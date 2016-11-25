@@ -12,6 +12,10 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### v0.4.0 (2016-11-25)
+
+- [changed] Updated all dependencies
+
 ### v0.3.0 (2016-08-01)
 
 - [changed] Updated curl dependency

@@ -20,12 +20,12 @@ dev = ["clippy"]
 log = "^0.3"
 xdg = "^2.0"
 tar = "^0.4"
-curl = "^0.3"
+curl = "^0.4"
 time = "^0.1"
 flate2 = "^0.2"
 docopt = "^0.6"
-walkdir = "^0.1"
-ansi_term = "^0.8"
+walkdir = "^1.0"
+ansi_term = "^0.9"
 rustc-serialize = "^0.3"
 clippy = {version = "~0.0.37", optional = true}
 env_logger = { version = "^0.3", optional = true }
