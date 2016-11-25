@@ -1,6 +1,6 @@
 [package]
 name = "tealdeer"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Danilo Bargen <mail@dbrgn.ch>"]
 repository = "https://github.com/dbrgn/tealdeer/"
 homepage = "https://github.com/dbrgn/tealdeer/"

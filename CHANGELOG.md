@@ -14,6 +14,7 @@ Possible log types:
 
 ### v0.4.0 (2016-11-25)
 
+- [added] Support for new page format
 - [changed] Updated all dependencies
 
 ### v0.3.0 (2016-08-01)
