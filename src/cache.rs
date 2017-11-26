@@ -9,7 +9,7 @@ use xdg::BaseDirectories;
 use flate2::read::GzDecoder;
 use tar::Archive;
 use curl::easy::Easy as CurlEasy;
-use walkdir::{WalkDir, WalkDirIterator, DirEntry};
+use walkdir::{WalkDir, DirEntry};
 use time;
 
 use error::TealdeerError::{self, CacheError, UpdateError};
