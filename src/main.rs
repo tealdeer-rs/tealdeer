@@ -256,3 +256,29 @@ fn main() {
         process::exit(1);
     }
 }
+
+#[cfg(test)]
+mod test {
+    use Args;
+    use OsType;
+    use USAGE;
+    use docopt::Docopt;
+    use docopt::Error;
+
+    fn test_helper(argv: &[&str]) -> Result<Args, Error> {
+        Docopt::new(USAGE).and_then(|d| d.argv(argv.iter()).deserialize())
+    }
+
+    #[test]
+    fn test_docopt_os_case_insensitive() {
+        let argv = vec!["cp", "--os", "LiNuX"];
+        let os = test_helper(&argv).unwrap().flag_os.unwrap();
+        assert_eq!(OsType::Linux, os);
+    }
+
+    #[test]
+    fn test_docopt_expect_error() {
+        let argv = vec!["cp", "--os", "lindows"];
+        assert!(!test_helper(&argv).is_ok());
+    }
+}

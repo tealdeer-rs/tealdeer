@@ -54,32 +54,7 @@ impl LineType {
 
 #[cfg(test)]
 mod test {
-    extern crate serde_json;
-
-    use super::OsType::{self, Linux, OsX, SunOs, Other};
     use super::LineType;
-    use self::serde_json::from_str;
-
-    #[test]
-    fn test_os_type_decoding_regular() {
-        assert_eq!(from_str::<OsType>("\"linux\"").unwrap(), Linux);
-        assert_eq!(from_str::<OsType>("\"osx\"").unwrap(), OsX);
-        assert_eq!(from_str::<OsType>("\"sunos\"").unwrap(), SunOs);
-        assert_eq!(from_str::<OsType>("\"other\"").unwrap(), Other);
-    }
-
-    // REVIEW: Not sure how to do case-insensitive deserialization with serde
-    //         json. Ok to ditch support for this?
-    //#[test]
-    //fn test_os_type_decoding_uppercase() {
-    //    assert_eq!(from_str::<OsType>("\"Linux\"").unwrap(), Linux);
-    //    assert_eq!(from_str::<OsType>("\"LINUX\"").unwrap(), Linux);
-    //}
-
-    #[test]
-    fn test_os_type_decoding_unknown() {
-        assert!(from_str::<OsType>("\"lindows\"").is_err());
-    }
 
     #[test]
     fn test_linetype_from_str() {
