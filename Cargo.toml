@@ -32,3 +32,4 @@ env_logger = { version = "^0.3", optional = true }
 
 [dev-dependencies]
 tempdir = "^0.3"
+assert_cli = "^0.5"
