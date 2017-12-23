@@ -66,7 +66,7 @@ If you're an Arch Linux user, you can also install the package from the AUR:
 
 ## Building
 
-tealdeer requires at least Rust 1.9.
+tealdeer requires at least Rust 1.19.
 
 Debug build with logging enabled:
 
