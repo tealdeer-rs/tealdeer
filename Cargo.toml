@@ -1,35 +1,36 @@
 [package]
-name = "tealdeer"
-version = "0.4.0"
 authors = ["Danilo Bargen <mail@dbrgn.ch>"]
-repository = "https://github.com/dbrgn/tealdeer/"
+description = "Fetch and show tldr help pages for many CLI commands. Full featured offline client with caching support."
 homepage = "https://github.com/dbrgn/tealdeer/"
 license = "MIT/Apache-2.0"
+name = "tealdeer"
 readme = "README.md"
-description = "Fetch and show tldr help pages for many CLI commands. Full featured offline client with caching support."
+repository = "https://github.com/dbrgn/tealdeer/"
+version = "0.4.0"
 
 [[bin]]
 name = "tldr"
 path = "src/main.rs"
 
-[features]
-logging = ["env_logger"]
-dev = ["clippy"]
-
 [dependencies]
-log = "^0.3"
-xdg = "^2.0"
-tar = "^0.4"
-curl = "^0.4"
-time = "^0.1"
-flate2 = "^0.2"
-docopt = "^0.6"
-walkdir = "^1.0"
-ansi_term = "^0.9"
-rustc-serialize = "^0.3"
-clippy = {version = "~0.0.37", optional = true}
-env_logger = { version = "^0.3", optional = true }
+ansi_term = "0.10.2"
+clippy = { version = "0.0.174", optional = true }
+curl = "0.4.8"
+docopt = "0.8.1"
+env_logger = { version = "0.4.3", optional = true }
+flate2 = "0.2.20"
+log = "0.3.8"
+serde = "1.0.21"
+serde_derive = "1.0.21"
+tar = "0.4.14"
+time = "0.1.38"
+walkdir = "2.0.1"
+xdg = "2.1.0"
 
 [dev-dependencies]
 tempdir = "^0.3"
 assert_cli = "^0.5"
+
+[features]
+dev = ["clippy"]
+logging = ["env_logger"]

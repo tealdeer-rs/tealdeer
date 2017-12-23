@@ -30,9 +30,10 @@ extern crate flate2;
 extern crate tar;
 extern crate xdg;
 extern crate curl;
-extern crate rustc_serialize;
 extern crate time;
 extern crate walkdir;
+#[macro_use]
+extern crate serde_derive;
 
 use std::io::BufReader;
 use std::fs::File;
@@ -89,7 +90,7 @@ To render a local file (for testing):
 const ARCHIVE_URL: &'static str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
 const MAX_CACHE_AGE: i64 = 2592000; // 30 days
 
-#[derive(Debug, RustcDecodable)]
+#[derive(Debug, Deserialize)]
 struct Args {
     arg_command: Option<String>,
     flag_help: bool,
@@ -159,7 +160,7 @@ fn main() {
 
     // Parse arguments
     let args: Args = Docopt::new(USAGE)
-                            .and_then(|d| d.decode())
+                            .and_then(|d| d.deserialize())
                             .unwrap_or_else(|e| e.exit());
 
     // Show version and exit
@@ -253,5 +254,31 @@ fn main() {
     if !(args.flag_update || args.flag_clear_cache) {
         println!("{}", USAGE);
         process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use Args;
+    use OsType;
+    use USAGE;
+    use docopt::Docopt;
+    use docopt::Error;
+
+    fn test_helper(argv: &[&str]) -> Result<Args, Error> {
+        Docopt::new(USAGE).and_then(|d| d.argv(argv.iter()).deserialize())
+    }
+
+    #[test]
+    fn test_docopt_os_case_insensitive() {
+        let argv = vec!["cp", "--os", "LiNuX"];
+        let os = test_helper(&argv).unwrap().flag_os.unwrap();
+        assert_eq!(OsType::Linux, os);
+    }
+
+    #[test]
+    fn test_docopt_expect_error() {
+        let argv = vec!["cp", "--os", "lindows"];
+        assert!(!test_helper(&argv).is_ok());
     }
 }
