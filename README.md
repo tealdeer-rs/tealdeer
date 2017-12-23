@@ -2,7 +2,7 @@
 
 ![teal deer](deer.png)
 
-[![Travis CI][travis-ci-badge]][travis-ci]
+[![Circle CI][circle-ci-badge]][circle-ci]
 [![Crates.io][crates-io-badge]][crates-io]
 
 An implementation of [tldr](https://github.com/tldr-pages/tldr) in Rust:
@@ -66,7 +66,7 @@ If you're an Arch Linux user, you can also install the package from the AUR:
 
 ## Building
 
-tealdeer requires at least Rust 1.9.
+tealdeer requires at least Rust 1.19.
 
 Debug build with logging enabled:
 
@@ -103,7 +103,7 @@ Thanks to @SShrike for coming up with the name "tealdeer"!
 [tldr-node-client]: https://github.com/tldr-pages/tldr-node-client
 
 <!-- Badges -->
-[travis-ci]: https://travis-ci.org/dbrgn/tealdeer
-[travis-ci-badge]: https://img.shields.io/travis/dbrgn/tealdeer.svg
+[circle-ci]: https://circleci.com/gh/dbrgn/tealdeer/tree/master
+[circle-ci-badge]: https://circleci.com/gh/dbrgn/tealdeer/tree/master.svg?style=shield
 [crates-io]: https://crates.io/crates/tealdeer
 [crates-io-badge]: https://img.shields.io/crates/v/tealdeer.svg

@@ -1,0 +1,32 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: rust:1.19
+    steps:
+      - checkout
+      # Load cargo target from cache if possible.
+      # Multiple caches are used to increase the chance of a cache hit.
+      - restore_cache:
+          keys:
+            - v1-cargo-cache-{{ arch }}-{{ .Branch }}
+            - v1-cargo-cache-{{ arch }}
+
+      # Show versions
+      - run: rustc --version && cargo --version
+
+      # Build
+      - run: cargo build
+      # Run tests
+      - run: cargo test
+
+      - save_cache:
+          key: v1-cargo-cache-{{ arch }}-{{ .Branch }}
+          paths:
+            - target
+            - /usr/local/cargo
+      - save_cache:
+          key: v1-cargo-cache-{{ arch }}
+          paths:
+            - target
+            - /usr/local/cargo
