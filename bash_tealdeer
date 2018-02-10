@@ -1,0 +1,30 @@
+# tealdeer bash completion
+
+_tealdeer()
+{
+	local cur prev words cword
+	_init_completion || return
+
+	case $prev in
+		-h|--help|-v|--version|-l|--list|-u|--update|-c|--clear-cache)
+			return
+			;;
+		-f|--render)
+			_filedir
+			return
+			;;
+		-o|--os)
+			COMPREPLY=( $(compgen -W 'linux osx sunos' -- "${cur}") )
+			return
+			;;
+	esac
+
+	if [[ $cur == -* ]]; then
+		COMPREPLY=( $( compgen -W '$( _parse_help "$1" )' -- "$cur" ) )
+		return
+	fi
+
+	COMPREPLY=( $(compgen -W '$( tldr -l | tr -d , )' -- "${cur}") )
+}
+
+complete -F _tealdeer tldr
