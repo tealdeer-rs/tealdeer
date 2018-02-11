@@ -12,14 +12,21 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### v1.0.0 (2018-02-11)
+
+- [added] Include bash completions (#34)
+- [changed] Update all dependencies
+- [changed] Require at least Rust 1.19 to build (previous: 1.9)
+- [changed] Improved unit/integration testing
+
 ### v0.4.0 (2016-11-25)
 
 - [added] Support for new page format
-- [changed] Updated all dependencies
+- [changed] Update all dependencies
 
 ### v0.3.0 (2016-08-01)
 
-- [changed] Updated curl dependency
+- [changed] Update curl dependency
 
 ### v0.2.0 (2016-04-16)
 
