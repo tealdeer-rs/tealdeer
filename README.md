@@ -63,6 +63,11 @@ If you're an Arch Linux user, you can also install the package from the AUR:
 
     $ yaourt -S tealdeer-git
 
+### Bash Autocompletion
+
+To get bash autocompletion, simply copy the file `bash_tealdeer` from the
+source repository to `/usr/share/bash-completion/completions/`.
+
 
 ## Building
 
