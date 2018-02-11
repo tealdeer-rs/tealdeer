@@ -5,8 +5,8 @@
 [![Circle CI][circle-ci-badge]][circle-ci]
 [![Crates.io][crates-io-badge]][crates-io]
 
-An implementation of [tldr](https://github.com/tldr-pages/tldr) in Rust:
-Simplified, example based and community-driven man pages.
+A very fast implementation of [tldr](https://github.com/tldr-pages/tldr) in
+Rust: Simplified, example based and community-driven man pages.
 
 ![screenshot](screenshot.png)
 
@@ -20,6 +20,35 @@ High level project goals:
 - [x] Don't require a network connection for anything besides updating the cache
 - [x] Command line interface similar or equivalent to the [NodeJS client][tldr-node-client]
 - [x] Be fast
+
+A tool like `tldr` should be as frictionless as possible to use. It should be
+easy to invoke (just `tldr tar`, not using another subcommand like `tldr find
+tar`) and it should show the output as fast as possible.
+
+Tealdeer reaches these goals. During a (highly non-scientific) test (see
+[#38](https://github.com/dbrgn/tealdeer/issues/38) for details), I tested the
+invocation speed of `tldr <command>` for a few of the existing clients:
+
+| Client | Times (ms) | Avg of 5 (ms) |
+| --- | --- | --- |
+| [Tealdeer](https://github.com/dbrgn/tealdeer/) | `15/11/5/5/11` | `9.4` |
+| [C client](https://github.com/tldr-pages/tldr-cpp-client) | `11/5/12/11/15` | `10.8` |
+| [Bash client](https://github.com/pepa65/tldr-bash-client) | `15/19/22/25/24` | `21.0` |
+| [Go client by k3mist](https://github.com/k3mist/tldr/) | `98/96/100/95/101` | `98.8` |
+| [Python client](https://github.com/lord63/tldr.py) | `152/148/151/158/140` | `149.8` |
+| [NodeJS client](https://github.com/tldr-pages/tldr-node-client) | `169/171/170/170/170` | `170.0` |
+
+Tealdeer was the winner here, although the C client and the Bash client are in
+the same speed class. Interpreted languages are clearly much slower to invoke,
+a delay of 170 milliseconds is definitely noticeable and increases friction for
+the user.
+
+These are the clients I tried but failed to compile or run:
+[Haskell client](https://github.com/psibi/tldr-hs),
+[Ruby client](https://github.com/YellowApple/tldrb),
+[Perl client](https://github.com/skaji/perl-tldr),
+[Go client by anoopengineer](https://github.com/anoopengineer/tldr/),
+[PHP client](https://github.com/BrainMaestro/tldr-php).
 
 ## Usage
 
