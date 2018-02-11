@@ -73,9 +73,8 @@ impl Cache {
     }
 
     /// Decompress and open the archive
-    fn decompress<R: Read>(&self, reader: R) -> Result<Archive<GzDecoder<R>>, TealdeerError> {
-        let decoder = try!(GzDecoder::new(reader).map_err(|_| UpdateError("Could not decode gzip data".into())));
-        Ok(Archive::new(decoder))
+    fn decompress<R: Read>(&self, reader: R) -> Archive<GzDecoder<R>> {
+        Archive::new(GzDecoder::new(reader))
     }
 
     /// Update the pages cache.
@@ -84,7 +83,7 @@ impl Cache {
         let bytes: Vec<u8> = try!(self.download());
 
         // Decompress the response body into an `Archive`
-        let mut archive = try!(self.decompress(&bytes[..]));
+        let mut archive = self.decompress(&bytes[..]);
 
         // Determine paths
         let cache_dir = try!(self.get_cache_dir());
