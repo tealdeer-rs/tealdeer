@@ -1,0 +1,7 @@
+language: rust
+os: osx
+rust:
+  - 1.19.0
+  - stable
+cache: cargo
+script: cargo test
