@@ -65,8 +65,8 @@ If you're an Arch Linux user, you can also install the package from the AUR:
 
 ### Bash Autocompletion
 
-To get bash autocompletion, simply copy the file `bash_tealdeer` from the
-source repository to `/usr/share/bash-completion/completions/`.
+To get bash autocompletion, simply rename the file `bash_tealdeer` to `tldr`
+and copy it to `/usr/share/bash-completion/completions/tldr`.
 
 
 ## Building
