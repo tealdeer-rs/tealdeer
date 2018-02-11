@@ -2,8 +2,9 @@
 
 ![teal deer](deer.png)
 
-[![Circle CI][circle-ci-badge]][circle-ci]
-[![Crates.io][crates-io-badge]][crates-io]
+|Crate|Linux|macOS|
+|:---:|:---:|:---:|
+|[![Crates.io][crates-io-badge]][crates-io]|[![Circle CI][circle-ci-badge]][circle-ci]|[![Travis CI][travis-ci-badge]][travis-ci]|
 
 A very fast implementation of [tldr](https://github.com/tldr-pages/tldr) in
 Rust: Simplified, example based and community-driven man pages.
@@ -139,5 +140,7 @@ Thanks to @SShrike for coming up with the name "tealdeer"!
 <!-- Badges -->
 [circle-ci]: https://circleci.com/gh/dbrgn/tealdeer/tree/master
 [circle-ci-badge]: https://circleci.com/gh/dbrgn/tealdeer/tree/master.svg?style=shield
+[travis-ci]: https://travis-ci.org/dbrgn/tealdeer
+[travis-ci-badge]: https://travis-ci.org/dbrgn/tealdeer.svg?branch=master
 [crates-io]: https://crates.io/crates/tealdeer
 [crates-io-badge]: https://img.shields.io/crates/v/tealdeer.svg
