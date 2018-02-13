@@ -86,7 +86,7 @@ These are the clients I tried but failed to compile or run:
 ### Static Binaries (Linux)
 
 Static binary builds (currently for Linux only) are available on the
-[Release page](https://github.com/dbrgn/tealdeer/releases).
+[GitHub release page](https://github.com/dbrgn/tealdeer/releases).
 Simply download the binary for your platform and run it!
 
 Builds for other platforms are planned.
