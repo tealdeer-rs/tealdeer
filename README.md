@@ -91,13 +91,13 @@ Simply download the binary for your platform and run it!
 
 Builds for other platforms are planned.
 
-### Cargo Install (Any platform)
+### Cargo Install (any platform)
 
 Build and install the tool via cargo...
 
     $ cargo install tealdeer
 
-### From Source (Any platform)
+### From Source (any platform)
 
 tealdeer requires at least Rust 1.19.
 
