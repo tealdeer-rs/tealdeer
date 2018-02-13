@@ -13,9 +13,8 @@ Rust: Simplified, example based and community-driven man pages.
 
 If you pronounce "tldr" in English, it sounds somewhat like "tealdeer". Hence the project name :)
 
-(TL;DR: In case you're in a hurry and just want to try tealdeer
-without any reading, you can find static binaries on the
-[GitHub releases page](https://github.com/dbrgn/tealdeer/releases/)!)
+In case you're in a hurry and just want to quickly try tealdeer, you can find static
+binaries on the [GitHub releases page](https://github.com/dbrgn/tealdeer/releases/)!
 
 ## Goals
 
