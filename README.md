@@ -83,23 +83,21 @@ These are the clients I tried but failed to compile or run:
 
 ## Installing
 
+### Static Binaries (Linux)
+
+Static binary builds (currently for Linux only) are available on the
+[Release page](https://github.com/dbrgn/tealdeer/releases).
+Simply download the binary for your platform and run it!
+
+Builds for other platforms are planned.
+
+### Cargo Install (Any platform)
+
 Build and install the tool via cargo...
 
     $ cargo install tealdeer
 
-...or from source (see section "Building" in this README).
-
-If you're an Arch Linux user, you can also install the package from the AUR:
-
-    $ yaourt -S tealdeer-git
-
-### Bash Autocompletion
-
-To get bash autocompletion, simply rename the file `bash_tealdeer` to `tldr`
-and copy it to `/usr/share/bash-completion/completions/tldr`.
-
-
-## Building
+### From Source (Any platform)
 
 tealdeer requires at least Rust 1.19.
 
@@ -114,6 +112,19 @@ Release build without logging:
 To enable the log output, set the `RUST_LOG` env variable:
 
     $ export RUST_LOG=tldr=debug
+
+
+### From AUR (Arch Linux)
+
+If you're an Arch Linux user, you can also install the package from the AUR:
+
+    $ yaourt -S tealdeer-git
+
+
+## Bash Autocompletion
+
+To get bash autocompletion, simply rename the file `bash_tealdeer` to `tldr`
+and copy it to `/usr/share/bash-completion/completions/tldr`.
 
 
 ## License
