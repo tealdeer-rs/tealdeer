@@ -35,3 +35,6 @@ assert_cli = "^0.5"
 [features]
 dev = ["clippy"]
 logging = ["env_logger"]
+
+[profile.release]
+lto = true
