@@ -13,6 +13,10 @@ Rust: Simplified, example based and community-driven man pages.
 
 If you pronounce "tldr" in English, it sounds somewhat like "tealdeer". Hence the project name :)
 
+(TL;DR: In case you're in a hurry and just want to try tealdeer
+without any reading, you can find static binaries on the
+[GitHub releases page](https://github.com/dbrgn/tealdeer/releases/)!)
+
 ## Goals
 
 High level project goals:
@@ -26,7 +30,7 @@ A tool like `tldr` should be as frictionless as possible to use. It should be
 easy to invoke (just `tldr tar`, not using another subcommand like `tldr find
 tar`) and it should show the output as fast as possible.
 
-Tealdeer reaches these goals. During a (highly non-scientific) test (see
+tealdeer reaches these goals. During a (highly non-scientific) test (see
 [#38](https://github.com/dbrgn/tealdeer/issues/38) for details), I tested the
 invocation speed of `tldr <command>` for a few of the existing clients:
 
@@ -39,7 +43,7 @@ invocation speed of `tldr <command>` for a few of the existing clients:
 | [Python client](https://github.com/lord63/tldr.py) | `152/148/151/158/140` | `149.8` |
 | [NodeJS client](https://github.com/tldr-pages/tldr-node-client) | `169/171/170/170/170` | `170.0` |
 
-Tealdeer was the winner here, although the C client and the Bash client are in
+tealdeer was the winner here, although the C client and the Bash client are in
 the same speed class. Interpreted languages are clearly much slower to invoke,
 a delay of 170 milliseconds is definitely noticeable and increases friction for
 the user.
@@ -86,7 +90,7 @@ These are the clients I tried but failed to compile or run:
 ### Static Binaries (Linux)
 
 Static binary builds (currently for Linux only) are available on the
-[GitHub release page](https://github.com/dbrgn/tealdeer/releases).
+[GitHub releases page](https://github.com/dbrgn/tealdeer/releases).
 Simply download the binary for your platform and run it!
 
 Builds for other platforms are planned.
