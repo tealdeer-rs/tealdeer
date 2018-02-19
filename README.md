@@ -121,7 +121,9 @@ To enable the log output, set the `RUST_LOG` env variable:
 
 If you're an Arch Linux user, you can also install the package from the AUR:
 
-    $ yaourt -S tealdeer-git
+    $ yaourt -S tealdeer
+
+(Or `tealdeer-git` if you prefer the current development version.)
 
 
 ## Bash Autocompletion
