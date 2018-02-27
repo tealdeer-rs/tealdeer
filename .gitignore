@@ -2,3 +2,4 @@ target
 *.swp
 *.tar.gz
 tldr-master/
+dist-*/

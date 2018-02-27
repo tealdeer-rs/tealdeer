@@ -31,10 +31,6 @@ function docker-build {
     docker run --rm -it -v "$(pwd)":/home/rust/src messense/rust-musl-cross:$1 cargo build --release
 }
 
-function copy {
-    cp target/
-}
-
 echo -e "==> Version $VERSION\n"
 
 for target in ${targets[@]}; do docker-download $target; done
@@ -51,7 +47,11 @@ for i in ${!targets[@]}; do
 done
 echo ""
 
-# TODO: Strip binaries, see https://github.com/messense/rust-musl-cross/issues/9
+for target in ${targets[@]}; do
+    echo "==> Stripping $target"
+    docker run --rm -it -v "$(pwd)":/home/rust/src messense/rust-musl-cross:$target musl-strip -s /home/rust/src/dist-$VERSION/tldr-$target
+done
+echo ""
 
 for target in ${targets[@]}; do
     echo "==> Signing $target"
