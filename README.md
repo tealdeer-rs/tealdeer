@@ -9,7 +9,7 @@
 A very fast implementation of [tldr](https://github.com/tldr-pages/tldr) in
 Rust: Simplified, example based and community-driven man pages.
 
-![screenshot](screenshot.png)
+![screenshot](screenshot-default.png)
 
 If you pronounce "tldr" in English, it sounds somewhat like "tealdeer". Hence the project name :)
 
@@ -61,13 +61,15 @@ These are the clients I tried but failed to compile or run:
 
     Options:
 
-        -h --help           Show this screen
-        -v --version        Show version information
-        -l --list           List all commands in the cache
-        -f --render <file>  Render a specific markdown file
-        -o --os <type>      Override the operating system [linux, osx, sunos]
-        -u --update         Update the local cache
-        -c --clear-cache    Clear the local cache
+        -h --help            Show this screen
+        -v --version         Show version information
+        -l --list            List all commands in the cache
+        -f --render <file>   Render a specific markdown file
+        -o --os <type>       Override the operating system [linux, osx, sunos]
+        -u --update          Update the local cache
+        -c --clear-cache     Clear the local cache
+        --display-config     Show config directory path
+        --seed-config        Create a basic config
 
     Examples:
 
@@ -83,6 +85,35 @@ These are the clients I tried but failed to compile or run:
 
         $ tldr --render /path/to/file.md
 
+### Style Customization
+
+The tldr page syntax highlighting can be customized with a config file.
+Creating the config file can be done manually or with the help of tldr.
+    tldr --seed-config
+
+The command should print the location where the command created the config file.
+Example: `~/.config/tealdeer/syntax.toml`
+
+The currently supported attributes are:
+
+- `foreground` | optional
+- `background` | optional
+- `underline`
+- `bold`
+
+The currently supported colors are:
+
+- `Black`
+- `Red`
+- `Green`
+- `Yellow`
+- `Blue`
+- `Purple`
+- `Cyan`
+- `White`
+
+Example customization:
+![screenshot](screenshot-custom.png)
 
 ## Installing
 

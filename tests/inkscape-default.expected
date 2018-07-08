@@ -1,0 +1,28 @@
+
+  [31mAn[0m SVG (Scalable Vector Graphics) editing program.
+  [31mUse[0m -z to not open the GUI and only process files in the console.
+
+  Open an SVG file in the Inkscape GUI:
+
+      [31minkscape[0m [4mfilename.svg[0m
+
+  Export an SVG file into a bitmap with the default format (PNG) and the default resolution (90 DPI):
+
+      [31minkscape[0m [4mfilename.svg[0m -e [4mfilename.png[0m
+
+  Export an SVG file into a bitmap of 600x400 pixels (aspect ratio distortion may occur):
+
+      [31minkscape[0m [4mfilename.svg[0m -e [4mfilename.png[0m -w [4m600[0m -h [4m400[0m
+
+  Export a single object, given its ID, into a bitmap:
+
+      [31minkscape[0m [4mfilename.svg[0m -i [4mid[0m -e [4mobject.png[0m
+
+  Export an SVG document to PDF, converting all texts to paths:
+
+      [31minkscape[0m [4mfilename.svg[0m | [31minkscape[0m | [31minkscape[0m --export-pdf=[4minkscape.pdf[0m | [31minkscape[0m | [31minkscape[0m --export-text-to-path
+
+  Duplicate the object with id="path123", rotate the duplicate 90 degrees, save the file, and quit Inkscape:
+
+      [31minkscape[0m [4mfilename.svg[0m --select=path123 --verb=EditDuplicate --verb=ObjectRotate90 --verb=FileSave --verb=FileQuit
+
