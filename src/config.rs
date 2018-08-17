@@ -9,9 +9,9 @@ use xdg::BaseDirectories;
 
 use error::TealdeerError::{self, ConfigError};
 
-const SYNTAX_CONFIG_FILE_NAME: &'static str = "syntax.toml";
+pub const SYNTAX_CONFIG_FILE_NAME: &'static str = "syntax.toml";
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RawColour {
     Black,
     Red,
@@ -38,7 +38,7 @@ impl From<RawColour> for Colour {
     }
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 struct RawStyle {
     pub foreground: Option<RawColour>,
     pub background: Option<RawColour>,
@@ -81,7 +81,7 @@ impl From<RawStyle> for Style {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 struct RawConfig {
     pub highlight_style: RawStyle,
     pub description_style: RawStyle,
@@ -101,7 +101,7 @@ impl RawConfig {
     }
 } // impl RawConfig
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Config {
     pub highlight_style: Style,
     pub description_style: Style,
@@ -196,4 +196,12 @@ pub fn make_default_syntax_config() -> Result<PathBuf, TealdeerError> {
     let _wc = syntax_config_file.write(serialized_syntax_config.as_bytes())?;
 
     Ok(syntax_config_file_path)
+}
+
+#[test]
+fn test_serialize_deserialize() {
+    let raw_config = RawConfig::new();
+    let serialized = toml::to_string(&raw_config).unwrap();
+    let deserialized: RawConfig = toml::from_str(&serialized).unwrap();
+    assert_eq!(raw_config, deserialized);
 }

@@ -1,0 +1,20 @@
+[highlight_style]
+foreground = "Blue"
+underline = false
+bold = false
+
+[description_style]
+underline = false
+bold = false
+
+[example_text_style]
+underline = true
+bold = false
+
+[example_code_style]
+underline = false
+bold = false
+
+[example_variable_stlye]
+underline = true
+bold = false
