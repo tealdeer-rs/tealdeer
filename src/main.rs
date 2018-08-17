@@ -31,6 +31,7 @@ extern crate tar;
 extern crate xdg;
 extern crate curl;
 extern crate time;
+extern crate toml;
 extern crate walkdir;
 #[macro_use]
 extern crate serde_derive;
@@ -47,11 +48,13 @@ mod types;
 mod tokenizer;
 mod formatter;
 mod cache;
+mod config;
 mod error;
 
 use tokenizer::Tokenizer;
 use cache::Cache;
-use error::TealdeerError::{UpdateError, CacheError};
+use config::{get_config_dir, make_default_syntax_config, Config};
+use error::TealdeerError::{CacheError, ConfigError, UpdateError};
 use formatter::print_lines;
 use types::OsType;
 
@@ -65,13 +68,15 @@ Usage:
 
 Options:
 
-    -h --help           Show this screen
-    -v --version        Show version information
-    -l --list           List all commands in the cache
-    -f --render <file>  Render a specific markdown file
-    -o --os <type>      Override the operating system [linux, osx, sunos]
-    -u --update         Update the local cache
-    -c --clear-cache    Clear the local cache
+    -h --help            Show this screen
+    -v --version         Show version information
+    -l --list            List all commands in the cache
+    -f --render <file>   Render a specific markdown file
+    -o --os <type>       Override the operating system [linux, osx, sunos]
+    -u --update          Update the local cache
+    -c --clear-cache     Clear the local cache
+    -d --display-config  Show config directory path
+    -s --seed-config     Create a basic config
 
 Examples:
 
@@ -100,6 +105,8 @@ struct Args {
     flag_os: Option<OsType>,
     flag_update: bool,
     flag_clear_cache: bool,
+    flag_display_config: bool,
+    flag_seed_config: bool,
 }
 
 /// Print page by path
@@ -110,9 +117,22 @@ fn print_page(path: &Path) -> Result<(), String> {
     );
     let reader = BufReader::new(file);
 
+    // Look up config file, if none is found fall back to default config.
+    let config = match Config::new() {
+        Ok(config) => config,
+        Err(ConfigError(msg)) => {
+            println!("Failed to create config: {}", msg);
+            process::exit(1);
+        }
+        Err(_) => {
+            println!("Unknown error while creating config");
+            process::exit(1);
+        }
+    };
+
     // Create tokenizer and print output
     let mut tokenizer = Tokenizer::new(reader);
-    print_lines(&mut tokenizer);
+    print_lines(&mut tokenizer, &config);
 
     Ok(())
 }
@@ -182,7 +202,8 @@ fn main() {
     if args.flag_clear_cache {
         cache.clear().unwrap_or_else(|e| {
             match e {
-                UpdateError(msg) | CacheError(msg) => println!("Could not delete cache: {}", msg),
+                CacheError(msg) | ConfigError(msg) | UpdateError(msg) =>
+                    println!("Could not delete cache: {}", msg),
             };
             process::exit(1);
         });
@@ -193,7 +214,8 @@ fn main() {
     if args.flag_update {
         cache.update().unwrap_or_else(|e| {
             match e {
-                UpdateError(msg) | CacheError(msg) => println!("Could not update cache: {}", msg),
+                CacheError(msg) | ConfigError(msg) | UpdateError(msg) =>
+                    println!("Could not update cache: {}", msg),
             };
             process::exit(1);
         });
@@ -219,7 +241,8 @@ fn main() {
         // Get list of pages
         let pages = cache.list_pages().unwrap_or_else(|e| {
             match e {
-                UpdateError(msg) | CacheError(msg) => println!("Could not get list of pages: {}", msg),
+                CacheError(msg) | ConfigError(msg) | UpdateError(msg) =>
+                    println!("Could not get list of pages: {}", msg),
             }
             process::exit(1);
         });
@@ -247,6 +270,42 @@ fn main() {
             println!("Try updating with `tldr --update`, or submit a pull request to:");
             println!("https://github.com/tldr-pages/tldr");
             process::exit(1);
+        }
+    }
+
+    // Show config file and path and exit
+    if args.flag_display_config {
+        match get_config_dir() {
+            Ok(config_file_path) => {
+                println!("Config directory path is: {}", config_file_path.to_str().unwrap());
+                process::exit(0);
+            },
+            Err(ConfigError(msg)) => {
+                println!("Could not look up syntax_config_path: {}", msg);
+                process::exit(1);
+            },
+            Err(_) => {
+                println!("Unknown error");
+                process::exit(1);
+            },
+        }
+    }
+
+    // Create a basic config and exit
+    if args.flag_seed_config {
+        match make_default_syntax_config() {
+            Ok(syntax_config_file_path) => {
+                println!("Successfully created seed syntax config file here: {}", syntax_config_file_path.to_str().unwrap());
+                process::exit(0);
+            },
+            Err(ConfigError(msg)) => {
+                println!("Could not look up syntax_config_path: {}", msg);
+                process::exit(1);
+            },
+            Err(_) => {
+                println!("Unkown error");
+                process::exit(1);
+            },
         }
     }
 

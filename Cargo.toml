@@ -25,6 +25,7 @@ serde = "1.0.21"
 serde_derive = "1.0.21"
 tar = "0.4.14"
 time = "0.1.38"
+toml = "0.4.6"
 walkdir = "2.0.1"
 xdg = "2.1.0"
 
