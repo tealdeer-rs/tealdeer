@@ -3,39 +3,36 @@
 use std::fmt::Write;
 use std::io::BufRead;
 
+use ansi_term::ANSIStrings;
+
 use config::Config;
 use tokenizer::Tokenizer;
 use types::LineType;
 
-/// Provide formatting for {{ curly braces }} in ExampleCode lines
+/// Format and highlight code examples including variables in {{ curly braces }}.
 fn format_code(command: &str, text: &str, config: &Config) -> String {
-    let mut parts = String::new();
-    parts.reserve(text.len() * 3);
+    let mut parts = Vec::new();
+    for between_commands in text.split(&command) {
+        parts.push(config.highlight_style.paint(command));
 
-    for part in text.split("}}") {
-        let var_begin_op = part.find("{{");
-        let command_begin_op = part[..var_begin_op.unwrap_or(part.len())].find(&command);
+        for between_variables in between_commands.split("}}") {
+            if let Some(variable_start) = between_variables.find("{{") {
+                let example_code = &between_variables[..variable_start];
+                let example_variable = &between_variables[variable_start + 2..];
 
-        let begin = command_begin_op.map(|v| v + command.len()).unwrap_or(0);
-        let end = var_begin_op.unwrap_or(part.len());
-
-        if let Some(command_begin) =  command_begin_op {
-            write!(parts, "{}", config.example_code_style.paint(&part[..command_begin])).unwrap();
-
-            write!(parts, "{}", config.highlight_style.paint(command)).unwrap();
-        }
-
-        write!(parts, "{}", config.example_code_style.paint(&part[begin..end])).unwrap();
-
-        if let Some(var_begin) = var_begin_op {
-            let var_slice = &part[var_begin + 2..];
-            write!(parts, "{}", config.example_variable_stlye.paint(var_slice)).unwrap();
+                parts.push(config.example_code_style.paint(example_code));
+                parts.push(config.example_variable_style.paint(example_variable));
+            }
+            else {
+                parts.push(config.example_code_style.paint(between_variables));
+            }
         }
     }
 
-    parts
+    ANSIStrings(&parts).to_string()
 }
 
+/// Format and highlight description text.
 fn format_description(description: &str, config: &Config) -> String {
     if let Some(first_space) = description.find(' ') {
         let mut highlighted_description = String::new();

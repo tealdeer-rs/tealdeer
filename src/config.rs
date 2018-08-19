@@ -87,7 +87,7 @@ struct RawConfig {
     pub description_style: RawStyle,
     pub example_text_style: RawStyle,
     pub example_code_style: RawStyle,
-    pub example_variable_stlye: RawStyle,
+    pub example_variable_style: RawStyle,
 }
 
 impl RawConfig {
@@ -95,7 +95,7 @@ impl RawConfig {
         let mut raw_config = RawConfig::default();
 
         raw_config.highlight_style.foreground = Some(RawColour::Red);
-        raw_config.example_variable_stlye.underline = true;
+        raw_config.example_variable_style.underline = true;
 
         raw_config
     }
@@ -107,7 +107,7 @@ pub struct Config {
     pub description_style: Style,
     pub example_text_style: Style,
     pub example_code_style: Style,
-    pub example_variable_stlye: Style,
+    pub example_variable_style: Style,
 }
 
 impl From<RawConfig> for Config {
@@ -117,7 +117,7 @@ impl From<RawConfig> for Config {
             description_style: Style::from(raw_config.description_style),
             example_text_style: Style::from(raw_config.example_text_style),
             example_code_style: Style::from(raw_config.example_code_style),
-            example_variable_stlye: Style::from(raw_config.example_variable_stlye),
+            example_variable_style: Style::from(raw_config.example_variable_style),
         }
     }
 }

@@ -1,5 +1,5 @@
 [highlight_style]
-foreground = "Blue"
+foreground = "Green"
 underline = false
 bold = false
 
@@ -8,13 +8,15 @@ underline = false
 bold = false
 
 [example_text_style]
-underline = true
+foreground = "Black"
+background = "Blue"
+underline = false
 bold = false
 
 [example_code_style]
 underline = false
 bold = false
 
-[example_variable_stlye]
+[example_variable_style]
 underline = true
 bold = false
