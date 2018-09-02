@@ -66,6 +66,7 @@ pub fn print_lines<R>(tokenizer: &mut Tokenizer<R>, config: &Config) where R: Bu
                 // This is safe as long as the parsed title is only the command,
                 // and tokenizer yields values in order of appearance.
                 command = title;
+                debug!("Detected command name: {}", &command);
             },
             LineType::Description(text) => println!("  {}", format_description(&text, &config)),
             LineType::ExampleText(text) => println!("  {}", config.example_text_style.paint(text)),

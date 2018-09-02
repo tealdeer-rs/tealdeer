@@ -42,7 +42,7 @@ use std::path::{Path, PathBuf};
 use std::process;
 
 use docopt::Docopt;
-use ansi_term::Colour;
+use ansi_term::Color;
 
 mod types;
 mod tokenizer;
@@ -75,8 +75,8 @@ Options:
     -o --os <type>       Override the operating system [linux, osx, sunos]
     -u --update          Update the local cache
     -c --clear-cache     Clear the local cache
-    -d --display-config  Show config directory path
-    -s --seed-config     Create a basic config
+    --display-config     Show config directory path
+    --seed-config        Create a basic config
 
 Examples:
 
@@ -118,14 +118,14 @@ fn print_page(path: &Path) -> Result<(), String> {
     let reader = BufReader::new(file);
 
     // Look up config file, if none is found fall back to default config.
-    let config = match Config::new() {
+    let config = match Config::load() {
         Ok(config) => config,
         Err(ConfigError(msg)) => {
-            println!("Failed to create config: {}", msg);
+            eprintln!("Failed to create config: {}", msg);
             process::exit(1);
         }
         Err(_) => {
-            println!("Unknown error while creating config");
+            eprintln!("Unknown error while creating config");
             process::exit(1);
         }
     };
@@ -142,14 +142,14 @@ fn check_cache(args: &Args, cache: &Cache) {
     if !args.flag_update {
         match cache.last_update() {
             Some(ago) if ago > MAX_CACHE_AGE => {
-                println!("{}", Colour::Red.paint(format!(
+                println!("{}", Color::Red.paint(format!(
                     "Cache wasn't updated in {} days.\n\
                     You should probably run `tldr --update` soon.\n",
                     MAX_CACHE_AGE / 24 / 3600
                 )));
             },
             None => {
-                println!("Cache not found. Please run `tldr --update`.");
+                eprintln!("Cache not found. Please run `tldr --update`.");
                 process::exit(1);
             },
             _ => {},
@@ -203,7 +203,7 @@ fn main() {
         cache.clear().unwrap_or_else(|e| {
             match e {
                 CacheError(msg) | ConfigError(msg) | UpdateError(msg) =>
-                    println!("Could not delete cache: {}", msg),
+                    eprintln!("Could not delete cache: {}", msg),
             };
             process::exit(1);
         });
@@ -215,7 +215,7 @@ fn main() {
         cache.update().unwrap_or_else(|e| {
             match e {
                 CacheError(msg) | ConfigError(msg) | UpdateError(msg) =>
-                    println!("Could not update cache: {}", msg),
+                    eprintln!("Could not update cache: {}", msg),
             };
             process::exit(1);
         });
@@ -226,7 +226,7 @@ fn main() {
     if let Some(ref file) = args.flag_render {
         let path = PathBuf::from(file);
         if let Err(msg) = print_page(&path) {
-            println!("{}", msg);
+            eprintln!("{}", msg);
             process::exit(1);
         } else {
             process::exit(0);
@@ -242,7 +242,7 @@ fn main() {
         let pages = cache.list_pages().unwrap_or_else(|e| {
             match e {
                 CacheError(msg) | ConfigError(msg) | UpdateError(msg) =>
-                    println!("Could not get list of pages: {}", msg),
+                    eprintln!("Could not get list of pages: {}", msg),
             }
             process::exit(1);
         });
@@ -260,7 +260,7 @@ fn main() {
         // Search for command in cache
         if let Some(path) = cache.find_page(&command) {
             if let Err(msg) = print_page(&path) {
-                println!("{}", msg);
+                eprintln!("{}", msg);
                 process::exit(1);
             } else {
                 process::exit(0);
@@ -268,7 +268,7 @@ fn main() {
         } else {
             println!("Page {} not found in cache", &command);
             println!("Try updating with `tldr --update`, or submit a pull request to:");
-            println!("https://github.com/tldr-pages/tldr");
+            eprintln!("https://github.com/tldr-pages/tldr");
             process::exit(1);
         }
     }
@@ -281,11 +281,11 @@ fn main() {
                 process::exit(0);
             },
             Err(ConfigError(msg)) => {
-                println!("Could not look up syntax_config_path: {}", msg);
+                eprintln!("Could not look up syntax_config_path: {}", msg);
                 process::exit(1);
             },
             Err(_) => {
-                println!("Unknown error");
+                eprintln!("Unknown error");
                 process::exit(1);
             },
         }
@@ -299,11 +299,11 @@ fn main() {
                 process::exit(0);
             },
             Err(ConfigError(msg)) => {
-                println!("Could not look up syntax_config_path: {}", msg);
+                eprintln!("Could not look up syntax_config_path: {}", msg);
                 process::exit(1);
             },
             Err(_) => {
-                println!("Unkown error");
+                eprintln!("Unkown error");
                 process::exit(1);
             },
         }
@@ -311,7 +311,7 @@ fn main() {
 
     // Some flags can be run without a command.
     if !(args.flag_update || args.flag_clear_cache) {
-        println!("{}", USAGE);
+        eprintln!("{}", USAGE);
         process::exit(1);
     }
 }

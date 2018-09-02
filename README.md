@@ -68,8 +68,8 @@ These are the clients I tried but failed to compile or run:
         -o --os <type>       Override the operating system [linux, osx, sunos]
         -u --update          Update the local cache
         -c --clear-cache     Clear the local cache
-        -d --display-config  Show config directory path
-        -s --seed-config     Create a basic config
+        --display-config     Show config directory path
+        --seed-config        Create a basic config
 
     Examples:
 
@@ -89,11 +89,9 @@ These are the clients I tried but failed to compile or run:
 
 The tldr page syntax highlighting can be customized with a config file.
 Creating the config file can be done manually or with the help of tldr.
-```
-tldr -s
-```
+    tldr --seed-config
 
-It should print the location where it created the config file.
+The command should print the location where the command created the config file.
 Example: `~/.config/tealdeer/syntax.toml`
 
 The currently supported attributes are:
@@ -103,7 +101,7 @@ The currently supported attributes are:
 - `underline`
 - `bold`
 
-The currently supported colours are:
+The currently supported colors are:
 
 - `Black`
 - `Red`

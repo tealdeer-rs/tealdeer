@@ -41,7 +41,7 @@ fn test_missing_cache() {
         .assert()
         .with_args(&["sl"])
         .fails()
-        .stdout().contains("Cache not found. Please run `tldr --update`.")
+        .stderr().contains("Cache not found. Please run `tldr --update`.")
         .unwrap();
 }
 
@@ -52,7 +52,7 @@ fn test_update_cache() {
     testenv.assert()
         .with_args(&["sl"])
         .fails()
-        .stdout().contains("Cache not found. Please run `tldr --update`.")
+        .stderr().contains("Cache not found. Please run `tldr --update`.")
         .unwrap();
 
     testenv.assert()
@@ -72,7 +72,7 @@ fn test_setup_seed_config() {
     let testenv = TestEnv::new();
 
     testenv.assert()
-        .with_args(&["-s"])
+        .with_args(&["--seed-config"])
         .succeeds()
         .stdout().contains("Successfully created seed syntax config file")
         .unwrap();

@@ -1,9 +1,9 @@
 use std::env;
 use std::fs;
-use std::io::{Read, Write};
+use std::io::{Error as IoError, Read, Write};
 use std::path::PathBuf;
 
-use ansi_term::{Colour, Style};
+use ansi_term::{Color, Style};
 use toml;
 use xdg::BaseDirectories;
 
@@ -12,7 +12,7 @@ use error::TealdeerError::{self, ConfigError};
 pub const SYNTAX_CONFIG_FILE_NAME: &'static str = "syntax.toml";
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub enum RawColour {
+pub enum RawColor {
     Black,
     Red,
     Green,
@@ -23,25 +23,25 @@ pub enum RawColour {
     White,
 }
 
-impl From<RawColour> for Colour {
-    fn from(raw_colour: RawColour) -> Colour {
-        match raw_colour {
-            RawColour::Black => Colour::Black,
-            RawColour::Red => Colour::Red,
-            RawColour::Green => Colour::Green,
-            RawColour::Yellow => Colour::Yellow,
-            RawColour::Blue => Colour::Blue,
-            RawColour::Purple => Colour::Purple,
-            RawColour::Cyan => Colour::Cyan,
-            RawColour::White => Colour::White,
+impl From<RawColor> for Color {
+    fn from(raw_color: RawColor) -> Color {
+        match raw_color {
+            RawColor::Black => Color::Black,
+            RawColor::Red => Color::Red,
+            RawColor::Green => Color::Green,
+            RawColor::Yellow => Color::Yellow,
+            RawColor::Blue => Color::Blue,
+            RawColor::Purple => Color::Purple,
+            RawColor::Cyan => Color::Cyan,
+            RawColor::White => Color::White,
         }
     }
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 struct RawStyle {
-    pub foreground: Option<RawColour>,
-    pub background: Option<RawColour>,
+    pub foreground: Option<RawColor>,
+    pub background: Option<RawColor>,
     pub underline: bool,
     pub bold: bool,
 }
@@ -62,11 +62,11 @@ impl From<RawStyle> for Style {
         let mut style = Style::default();
 
         if let Some(foreground) = raw_style.foreground {
-            style = style.fg(Colour::from(foreground));
+            style = style.fg(Color::from(foreground));
         }
 
         if let Some(background) = raw_style.background {
-            style = style.on(Colour::from(background));
+            style = style.on(Color::from(background));
         }
 
         if raw_style.underline {
@@ -81,7 +81,7 @@ impl From<RawStyle> for Style {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawConfig {
     pub highlight_style: RawStyle,
     pub description_style: RawStyle,
@@ -94,7 +94,7 @@ impl RawConfig {
     fn new() -> RawConfig {
         let mut raw_config = RawConfig::default();
 
-        raw_config.highlight_style.foreground = Some(RawColour::Red);
+        raw_config.highlight_style.foreground = Some(RawColor::Red);
         raw_config.example_variable_style.underline = true;
 
         raw_config
@@ -113,22 +113,28 @@ pub struct Config {
 impl From<RawConfig> for Config {
     fn from(raw_config: RawConfig) -> Config {
         Config{
-            highlight_style: Style::from(raw_config.highlight_style),
-            description_style: Style::from(raw_config.description_style),
-            example_text_style: Style::from(raw_config.example_text_style),
-            example_code_style: Style::from(raw_config.example_code_style),
-            example_variable_style: Style::from(raw_config.example_variable_style),
+            highlight_style: raw_config.highlight_style.into(),
+            description_style: raw_config.description_style.into(),
+            example_text_style: raw_config.example_text_style.into(),
+            example_code_style: raw_config.example_code_style.into(),
+            example_variable_style: raw_config.example_variable_style.into(),
         }
     }
 }
 
+fn map_io_err_to_config_err(e: IoError) -> TealdeerError {
+    ConfigError(format!("Io Error: {}", e))
+}
+
 impl Config {
-    pub fn new() -> Result<Config, TealdeerError> {
+    pub fn load() -> Result<Config, TealdeerError> {
         let raw_config = match get_syntax_config_path() {
             Ok(syntax_config_file_path) => {
-                let mut syntax_config_file = fs::File::open(syntax_config_file_path)?;
+                let mut syntax_config_file = fs::File::open(syntax_config_file_path)
+                    .map_err(map_io_err_to_config_err)?;
                 let mut contents = String::new();
-                let _rc = syntax_config_file.read_to_string(&mut contents)?;
+                let _rc = syntax_config_file.read_to_string(&mut contents)
+                    .map_err(map_io_err_to_config_err)?;
 
                 toml::from_str(&contents).map_err(|err| ConfigError(format!("Failed to parse syntax config file: {}", err)))?
             }
@@ -192,8 +198,10 @@ pub fn make_default_syntax_config() -> Result<PathBuf, TealdeerError> {
         .map_err(|err| ConfigError(format!("Failed to serialize default syntax config: {}", err)))?;
 
     let syntax_config_file_path = config_dir.join(SYNTAX_CONFIG_FILE_NAME);
-    let mut syntax_config_file = fs::File::create(&syntax_config_file_path)?;
-    let _wc = syntax_config_file.write(serialized_syntax_config.as_bytes())?;
+    let mut syntax_config_file = fs::File::create(&syntax_config_file_path)
+        .map_err(map_io_err_to_config_err)?;
+    let _wc = syntax_config_file.write(serialized_syntax_config.as_bytes())
+        .map_err(map_io_err_to_config_err)?;
 
     Ok(syntax_config_file_path)
 }
