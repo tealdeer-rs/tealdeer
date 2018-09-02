@@ -3,29 +3,42 @@
 use std::fmt::Write;
 use std::io::BufRead;
 
-use ansi_term::ANSIStrings;
+use ansi_term::{ANSIString, ANSIStrings};
 
 use config::Config;
 use tokenizer::Tokenizer;
 use types::LineType;
 
+fn highlight_command<'a>(
+    command: &'a str,
+    example_code: &'a str,
+    config: &Config,
+    parts: &mut Vec<ANSIString<'a>>
+) {
+    let mut code_part_end_pos = 0;
+    while let Some(command_start) = example_code[code_part_end_pos..].find(&command) {
+        let code_part = &example_code[code_part_end_pos..code_part_end_pos + command_start];
+        parts.push(config.example_code_style.paint(code_part));
+        parts.push(config.highlight_style.paint(command));
+
+        code_part_end_pos += command_start + command.len();
+    }
+    parts.push(config.example_code_style.paint(&example_code[code_part_end_pos..]));
+}
+
 /// Format and highlight code examples including variables in {{ curly braces }}.
 fn format_code(command: &str, text: &str, config: &Config) -> String {
     let mut parts = Vec::new();
-    for between_commands in text.split(&command) {
-        parts.push(config.highlight_style.paint(command));
+    for between_variables in text.split("}}") {
+        if let Some(variable_start) = between_variables.find("{{") {
+            let example_code = &between_variables[..variable_start];
+            let example_variable = &between_variables[variable_start + 2..];
 
-        for between_variables in between_commands.split("}}") {
-            if let Some(variable_start) = between_variables.find("{{") {
-                let example_code = &between_variables[..variable_start];
-                let example_variable = &between_variables[variable_start + 2..];
-
-                parts.push(config.example_code_style.paint(example_code));
-                parts.push(config.example_variable_style.paint(example_variable));
-            }
-            else {
-                parts.push(config.example_code_style.paint(between_variables));
-            }
+            highlight_command(&command, &example_code, &config, &mut parts);
+            parts.push(config.example_variable_style.paint(example_variable));
+        }
+        else {
+            highlight_command(&command, &between_variables, &config, &mut parts);
         }
     }
 
