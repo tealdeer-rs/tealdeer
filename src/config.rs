@@ -9,8 +9,9 @@ use xdg::BaseDirectories;
 
 use error::TealdeerError::{self, ConfigError};
 
-pub const SYNTAX_CONFIG_FILE_NAME: &'static str = "syntax.toml";
+pub const SYNTAX_CONFIG_FILE_NAME: &'static str = "config.toml";
 
+#[serde(rename_all = "lowercase")]
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RawColor {
     Black,
@@ -82,42 +83,55 @@ impl From<RawStyle> for Style {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+struct RawStyleConfig {
+    pub highlight: RawStyle,
+    pub description: RawStyle,
+    pub example_text: RawStyle,
+    pub example_code: RawStyle,
+    pub example_variable: RawStyle,
+}
+
+
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawConfig {
-    pub highlight_style: RawStyle,
-    pub description_style: RawStyle,
-    pub example_text_style: RawStyle,
-    pub example_code_style: RawStyle,
-    pub example_variable_style: RawStyle,
+    style: RawStyleConfig,
 }
 
 impl RawConfig {
     fn new() -> RawConfig {
         let mut raw_config = RawConfig::default();
 
-        raw_config.highlight_style.foreground = Some(RawColor::Red);
-        raw_config.example_variable_style.underline = true;
+        raw_config.style.highlight.foreground = Some(RawColor::Red);
+        raw_config.style.example_variable.underline = true;
 
         raw_config
     }
 } // impl RawConfig
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+pub struct StyleConfig {
+    pub highlight: Style,
+    pub description: Style,
+    pub example_text: Style,
+    pub example_code: Style,
+    pub example_variable: Style,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Config {
-    pub highlight_style: Style,
-    pub description_style: Style,
-    pub example_text_style: Style,
-    pub example_code_style: Style,
-    pub example_variable_style: Style,
+    pub style: StyleConfig,
 }
 
 impl From<RawConfig> for Config {
     fn from(raw_config: RawConfig) -> Config {
         Config{
-            highlight_style: raw_config.highlight_style.into(),
-            description_style: raw_config.description_style.into(),
-            example_text_style: raw_config.example_text_style.into(),
-            example_code_style: raw_config.example_code_style.into(),
-            example_variable_style: raw_config.example_variable_style.into(),
+            style: StyleConfig{
+                highlight: raw_config.style.highlight.into(),
+                description: raw_config.style.description.into(),
+                example_text: raw_config.style.example_text.into(),
+                example_code: raw_config.style.example_code.into(),
+                example_variable: raw_config.style.example_variable.into(),
+            }
         }
     }
 }

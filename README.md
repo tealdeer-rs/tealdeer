@@ -92,7 +92,7 @@ Creating the config file can be done manually or with the help of tldr.
     tldr --seed-config
 
 The command should print the location where the command created the config file.
-Example: `~/.config/tealdeer/syntax.toml`
+Example: `~/.config/tealdeer/config.toml`
 
 The currently supported attributes are:
 
@@ -103,14 +103,14 @@ The currently supported attributes are:
 
 The currently supported colors are:
 
-- `Black`
-- `Red`
-- `Green`
-- `Yellow`
-- `Blue`
-- `Purple`
-- `Cyan`
-- `White`
+- `black`
+- `red`
+- `green`
+- `yellow`
+- `blue`
+- `purple`
+- `cyan`
+- `white`
 
 Example customization:
 ![screenshot](screenshot-custom.png)

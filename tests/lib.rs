@@ -116,11 +116,11 @@ fn test_correct_rendering_with_config() {
 
     // Setup syntax config file
     // TODO should be config::SYNTAX_CONFIG_FILE_NAME
-    let syntax_file_path = testenv.config_dir.path().join("syntax.toml");
+    let syntax_file_path = testenv.config_dir.path().join("config.toml");
     println!("Syntax config path: {:?}", &syntax_file_path);
 
     let mut syntax_config_file = File::create(&syntax_file_path).unwrap();
-    syntax_config_file.write(include_str!("syntax.toml").as_bytes()).unwrap();
+    syntax_config_file.write(include_str!("config.toml").as_bytes()).unwrap();
 
     // Create input file
     let file_path = testenv.input_dir.path().join("inkscape-v2.md");
