@@ -68,15 +68,15 @@ Usage:
 
 Options:
 
-    -h --help            Show this screen
-    -v --version         Show version information
-    -l --list            List all commands in the cache
-    -f --render <file>   Render a specific markdown file
-    -o --os <type>       Override the operating system [linux, osx, sunos]
-    -u --update          Update the local cache
-    -c --clear-cache     Clear the local cache
-    --display-config     Show config directory path
-    --seed-config        Create a basic config
+    -h --help           Show this screen
+    -v --version        Show version information
+    -l --list           List all commands in the cache
+    -f --render <file>  Render a specific markdown file
+    -o --os <type>      Override the operating system [linux, osx, sunos]
+    -u --update         Update the local cache
+    -c --clear-cache    Clear the local cache
+    --config-path       Show config directory path
+    --seed-config       Create a basic config
 
 Examples:
 
@@ -105,7 +105,7 @@ struct Args {
     flag_os: Option<OsType>,
     flag_update: bool,
     flag_clear_cache: bool,
-    flag_display_config: bool,
+    flag_config_path: bool,
     flag_seed_config: bool,
 }
 
@@ -274,7 +274,7 @@ fn main() {
     }
 
     // Show config file and path and exit
-    if args.flag_display_config {
+    if args.flag_config_path {
         match get_config_dir() {
             Ok(config_file_path) => {
                 println!("Config directory path is: {}", config_file_path.to_str().unwrap());

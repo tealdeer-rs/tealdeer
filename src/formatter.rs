@@ -1,6 +1,5 @@
 //! Functions related to formatting and printing lines from a `Tokenizer`.
 
-use std::fmt::Write;
 use std::io::BufRead;
 
 use ansi_term::{ANSIString, ANSIStrings};
@@ -18,12 +17,12 @@ fn highlight_command<'a>(
     let mut code_part_end_pos = 0;
     while let Some(command_start) = example_code[code_part_end_pos..].find(&command) {
         let code_part = &example_code[code_part_end_pos..code_part_end_pos + command_start];
-        parts.push(config.example_code_style.paint(code_part));
-        parts.push(config.highlight_style.paint(command));
+        parts.push(config.style.example_code.paint(code_part));
+        parts.push(config.style.highlight.paint(command));
 
         code_part_end_pos += command_start + command.len();
     }
-    parts.push(config.example_code_style.paint(&example_code[code_part_end_pos..]));
+    parts.push(config.style.example_code.paint(&example_code[code_part_end_pos..]));
 }
 
 /// Format and highlight code examples including variables in {{ curly braces }}.
@@ -35,36 +34,13 @@ fn format_code(command: &str, text: &str, config: &Config) -> String {
             let example_variable = &between_variables[variable_start + 2..];
 
             highlight_command(&command, &example_code, &config, &mut parts);
-            parts.push(config.example_variable_style.paint(example_variable));
-        }
-        else {
+            parts.push(config.style.example_variable.paint(example_variable));
+        } else {
             highlight_command(&command, &between_variables, &config, &mut parts);
         }
     }
 
     ANSIStrings(&parts).to_string()
-}
-
-/// Format and highlight description text.
-fn format_description(description: &str, config: &Config) -> String {
-    if let Some(first_space) = description.find(' ') {
-        let mut highlighted_description = String::new();
-        write!(
-            highlighted_description,
-            "{}",
-            config.highlight_style.paint(&description[..first_space])
-        ).unwrap();
-
-        write!(
-            highlighted_description,
-            "{}",
-            config.description_style.paint(&description[first_space..])
-        ).unwrap();
-
-        return highlighted_description;
-    }
-
-    String::from(description)
 }
 
 /// Print a token stream to an ANSI terminal.
@@ -81,8 +57,8 @@ pub fn print_lines<R>(tokenizer: &mut Tokenizer<R>, config: &Config) where R: Bu
                 command = title;
                 debug!("Detected command name: {}", &command);
             },
-            LineType::Description(text) => println!("  {}", format_description(&text, &config)),
-            LineType::ExampleText(text) => println!("  {}", config.example_text_style.paint(text)),
+            LineType::Description(text) => println!("  {}", config.style.description.paint(text)),
+            LineType::ExampleText(text) => println!("  {}", config.style.example_text.paint(text)),
             LineType::ExampleCode(text) => println!("      {}", &format_code(&command, &text, &config)),
             LineType::Other(text) => debug!("Unknown line type: {:?}", text),
         }

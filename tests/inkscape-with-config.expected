@@ -1,6 +1,6 @@
 
-  [32mAn[0m SVG (Scalable Vector Graphics) editing program.
-  [32mUse[0m -z to not open the GUI and only process files in the console.
+  An SVG (Scalable Vector Graphics) editing program.
+  Use -z to not open the GUI and only process files in the console.
 
   [44;30mOpen an SVG file in the Inkscape GUI:[0m
 
