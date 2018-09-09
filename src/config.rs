@@ -208,10 +208,17 @@ pub fn make_default_syntax_config() -> Result<PathBuf, TealdeerError> {
         }
     }
 
+    let syntax_config_file_path = config_dir.join(SYNTAX_CONFIG_FILE_NAME);
+    if syntax_config_file_path.is_file() {
+        return Err(ConfigError(format!(
+            "A configuration file already exists at {}, no action was taken.",
+            syntax_config_file_path.to_str().unwrap()
+        )));
+    }
+
     let serialized_syntax_config = toml::to_string(&RawConfig::new())
         .map_err(|err| ConfigError(format!("Failed to serialize default syntax config: {}", err)))?;
 
-    let syntax_config_file_path = config_dir.join(SYNTAX_CONFIG_FILE_NAME);
     let mut syntax_config_file = fs::File::create(&syntax_config_file_path)
         .map_err(map_io_err_to_config_err)?;
     let _wc = syntax_config_file.write(serialized_syntax_config.as_bytes())
