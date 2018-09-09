@@ -1,6 +1,5 @@
 //! Functions related to formatting and printing lines from a `Tokenizer`.
 
-use std::fmt::Write;
 use std::io::BufRead;
 
 use ansi_term::{ANSIString, ANSIStrings};
@@ -44,28 +43,6 @@ fn format_code(command: &str, text: &str, config: &Config) -> String {
     ANSIStrings(&parts).to_string()
 }
 
-/// Format and highlight description text.
-fn format_description(description: &str, config: &Config) -> String {
-    if let Some(first_space) = description.find(' ') {
-        let mut highlighted_description = String::new();
-        write!(
-            highlighted_description,
-            "{}",
-            config.style.highlight.paint(&description[..first_space])
-        ).unwrap();
-
-        write!(
-            highlighted_description,
-            "{}",
-            config.style.description.paint(&description[first_space..])
-        ).unwrap();
-
-        return highlighted_description;
-    }
-
-    String::from(description)
-}
-
 /// Print a token stream to an ANSI terminal.
 pub fn print_lines<R>(tokenizer: &mut Tokenizer<R>, config: &Config) where R: BufRead {
     let mut command = String::new();
@@ -80,7 +57,7 @@ pub fn print_lines<R>(tokenizer: &mut Tokenizer<R>, config: &Config) where R: Bu
                 command = title;
                 debug!("Detected command name: {}", &command);
             },
-            LineType::Description(text) => println!("  {}", format_description(&text, &config)),
+            LineType::Description(text) => println!("  {}", config.style.description.paint(text)),
             LineType::ExampleText(text) => println!("  {}", config.style.example_text.paint(text)),
             LineType::ExampleCode(text) => println!("      {}", &format_code(&command, &text, &config)),
             LineType::Other(text) => debug!("Unknown line type: {:?}", text),
