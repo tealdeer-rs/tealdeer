@@ -299,7 +299,7 @@ fn main() {
                 process::exit(0);
             },
             Err(ConfigError(msg)) => {
-                eprintln!("Could not look up syntax_config_path: {}", msg);
+                eprintln!("Could not create seed config: {}", msg);
                 process::exit(1);
             },
             Err(_) => {
