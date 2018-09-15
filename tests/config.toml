@@ -11,11 +11,6 @@ bold = false
 foreground = "black"
 background = "blue"
 underline = false
-bold = false
-
-[style.example_code]
-underline = false
-bold = false
 
 [style.example_variable]
 underline = true
