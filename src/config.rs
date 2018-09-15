@@ -11,6 +11,14 @@ use error::TealdeerError::{self, ConfigError};
 
 pub const SYNTAX_CONFIG_FILE_NAME: &'static str = "config.toml";
 
+fn default_underline() -> bool {
+    false
+}
+
+fn default_bold() -> bool {
+    false
+}
+
 #[serde(rename_all = "lowercase")]
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RawColor {
@@ -43,7 +51,9 @@ impl From<RawColor> for Color {
 struct RawStyle {
     pub foreground: Option<RawColor>,
     pub background: Option<RawColor>,
+    #[serde(default = "default_underline")]
     pub underline: bool,
+    #[serde(default = "default_bold")]
     pub bold: bool,
 }
 
@@ -84,10 +94,15 @@ impl From<RawStyle> for Style {
 
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawStyleConfig {
+    #[serde(default)]
     pub description: RawStyle,
+    #[serde(default)]
     pub command_name: RawStyle,
+    #[serde(default)]
     pub example_text: RawStyle,
+    #[serde(default)]
     pub example_code: RawStyle,
+    #[serde(default)]
     pub example_variable: RawStyle,
 }
 
