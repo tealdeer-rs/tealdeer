@@ -53,7 +53,7 @@ mod error;
 
 use tokenizer::Tokenizer;
 use cache::Cache;
-use config::{get_config_dir, make_default_syntax_config, Config};
+use config::{get_config_path, make_default_config, Config};
 use error::TealdeerError::{CacheError, ConfigError, UpdateError};
 use formatter::print_lines;
 use types::OsType;
@@ -75,7 +75,7 @@ Options:
     -o --os <type>      Override the operating system [linux, osx, sunos]
     -u --update         Update the local cache
     -c --clear-cache    Clear the local cache
-    --config-path       Show config directory path
+    --config-path       Show config file path
     --seed-config       Create a basic config
 
 Examples:
@@ -144,7 +144,7 @@ fn check_cache(args: &Args, cache: &Cache) {
             Some(ago) if ago > MAX_CACHE_AGE => {
                 println!("{}", Color::Red.paint(format!(
                     "Cache wasn't updated in {} days.\n\
-                    You should probably run `tldr --update` soon.\n",
+                    You should probably run `tldr --update` soon.",
                     MAX_CACHE_AGE / 24 / 3600
                 )));
             },
@@ -275,13 +275,13 @@ fn main() {
 
     // Show config file and path and exit
     if args.flag_config_path {
-        match get_config_dir() {
+        match get_config_path() {
             Ok(config_file_path) => {
-                println!("Config directory path is: {}", config_file_path.to_str().unwrap());
+                println!("Config path is: {}", config_file_path.to_str().unwrap());
                 process::exit(0);
             },
             Err(ConfigError(msg)) => {
-                eprintln!("Could not look up syntax_config_path: {}", msg);
+                eprintln!("Could not look up config_path: {}", msg);
                 process::exit(1);
             },
             Err(_) => {
@@ -293,9 +293,9 @@ fn main() {
 
     // Create a basic config and exit
     if args.flag_seed_config {
-        match make_default_syntax_config() {
-            Ok(syntax_config_file_path) => {
-                println!("Successfully created seed syntax config file here: {}", syntax_config_file_path.to_str().unwrap());
+        match make_default_config() {
+            Ok(config_file_path) => {
+                println!("Successfully created seed config file here: {}", config_file_path.to_str().unwrap());
                 process::exit(0);
             },
             Err(ConfigError(msg)) => {

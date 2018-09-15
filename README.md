@@ -70,7 +70,7 @@ These are the clients I tried but failed to compile or run:
         -o --os <type>       Override the operating system [linux, osx, sunos]
         -u --update          Update the local cache
         -c --clear-cache     Clear the local cache
-        --config-path        Show config directory path
+        --config-path        Show config file path
         --seed-config        Create a basic config
 
     Examples:
@@ -135,7 +135,7 @@ Creating the config file can be done manually or with the help of tldr:
 
     $ tldr --seed-config
 
-The command should print the location where the command created the config file. Alternatively the path can also be queried:
+The configuration file path follows OS conventions. It can be queried with the following command:
 
     $ tldr --config-path
 
