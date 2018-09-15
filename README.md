@@ -9,7 +9,7 @@
 A very fast implementation of [tldr](https://github.com/tldr-pages/tldr) in
 Rust: Simplified, example based and community-driven man pages.
 
-![screenshot](screenshot-default.png)
+<img src="screenshot-default.png" alt="Screenshot of tldr command" width="600">
 
 If you pronounce "tldr" in English, it sounds somewhat like "tealdeer". Hence the project name :)
 
@@ -170,7 +170,8 @@ The currently supported colors are:
 - `white`
 
 Example customization:
-![screenshot](screenshot-custom.png)
+
+<img src="screenshot-custom.png" alt="Screenshot of customized version" width="600">
 
 
 ## Bash Autocompletion
