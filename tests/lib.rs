@@ -74,7 +74,7 @@ fn test_setup_seed_config() {
     testenv.assert()
         .with_args(&["--seed-config"])
         .succeeds()
-        .stdout().contains("Successfully created seed syntax config file")
+        .stdout().contains("Successfully created seed config file")
         .unwrap();
 }
 
@@ -114,13 +114,13 @@ fn test_correct_rendering_v2() {
 fn test_correct_rendering_with_config() {
     let testenv = TestEnv::new();
 
-    // Setup syntax config file
-    // TODO should be config::SYNTAX_CONFIG_FILE_NAME
-    let syntax_file_path = testenv.config_dir.path().join("config.toml");
-    println!("Syntax config path: {:?}", &syntax_file_path);
+    // Setup config file
+    // TODO should be config::CONFIG_FILE_NAME
+    let config_file_path = testenv.config_dir.path().join("config.toml");
+    println!("Config path: {:?}", &config_file_path);
 
-    let mut syntax_config_file = File::create(&syntax_file_path).unwrap();
-    syntax_config_file.write(include_str!("config.toml").as_bytes()).unwrap();
+    let mut config_file = File::create(&config_file_path).unwrap();
+    config_file.write(include_str!("config.toml").as_bytes()).unwrap();
 
     // Create input file
     let file_path = testenv.input_dir.path().join("inkscape-v2.md");

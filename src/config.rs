@@ -9,7 +9,7 @@ use xdg::BaseDirectories;
 
 use error::TealdeerError::{self, ConfigError};
 
-pub const SYNTAX_CONFIG_FILE_NAME: &'static str = "config.toml";
+pub const CONFIG_FILE_NAME: &'static str = "config.toml";
 
 fn default_underline() -> bool {
     false
@@ -161,19 +161,19 @@ fn map_io_err_to_config_err(e: IoError) -> TealdeerError {
 
 impl Config {
     pub fn load() -> Result<Config, TealdeerError> {
-        let raw_config = match get_syntax_config_path() {
-            Ok(syntax_config_file_path) => {
-                let mut syntax_config_file = fs::File::open(syntax_config_file_path)
+        let raw_config = match get_config_path() {
+            Ok(config_file_path) => {
+                let mut config_file = fs::File::open(config_file_path)
                     .map_err(map_io_err_to_config_err)?;
                 let mut contents = String::new();
-                let _rc = syntax_config_file.read_to_string(&mut contents)
+                let _rc = config_file.read_to_string(&mut contents)
                     .map_err(map_io_err_to_config_err)?;
 
-                toml::from_str(&contents).map_err(|err| ConfigError(format!("Failed to parse syntax config file: {}", err)))?
+                toml::from_str(&contents).map_err(|err| ConfigError(format!("Failed to parse config file: {}", err)))?
             }
             Err(ConfigError(_)) => RawConfig::new(),
             Err(_) => {
-                return Err(ConfigError("Unknown error while looking up syntax config path".into()));
+                return Err(ConfigError("Unknown error while looking up config path".into()));
             }
         };
 
@@ -206,20 +206,20 @@ pub fn get_config_dir() -> Result<PathBuf, TealdeerError> {
     Ok(xdg_dirs.get_config_home())
 }
 
-/// Return the path to the syntax config file.
-pub fn get_syntax_config_path() -> Result<PathBuf, TealdeerError> {
+/// Return the path to the config file.
+pub fn get_config_path() -> Result<PathBuf, TealdeerError> {
     let config_dir = get_config_dir()?;
-    let syntax_config_file_path = config_dir.join(SYNTAX_CONFIG_FILE_NAME);
+    let config_file_path = config_dir.join(CONFIG_FILE_NAME);
 
-    if syntax_config_file_path.is_file() {
-        Ok(syntax_config_file_path)
+    if config_file_path.is_file() {
+        Ok(config_file_path)
     } else {
-        Err(ConfigError(format!("{} is not a file path", syntax_config_file_path.to_str().unwrap())))
+        Err(ConfigError(format!("{} is not a file path", config_file_path.to_str().unwrap())))
     }
 }
 
-/// Create default syntax config file.
-pub fn make_default_syntax_config() -> Result<PathBuf, TealdeerError> {
+/// Create default config file.
+pub fn make_default_config() -> Result<PathBuf, TealdeerError> {
     let config_dir = get_config_dir()?;
     if !config_dir.is_dir() {
         if let Err(e) = fs::create_dir_all(&config_dir) {
@@ -227,23 +227,23 @@ pub fn make_default_syntax_config() -> Result<PathBuf, TealdeerError> {
         }
     }
 
-    let syntax_config_file_path = config_dir.join(SYNTAX_CONFIG_FILE_NAME);
-    if syntax_config_file_path.is_file() {
+    let config_file_path = config_dir.join(CONFIG_FILE_NAME);
+    if config_file_path.is_file() {
         return Err(ConfigError(format!(
             "A configuration file already exists at {}, no action was taken.",
-            syntax_config_file_path.to_str().unwrap()
+            config_file_path.to_str().unwrap()
         )));
     }
 
-    let serialized_syntax_config = toml::to_string(&RawConfig::new())
-        .map_err(|err| ConfigError(format!("Failed to serialize default syntax config: {}", err)))?;
+    let serialized_config = toml::to_string(&RawConfig::new())
+        .map_err(|err| ConfigError(format!("Failed to serialize default config: {}", err)))?;
 
-    let mut syntax_config_file = fs::File::create(&syntax_config_file_path)
+    let mut config_file = fs::File::create(&config_file_path)
         .map_err(map_io_err_to_config_err)?;
-    let _wc = syntax_config_file.write(serialized_syntax_config.as_bytes())
+    let _wc = config_file.write(serialized_config.as_bytes())
         .map_err(map_io_err_to_config_err)?;
 
-    Ok(syntax_config_file_path)
+    Ok(config_file_path)
 }
 
 #[test]
