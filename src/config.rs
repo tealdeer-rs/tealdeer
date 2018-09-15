@@ -102,7 +102,10 @@ impl RawConfig {
         let mut raw_config = RawConfig::default();
 
         // Set default config
-        raw_config.style.command_name.foreground = Some(RawColor::Red);
+        raw_config.style.example_text.foreground = Some(RawColor::Green);
+        raw_config.style.command_name.foreground = Some(RawColor::Cyan);
+        raw_config.style.example_code.foreground = Some(RawColor::Cyan);
+        raw_config.style.example_variable.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.underline = true;
 
         raw_config

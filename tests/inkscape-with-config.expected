@@ -4,25 +4,25 @@
 
   [44;30mOpen an SVG file in the Inkscape GUI:[0m
 
-      [32minkscape[0m [4mfilename.svg[0m
+      inkscape [4mfilename.svg[0m
 
   [44;30mExport an SVG file into a bitmap with the default format (PNG) and the default resolution (90 DPI):[0m
 
-      [32minkscape[0m [4mfilename.svg[0m -e [4mfilename.png[0m
+      inkscape [4mfilename.svg[0m -e [4mfilename.png[0m
 
   [44;30mExport an SVG file into a bitmap of 600x400 pixels (aspect ratio distortion may occur):[0m
 
-      [32minkscape[0m [4mfilename.svg[0m -e [4mfilename.png[0m -w [4m600[0m -h [4m400[0m
+      inkscape [4mfilename.svg[0m -e [4mfilename.png[0m -w [4m600[0m -h [4m400[0m
 
   [44;30mExport a single object, given its ID, into a bitmap:[0m
 
-      [32minkscape[0m [4mfilename.svg[0m -i [4mid[0m -e [4mobject.png[0m
+      inkscape [4mfilename.svg[0m -i [4mid[0m -e [4mobject.png[0m
 
   [44;30mExport an SVG document to PDF, converting all texts to paths:[0m
 
-      [32minkscape[0m [4mfilename.svg[0m | [32minkscape[0m | [32minkscape[0m --export-pdf=[4minkscape.pdf[0m | [32minkscape[0m | [32minkscape[0m --export-text-to-path
+      inkscape [4mfilename.svg[0m | inkscape | inkscape --export-pdf=[4minkscape.pdf[0m | inkscape | inkscape --export-text-to-path
 
   [44;30mDuplicate the object with id="path123", rotate the duplicate 90 degrees, save the file, and quit Inkscape:[0m
 
-      [32minkscape[0m [4mfilename.svg[0m --select=path123 --verb=EditDuplicate --verb=ObjectRotate90 --verb=FileSave --verb=FileQuit
+      inkscape [4mfilename.svg[0m --select=path123 --verb=EditDuplicate --verb=ObjectRotate90 --verb=FileSave --verb=FileQuit
 
