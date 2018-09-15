@@ -84,8 +84,8 @@ impl From<RawStyle> for Style {
 
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawStyleConfig {
-    pub highlight: RawStyle,
     pub description: RawStyle,
+    pub command_name: RawStyle,
     pub example_text: RawStyle,
     pub example_code: RawStyle,
     pub example_variable: RawStyle,
@@ -101,7 +101,8 @@ impl RawConfig {
     fn new() -> RawConfig {
         let mut raw_config = RawConfig::default();
 
-        raw_config.style.highlight.foreground = Some(RawColor::Red);
+        // Set default config
+        raw_config.style.command_name.foreground = Some(RawColor::Red);
         raw_config.style.example_variable.underline = true;
 
         raw_config
@@ -110,8 +111,8 @@ impl RawConfig {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct StyleConfig {
-    pub highlight: Style,
     pub description: Style,
+    pub command_name: Style,
     pub example_text: Style,
     pub example_code: Style,
     pub example_variable: Style,
@@ -126,7 +127,7 @@ impl From<RawConfig> for Config {
     fn from(raw_config: RawConfig) -> Config {
         Config{
             style: StyleConfig{
-                highlight: raw_config.style.highlight.into(),
+                command_name: raw_config.style.command_name.into(),
                 description: raw_config.style.description.into(),
                 example_text: raw_config.style.example_text.into(),
                 example_code: raw_config.style.example_code.into(),

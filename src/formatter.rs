@@ -18,7 +18,7 @@ fn highlight_command<'a>(
     while let Some(command_start) = example_code[code_part_end_pos..].find(&command) {
         let code_part = &example_code[code_part_end_pos..code_part_end_pos + command_start];
         parts.push(config.style.example_code.paint(code_part));
-        parts.push(config.style.highlight.paint(command));
+        parts.push(config.style.command_name.paint(command));
 
         code_part_end_pos += command_start + command.len();
     }
