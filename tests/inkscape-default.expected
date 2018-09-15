@@ -20,7 +20,7 @@
 
   [32mExport an SVG document to PDF, converting all texts to paths:[0m
 
-      [36minkscape [4mfilename.svg[0m[36m --export-pdf=[4mfilename.pdf[0m[36m --export-text-to-path[0m
+      [36minkscape [4mfilename.svg[0m[36m | inkscape | inkscape --export-pdf=[4minkscape.pdf[0m[36m | inkscape | inkscape --export-text-to-path[0m
 
   [32mDuplicate the object with id="path123", rotate the duplicate 90 degrees, save the file, and quit Inkscape:[0m
 

@@ -1,0 +1,17 @@
+[style.highlight]
+foreground = "green"
+underline = false
+bold = false
+
+[style.description]
+underline = false
+bold = false
+
+[style.example_text]
+foreground = "black"
+background = "blue"
+underline = false
+
+[style.example_variable]
+underline = true
+bold = false

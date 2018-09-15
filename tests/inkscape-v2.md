@@ -22,7 +22,7 @@ Export a single object, given its ID, into a bitmap:
 
 Export an SVG document to PDF, converting all texts to paths:
 
-    inkscape {{filename.svg}} --export-pdf={{filename.pdf}} --export-text-to-path
+    inkscape {{filename.svg}} | inkscape | inkscape --export-pdf={{inkscape.pdf}} | inkscape | inkscape --export-text-to-path
 
 Duplicate the object with id="path123", rotate the duplicate 90 degrees, save the file, and quit Inkscape:
 

@@ -9,12 +9,13 @@
 A very fast implementation of [tldr](https://github.com/tldr-pages/tldr) in
 Rust: Simplified, example based and community-driven man pages.
 
-![screenshot](screenshot.png)
+<img src="screenshot-default.png" alt="Screenshot of tldr command" width="600">
 
 If you pronounce "tldr" in English, it sounds somewhat like "tealdeer". Hence the project name :)
 
 In case you're in a hurry and just want to quickly try tealdeer, you can find static
 binaries on the [GitHub releases page](https://github.com/dbrgn/tealdeer/releases/)!
+
 
 ## Goals
 
@@ -54,6 +55,7 @@ These are the clients I tried but failed to compile or run:
 [Go client by anoopengineer](https://github.com/anoopengineer/tldr/),
 [PHP client](https://github.com/BrainMaestro/tldr-php).
 
+
 ## Usage
 
     tldr [options] <command>
@@ -61,13 +63,15 @@ These are the clients I tried but failed to compile or run:
 
     Options:
 
-        -h --help           Show this screen
-        -v --version        Show version information
-        -l --list           List all commands in the cache
-        -f --render <file>  Render a specific markdown file
-        -o --os <type>      Override the operating system [linux, osx, sunos]
-        -u --update         Update the local cache
-        -c --clear-cache    Clear the local cache
+        -h --help            Show this screen
+        -v --version         Show version information
+        -l --list            List all commands in the cache
+        -f --render <file>   Render a specific markdown file
+        -o --os <type>       Override the operating system [linux, osx, sunos]
+        -u --update          Update the local cache
+        -c --clear-cache     Clear the local cache
+        --config-path        Show config file path
+        --seed-config        Create a basic config
 
     Examples:
 
@@ -116,14 +120,58 @@ To enable the log output, set the `RUST_LOG` env variable:
 
     $ export RUST_LOG=tldr=debug
 
-
 ### From AUR (Arch Linux)
 
 If you're an Arch Linux user, you can also install the package from the AUR:
 
-    $ yaourt -S tealdeer
+- [tealdeer](https://aur.archlinux.org/packages/tealdeer/)
+- [tealdeer-git](https://aur.archlinux.org/packages/tealdeer-git/)
 
-(Or `tealdeer-git` if you prefer the current development version.)
+
+## Configuration
+
+The tldr command can be customized with a config file called `config.toml`.
+Creating the config file can be done manually or with the help of tldr:
+
+    $ tldr --seed-config
+
+The configuration file path follows OS conventions. It can be queried with the following command:
+
+    $ tldr --config-path
+
+### Style
+
+Using the config file, the style (e.g. colors or underlines) can be customized.
+
+Possible styles:
+
+- `description`: The initial description text
+- `command_name`: The command name as part of the example code
+- `example_text`: The text that describes an example
+- `example_code`: The example itself, except the `command_name` and `example_variable`
+- `example_variable`: The variables in the example
+
+Currently supported attributes:
+
+- `foreground` (color string, see below)
+- `background` (color string, see below)
+- `underline` (`true` or `false`)
+- `bold` (`true` or `false`)
+
+The currently supported colors are:
+
+- `black`
+- `red`
+- `green`
+- `yellow`
+- `blue`
+- `purple`
+- `cyan`
+- `white`
+
+Example customization:
+
+<img src="screenshot-custom.png" alt="Screenshot of customized version" width="600">
 
 
 ## Bash Autocompletion

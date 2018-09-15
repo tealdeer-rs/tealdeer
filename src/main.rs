@@ -31,6 +31,7 @@ extern crate tar;
 extern crate xdg;
 extern crate curl;
 extern crate time;
+extern crate toml;
 extern crate walkdir;
 #[macro_use]
 extern crate serde_derive;
@@ -41,17 +42,19 @@ use std::path::{Path, PathBuf};
 use std::process;
 
 use docopt::Docopt;
-use ansi_term::Colour;
+use ansi_term::Color;
 
 mod types;
 mod tokenizer;
 mod formatter;
 mod cache;
+mod config;
 mod error;
 
 use tokenizer::Tokenizer;
 use cache::Cache;
-use error::TealdeerError::{UpdateError, CacheError};
+use config::{get_config_path, make_default_config, Config};
+use error::TealdeerError::{CacheError, ConfigError, UpdateError};
 use formatter::print_lines;
 use types::OsType;
 
@@ -72,6 +75,8 @@ Options:
     -o --os <type>      Override the operating system [linux, osx, sunos]
     -u --update         Update the local cache
     -c --clear-cache    Clear the local cache
+    --config-path       Show config file path
+    --seed-config       Create a basic config
 
 Examples:
 
@@ -100,6 +105,8 @@ struct Args {
     flag_os: Option<OsType>,
     flag_update: bool,
     flag_clear_cache: bool,
+    flag_config_path: bool,
+    flag_seed_config: bool,
 }
 
 /// Print page by path
@@ -110,9 +117,22 @@ fn print_page(path: &Path) -> Result<(), String> {
     );
     let reader = BufReader::new(file);
 
+    // Look up config file, if none is found fall back to default config.
+    let config = match Config::load() {
+        Ok(config) => config,
+        Err(ConfigError(msg)) => {
+            eprintln!("Failed to create config: {}", msg);
+            process::exit(1);
+        }
+        Err(_) => {
+            eprintln!("Unknown error while creating config");
+            process::exit(1);
+        }
+    };
+
     // Create tokenizer and print output
     let mut tokenizer = Tokenizer::new(reader);
-    print_lines(&mut tokenizer);
+    print_lines(&mut tokenizer, &config);
 
     Ok(())
 }
@@ -122,14 +142,14 @@ fn check_cache(args: &Args, cache: &Cache) {
     if !args.flag_update {
         match cache.last_update() {
             Some(ago) if ago > MAX_CACHE_AGE => {
-                println!("{}", Colour::Red.paint(format!(
+                println!("{}", Color::Red.paint(format!(
                     "Cache wasn't updated in {} days.\n\
-                    You should probably run `tldr --update` soon.\n",
+                    You should probably run `tldr --update` soon.",
                     MAX_CACHE_AGE / 24 / 3600
                 )));
             },
             None => {
-                println!("Cache not found. Please run `tldr --update`.");
+                eprintln!("Cache not found. Please run `tldr --update`.");
                 process::exit(1);
             },
             _ => {},
@@ -182,7 +202,8 @@ fn main() {
     if args.flag_clear_cache {
         cache.clear().unwrap_or_else(|e| {
             match e {
-                UpdateError(msg) | CacheError(msg) => println!("Could not delete cache: {}", msg),
+                CacheError(msg) | ConfigError(msg) | UpdateError(msg) =>
+                    eprintln!("Could not delete cache: {}", msg),
             };
             process::exit(1);
         });
@@ -193,7 +214,8 @@ fn main() {
     if args.flag_update {
         cache.update().unwrap_or_else(|e| {
             match e {
-                UpdateError(msg) | CacheError(msg) => println!("Could not update cache: {}", msg),
+                CacheError(msg) | ConfigError(msg) | UpdateError(msg) =>
+                    eprintln!("Could not update cache: {}", msg),
             };
             process::exit(1);
         });
@@ -204,7 +226,7 @@ fn main() {
     if let Some(ref file) = args.flag_render {
         let path = PathBuf::from(file);
         if let Err(msg) = print_page(&path) {
-            println!("{}", msg);
+            eprintln!("{}", msg);
             process::exit(1);
         } else {
             process::exit(0);
@@ -219,7 +241,8 @@ fn main() {
         // Get list of pages
         let pages = cache.list_pages().unwrap_or_else(|e| {
             match e {
-                UpdateError(msg) | CacheError(msg) => println!("Could not get list of pages: {}", msg),
+                CacheError(msg) | ConfigError(msg) | UpdateError(msg) =>
+                    eprintln!("Could not get list of pages: {}", msg),
             }
             process::exit(1);
         });
@@ -237,7 +260,7 @@ fn main() {
         // Search for command in cache
         if let Some(path) = cache.find_page(&command) {
             if let Err(msg) = print_page(&path) {
-                println!("{}", msg);
+                eprintln!("{}", msg);
                 process::exit(1);
             } else {
                 process::exit(0);
@@ -245,14 +268,50 @@ fn main() {
         } else {
             println!("Page {} not found in cache", &command);
             println!("Try updating with `tldr --update`, or submit a pull request to:");
-            println!("https://github.com/tldr-pages/tldr");
+            eprintln!("https://github.com/tldr-pages/tldr");
             process::exit(1);
+        }
+    }
+
+    // Show config file and path and exit
+    if args.flag_config_path {
+        match get_config_path() {
+            Ok(config_file_path) => {
+                println!("Config path is: {}", config_file_path.to_str().unwrap());
+                process::exit(0);
+            },
+            Err(ConfigError(msg)) => {
+                eprintln!("Could not look up config_path: {}", msg);
+                process::exit(1);
+            },
+            Err(_) => {
+                eprintln!("Unknown error");
+                process::exit(1);
+            },
+        }
+    }
+
+    // Create a basic config and exit
+    if args.flag_seed_config {
+        match make_default_config() {
+            Ok(config_file_path) => {
+                println!("Successfully created seed config file here: {}", config_file_path.to_str().unwrap());
+                process::exit(0);
+            },
+            Err(ConfigError(msg)) => {
+                eprintln!("Could not create seed config: {}", msg);
+                process::exit(1);
+            },
+            Err(_) => {
+                eprintln!("Unkown error");
+                process::exit(1);
+            },
         }
     }
 
     // Some flags can be run without a command.
     if !(args.flag_update || args.flag_clear_cache) {
-        println!("{}", USAGE);
+        eprintln!("{}", USAGE);
         process::exit(1);
     }
 }
