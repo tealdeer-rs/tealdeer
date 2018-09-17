@@ -13,7 +13,7 @@ Possible log types:
 
 ### Unreleased
 
-- [added] New --quiet / -q option to surpress most non-error messages
+- [added] New --quiet / -q option to suppress most non-error messages
 
 ### v1.0.0 (2018-02-11)
 

@@ -75,7 +75,7 @@ Options:
     -o --os <type>      Override the operating system [linux, osx, sunos]
     -u --update         Update the local cache
     -c --clear-cache    Clear the local cache
-    -q --quiet          Surpress informational messages
+    -q --quiet          Suppress informational messages
     --config-path       Show config file path
     --seed-config       Create a basic config
 
