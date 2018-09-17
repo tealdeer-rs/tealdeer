@@ -3,7 +3,6 @@
 extern crate assert_cli;
 extern crate tempdir;
 extern crate utime;
-extern crate time;
 
 use std::fs::File;
 use std::io::Write;
