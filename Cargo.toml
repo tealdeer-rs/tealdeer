@@ -32,6 +32,7 @@ xdg = "2.1.0"
 [dev-dependencies]
 tempdir = "^0.3"
 assert_cli = "^0.5"
+utime = "0.2.0"
 
 [features]
 dev = ["clippy"]
