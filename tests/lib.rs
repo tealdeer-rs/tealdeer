@@ -2,6 +2,7 @@
 
 extern crate assert_cli;
 extern crate tempdir;
+extern crate utime;
 
 use std::fs::File;
 use std::io::Write;
@@ -64,6 +65,71 @@ fn test_update_cache() {
     testenv.assert()
         .with_args(&["sl"])
         .succeeds()
+        .unwrap();
+}
+
+#[test]
+fn test_quiet_cache() {
+    let testenv = TestEnv::new();
+    testenv
+        .assert()
+        .with_args(&["--update", "--quiet"])
+        .succeeds()
+        .stdout().is("")
+        .unwrap();
+
+    testenv
+        .assert()
+        .with_args(&["--clear-cache", "--quiet"])
+        .succeeds()
+        .stdout().is("")
+        .unwrap();
+}
+
+#[test]
+fn test_quiet_failures() {
+    let testenv = TestEnv::new();
+
+    testenv
+        .assert()
+        .with_args(&["--update", "-q"])
+        .succeeds()
+        .stdout().is("")
+        .unwrap();
+
+    testenv
+        .assert()
+        .with_args(&["fakeprogram", "-q"])
+        .fails()
+        .stdout().is("")
+        .unwrap();
+}
+
+#[test]
+fn test_quiet_old_cache() {
+    let testenv = TestEnv::new();
+
+    testenv
+        .assert()
+        .with_args(&["--update", "-q"])
+        .succeeds()
+        .stdout().is("")
+        .unwrap();
+
+    let _ = utime::set_file_times(testenv.cache_dir.path().join("tldr-master"), 1, 1).unwrap();
+
+    testenv
+        .assert()
+        .with_args(&["tldr"])
+        .succeeds()
+        .stdout().contains("Cache wasn't updated in ")
+        .unwrap();
+
+    testenv
+        .assert()
+        .with_args(&["tldr", "--quiet"])
+        .succeeds()
+        .stdout().doesnt_contain("Cache wasn't updated in ")
         .unwrap();
 }
 

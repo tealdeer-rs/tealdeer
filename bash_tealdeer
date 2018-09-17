@@ -6,7 +6,7 @@ _tealdeer()
 	_init_completion || return
 
 	case $prev in
-		-h|--help|-v|--version|-l|--list|-u|--update|-c|--clear-cache|--config-path|--seed-config)
+		-h|--help|-v|--version|-l|--list|-u|--update|-c|--clear-cache|--config-path|--seed-config|-q|--quiet)
 			return
 			;;
 		-f|--render)
