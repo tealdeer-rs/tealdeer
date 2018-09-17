@@ -75,6 +75,7 @@ Options:
     -o --os <type>      Override the operating system [linux, osx, sunos]
     -u --update         Update the local cache
     -c --clear-cache    Clear the local cache
+    -q --quiet          Surpress informational messages
     --config-path       Show config file path
     --seed-config       Create a basic config
 
@@ -105,6 +106,7 @@ struct Args {
     flag_os: Option<OsType>,
     flag_update: bool,
     flag_clear_cache: bool,
+    flag_quiet: bool,
     flag_config_path: bool,
     flag_seed_config: bool,
 }
@@ -142,6 +144,7 @@ fn check_cache(args: &Args, cache: &Cache) {
     if !args.flag_update {
         match cache.last_update() {
             Some(ago) if ago > MAX_CACHE_AGE => {
+                if args.flag_quiet { return; }
                 println!("{}", Color::Red.paint(format!(
                     "Cache wasn't updated in {} days.\n\
                     You should probably run `tldr --update` soon.",
@@ -207,7 +210,9 @@ fn main() {
             };
             process::exit(1);
         });
-        println!("Successfully deleted cache.");
+        if !args.flag_quiet {
+            println!("Successfully deleted cache.");
+        }
     }
 
     // Update cache, pass through
@@ -219,7 +224,9 @@ fn main() {
             };
             process::exit(1);
         });
-        println!("Successfully updated cache.");
+        if !args.flag_quiet {
+            println!("Successfully updated cache.");
+        }
     }
 
     // Render local file and exit
@@ -266,9 +273,11 @@ fn main() {
                 process::exit(0);
             }
         } else {
-            println!("Page {} not found in cache", &command);
-            println!("Try updating with `tldr --update`, or submit a pull request to:");
-            eprintln!("https://github.com/tldr-pages/tldr");
+            if !args.flag_quiet {
+                println!("Page {} not found in cache", &command);
+                println!("Try updating with `tldr --update`, or submit a pull request to:");
+                println!("https://github.com/tldr-pages/tldr");
+            }
             process::exit(1);
         }
     }

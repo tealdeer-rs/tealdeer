@@ -11,6 +11,9 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
+### v1.1.0 (unreleased)
+
+- [added] --quiet,-q option to surpress most non-error messages
 
 ### v1.0.0 (2018-02-11)
 
