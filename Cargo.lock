@@ -657,7 +657,7 @@ dependencies = [
 
 [[package]]
 name = "tealdeer"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "ansi_term 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "assert_cli 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
