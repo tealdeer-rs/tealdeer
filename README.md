@@ -70,6 +70,7 @@ These are the clients I tried but failed to compile or run:
         -o --os <type>       Override the operating system [linux, osx, sunos]
         -u --update          Update the local cache
         -c --clear-cache     Clear the local cache
+        -q --quiet           Suppress informational messages
         --config-path        Show config file path
         --seed-config        Create a basic config
 
