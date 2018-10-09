@@ -29,10 +29,15 @@ impl TestEnv {
     /// the main binary with env vars set.
     fn assert(&self) -> Assert {
         let env = Environment::inherit()
-            .insert("TEALDEER_CACHE_DIR", self.cache_dir.path().to_str().unwrap())
-            .insert("TEALDEER_CONFIG_DIR", self.config_dir.path().to_str().unwrap());
-        Assert::main_binary()
-            .with_env(env)
+            .insert(
+                "TEALDEER_CACHE_DIR",
+                self.cache_dir.path().to_str().unwrap(),
+            )
+            .insert(
+                "TEALDEER_CONFIG_DIR",
+                self.config_dir.path().to_str().unwrap(),
+            );
+        Assert::main_binary().with_env(env)
     }
 }
 
@@ -42,7 +47,8 @@ fn test_missing_cache() {
         .assert()
         .with_args(&["sl"])
         .fails()
-        .stderr().contains("Cache not found. Please run `tldr --update`.")
+        .stderr()
+        .contains("Cache not found. Please run `tldr --update`.")
         .unwrap();
 }
 
@@ -50,22 +56,23 @@ fn test_missing_cache() {
 fn test_update_cache() {
     let testenv = TestEnv::new();
 
-    testenv.assert()
+    testenv
+        .assert()
         .with_args(&["sl"])
         .fails()
-        .stderr().contains("Cache not found. Please run `tldr --update`.")
+        .stderr()
+        .contains("Cache not found. Please run `tldr --update`.")
         .unwrap();
 
-    testenv.assert()
+    testenv
+        .assert()
         .with_args(&["--update"])
         .succeeds()
-        .stdout().contains("Successfully updated cache.")
+        .stdout()
+        .contains("Successfully updated cache.")
         .unwrap();
 
-    testenv.assert()
-        .with_args(&["sl"])
-        .succeeds()
-        .unwrap();
+    testenv.assert().with_args(&["sl"]).succeeds().unwrap();
 }
 
 #[test]
@@ -75,14 +82,16 @@ fn test_quiet_cache() {
         .assert()
         .with_args(&["--update", "--quiet"])
         .succeeds()
-        .stdout().is("")
+        .stdout()
+        .is("")
         .unwrap();
 
     testenv
         .assert()
         .with_args(&["--clear-cache", "--quiet"])
         .succeeds()
-        .stdout().is("")
+        .stdout()
+        .is("")
         .unwrap();
 }
 
@@ -94,14 +103,16 @@ fn test_quiet_failures() {
         .assert()
         .with_args(&["--update", "-q"])
         .succeeds()
-        .stdout().is("")
+        .stdout()
+        .is("")
         .unwrap();
 
     testenv
         .assert()
         .with_args(&["fakeprogram", "-q"])
         .fails()
-        .stdout().is("")
+        .stdout()
+        .is("")
         .unwrap();
 }
 
@@ -113,7 +124,8 @@ fn test_quiet_old_cache() {
         .assert()
         .with_args(&["--update", "-q"])
         .succeeds()
-        .stdout().is("")
+        .stdout()
+        .is("")
         .unwrap();
 
     let _ = utime::set_file_times(testenv.cache_dir.path().join("tldr-master"), 1, 1).unwrap();
@@ -122,14 +134,16 @@ fn test_quiet_old_cache() {
         .assert()
         .with_args(&["tldr"])
         .succeeds()
-        .stdout().contains("Cache wasn't updated in ")
+        .stdout()
+        .contains("Cache wasn't updated in ")
         .unwrap();
 
     testenv
         .assert()
         .with_args(&["tldr", "--quiet"])
         .succeeds()
-        .stdout().doesnt_contain("Cache wasn't updated in ")
+        .stdout()
+        .doesnt_contain("Cache wasn't updated in ")
         .unwrap();
 }
 
@@ -137,10 +151,12 @@ fn test_quiet_old_cache() {
 fn test_setup_seed_config() {
     let testenv = TestEnv::new();
 
-    testenv.assert()
+    testenv
+        .assert()
         .with_args(&["--seed-config"])
         .succeeds()
-        .stdout().contains("Successfully created seed config file")
+        .stdout()
+        .contains("Successfully created seed config file")
         .unwrap();
 }
 
@@ -156,10 +172,12 @@ fn _test_correct_rendering(input_file: &str, filename: &str) {
     // Load expected output
     let expected = include_str!("inkscape-default.expected");
 
-    testenv.assert()
+    testenv
+        .assert()
         .with_args(&["-f", &file_path.to_str().unwrap()])
         .succeeds()
-        .stdout().is(expected)
+        .stdout()
+        .is(expected)
         .unwrap();
 }
 
@@ -186,21 +204,26 @@ fn test_correct_rendering_with_config() {
     println!("Config path: {:?}", &config_file_path);
 
     let mut config_file = File::create(&config_file_path).unwrap();
-    config_file.write(include_str!("config.toml").as_bytes()).unwrap();
+    config_file
+        .write(include_str!("config.toml").as_bytes())
+        .unwrap();
 
     // Create input file
     let file_path = testenv.input_dir.path().join("inkscape-v2.md");
     println!("Testfile path: {:?}", &file_path);
 
     let mut file = File::create(&file_path).unwrap();
-    file.write_all(include_str!("inkscape-v2.md").as_bytes()).unwrap();
+    file.write_all(include_str!("inkscape-v2.md").as_bytes())
+        .unwrap();
 
     // Load expected output
     let expected = include_str!("inkscape-with-config.expected");
 
-    testenv.assert()
+    testenv
+        .assert()
         .with_args(&["-f", &file_path.to_str().unwrap()])
         .succeeds()
-        .stdout().is(expected)
+        .stdout()
+        .is(expected)
         .unwrap();
 }

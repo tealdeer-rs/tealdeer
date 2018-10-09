@@ -59,7 +59,7 @@ struct RawStyle {
 
 impl Default for RawStyle {
     fn default() -> RawStyle {
-        RawStyle{
+        RawStyle {
             foreground: None,
             background: None,
             underline: false,
@@ -106,7 +106,6 @@ struct RawStyleConfig {
     pub example_variable: RawStyle,
 }
 
-
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawConfig {
     style: RawStyleConfig,
@@ -143,14 +142,14 @@ pub struct Config {
 
 impl From<RawConfig> for Config {
     fn from(raw_config: RawConfig) -> Config {
-        Config{
-            style: StyleConfig{
+        Config {
+            style: StyleConfig {
                 command_name: raw_config.style.command_name.into(),
                 description: raw_config.style.description.into(),
                 example_text: raw_config.style.example_text.into(),
                 example_code: raw_config.style.example_code.into(),
                 example_variable: raw_config.style.example_variable.into(),
-            }
+            },
         }
     }
 }
@@ -163,17 +162,21 @@ impl Config {
     pub fn load() -> Result<Config, TealdeerError> {
         let raw_config = match get_config_path() {
             Ok(config_file_path) => {
-                let mut config_file = fs::File::open(config_file_path)
-                    .map_err(map_io_err_to_config_err)?;
+                let mut config_file =
+                    fs::File::open(config_file_path).map_err(map_io_err_to_config_err)?;
                 let mut contents = String::new();
-                let _rc = config_file.read_to_string(&mut contents)
+                let _rc = config_file
+                    .read_to_string(&mut contents)
                     .map_err(map_io_err_to_config_err)?;
 
-                toml::from_str(&contents).map_err(|err| ConfigError(format!("Failed to parse config file: {}", err)))?
+                toml::from_str(&contents)
+                    .map_err(|err| ConfigError(format!("Failed to parse config file: {}", err)))?
             }
             Err(ConfigError(_)) => RawConfig::new(),
             Err(_) => {
-                return Err(ConfigError("Unknown error while looking up config path".into()));
+                return Err(ConfigError(
+                    "Unknown error while looking up config path".into(),
+                ));
             }
         };
 
@@ -189,11 +192,12 @@ pub fn get_config_dir() -> Result<PathBuf, TealdeerError> {
         let path = PathBuf::from(value);
 
         if path.exists() && path.is_dir() {
-            return Ok(path)
+            return Ok(path);
         } else {
             return Err(ConfigError(
                 "Path specified by $TEALDEER_CONFIG_DIR \
-                 does not exist or is not a directory.".into()
+                 does not exist or is not a directory."
+                    .into(),
             ));
         }
     };
@@ -201,7 +205,11 @@ pub fn get_config_dir() -> Result<PathBuf, TealdeerError> {
     // Otherwise, fall back to $XDG_CONFIG_HOME/tealdeer.
     let xdg_dirs = match BaseDirectories::with_prefix(::NAME) {
         Ok(dirs) => dirs,
-        Err(_) => return Err(ConfigError("Could not determine XDG base directory.".into())),
+        Err(_) => {
+            return Err(ConfigError(
+                "Could not determine XDG base directory.".into(),
+            ))
+        }
     };
     Ok(xdg_dirs.get_config_home())
 }
@@ -214,7 +222,10 @@ pub fn get_config_path() -> Result<PathBuf, TealdeerError> {
     if config_file_path.is_file() {
         Ok(config_file_path)
     } else {
-        Err(ConfigError(format!("{} is not a file path", config_file_path.to_str().unwrap())))
+        Err(ConfigError(format!(
+            "{} is not a file path",
+            config_file_path.to_str().unwrap()
+        )))
     }
 }
 
@@ -223,7 +234,10 @@ pub fn make_default_config() -> Result<PathBuf, TealdeerError> {
     let config_dir = get_config_dir()?;
     if !config_dir.is_dir() {
         if let Err(e) = fs::create_dir_all(&config_dir) {
-            return Err(ConfigError(format!("Could not create config directory: {}", e)));
+            return Err(ConfigError(format!(
+                "Could not create config directory: {}",
+                e
+            )));
         }
     }
 
@@ -238,9 +252,9 @@ pub fn make_default_config() -> Result<PathBuf, TealdeerError> {
     let serialized_config = toml::to_string(&RawConfig::new())
         .map_err(|err| ConfigError(format!("Failed to serialize default config: {}", err)))?;
 
-    let mut config_file = fs::File::create(&config_file_path)
-        .map_err(map_io_err_to_config_err)?;
-    let _wc = config_file.write(serialized_config.as_bytes())
+    let mut config_file = fs::File::create(&config_file_path).map_err(map_io_err_to_config_err)?;
+    let _wc = config_file
+        .write(serialized_config.as_bytes())
         .map_err(map_io_err_to_config_err)?;
 
     Ok(config_file_path)

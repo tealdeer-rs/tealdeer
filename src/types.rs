@@ -27,9 +27,21 @@ impl<'a> From<&'a str> for LineType {
         let mut chars = trimmed.chars();
         match chars.next() {
             None => LineType::Empty,
-            Some('#') => LineType::Title(trimmed.trim_left_matches(|chr: char| chr == '#' || chr.is_whitespace()).into()),
-            Some('>') => LineType::Description(trimmed.trim_left_matches(|chr: char| chr == '>' || chr.is_whitespace()).into()),
-            Some(' ') => LineType::ExampleCode(trimmed.trim_left_matches(|chr: char| chr.is_whitespace()).into()),
+            Some('#') => LineType::Title(
+                trimmed
+                    .trim_left_matches(|chr: char| chr == '#' || chr.is_whitespace())
+                    .into(),
+            ),
+            Some('>') => LineType::Description(
+                trimmed
+                    .trim_left_matches(|chr: char| chr == '>' || chr.is_whitespace())
+                    .into(),
+            ),
+            Some(' ') => LineType::ExampleCode(
+                trimmed
+                    .trim_left_matches(|chr: char| chr.is_whitespace())
+                    .into(),
+            ),
             _ => LineType::ExampleText(trimmed.into()),
         }
     }
@@ -43,10 +55,26 @@ impl LineType {
         let mut chars = trimmed.chars();
         match chars.next() {
             None => LineType::Empty,
-            Some('#') => LineType::Title(trimmed.trim_left_matches(|chr: char| chr == '#' || chr.is_whitespace()).into()),
-            Some('>') => LineType::Description(trimmed.trim_left_matches(|chr: char| chr == '>' || chr.is_whitespace()).into()),
-            Some('-') => LineType::ExampleText(trimmed.trim_left_matches(|chr: char| chr == '-' || chr.is_whitespace()).into()),
-            Some('`') if chars.last() == Some('`') => LineType::ExampleCode(trimmed.trim_matches(|chr: char| chr == '`' || chr.is_whitespace()).into()),
+            Some('#') => LineType::Title(
+                trimmed
+                    .trim_left_matches(|chr: char| chr == '#' || chr.is_whitespace())
+                    .into(),
+            ),
+            Some('>') => LineType::Description(
+                trimmed
+                    .trim_left_matches(|chr: char| chr == '>' || chr.is_whitespace())
+                    .into(),
+            ),
+            Some('-') => LineType::ExampleText(
+                trimmed
+                    .trim_left_matches(|chr: char| chr == '-' || chr.is_whitespace())
+                    .into(),
+            ),
+            Some('`') if chars.last() == Some('`') => LineType::ExampleCode(
+                trimmed
+                    .trim_matches(|chr: char| chr == '`' || chr.is_whitespace())
+                    .into(),
+            ),
             _ => LineType::Other(trimmed.into()),
         }
     }
@@ -60,9 +88,21 @@ mod test {
     fn test_linetype_from_str() {
         assert_eq!(LineType::from(""), LineType::Empty);
         assert_eq!(LineType::from(" \n \r"), LineType::Empty);
-        assert_eq!(LineType::from("# Hello there"), LineType::Title("Hello there".into()));
-        assert_eq!(LineType::from("> tis a description \n"), LineType::Description("tis a description".into()));
-        assert_eq!(LineType::from("some command "), LineType::ExampleText("some command".into()));
-        assert_eq!(LineType::from("    $ cargo run "), LineType::ExampleCode("$ cargo run".into()));
+        assert_eq!(
+            LineType::from("# Hello there"),
+            LineType::Title("Hello there".into())
+        );
+        assert_eq!(
+            LineType::from("> tis a description \n"),
+            LineType::Description("tis a description".into())
+        );
+        assert_eq!(
+            LineType::from("some command "),
+            LineType::ExampleText("some command".into())
+        );
+        assert_eq!(
+            LineType::from("    $ cargo run "),
+            LineType::ExampleCode("$ cargo run".into())
+        );
     }
 }
