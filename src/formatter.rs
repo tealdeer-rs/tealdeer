@@ -56,7 +56,7 @@ where
     let mut command = String::new();
     while let Some(token) = tokenizer.next_token() {
         match token {
-            LineType::Empty => println!(""),
+            LineType::Empty => println!(),
             LineType::Title(title) => {
                 debug!("Ignoring title");
 
@@ -73,5 +73,5 @@ where
             LineType::Other(text) => debug!("Unknown line type: {:?}", text),
         }
     }
-    println!("");
+    println!();
 }

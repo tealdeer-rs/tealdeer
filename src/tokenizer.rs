@@ -52,7 +52,7 @@ where
             }
             Ok(_) => {
                 // Handle new titles
-                if self.first_line && !self.current_line.starts_with("#") {
+                if self.first_line && !self.current_line.starts_with('#') {
                     // It's the new format! Drop next line.
                     // (Hmm, is there a way to do this without an allocation?)
                     let mut devnull = String::new();

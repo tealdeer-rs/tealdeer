@@ -9,7 +9,7 @@ use xdg::BaseDirectories;
 
 use error::TealdeerError::{self, ConfigError};
 
-pub const CONFIG_FILE_NAME: &'static str = "config.toml";
+pub const CONFIG_FILE_NAME: &str = "config.toml";
 
 fn default_underline() -> bool {
     false
