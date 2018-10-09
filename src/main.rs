@@ -81,9 +81,9 @@ use formatter::print_lines;
 use tokenizer::Tokenizer;
 use types::OsType;
 
-const NAME: &'static str = "tealdeer";
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
-const USAGE: &'static str = "
+const NAME: &str = "tealdeer";
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+const USAGE: &str = "
 Usage:
 
     tldr [options] <command>
@@ -116,7 +116,7 @@ To render a local file (for testing):
 
     $ tldr --render /path/to/file.md
 ";
-const ARCHIVE_URL: &'static str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
+const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
 const MAX_CACHE_AGE: i64 = 2592000; // 30 days
 
 #[derive(Debug, Deserialize)]
