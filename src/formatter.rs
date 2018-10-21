@@ -12,7 +12,7 @@ fn highlight_command<'a>(
     command: &'a str,
     example_code: &'a str,
     config: &Config,
-    parts: &mut Vec<ANSIString<'a>>
+    parts: &mut Vec<ANSIString<'a>>,
 ) {
     let mut code_part_end_pos = 0;
     while let Some(command_start) = example_code[code_part_end_pos..].find(&command) {
@@ -22,7 +22,12 @@ fn highlight_command<'a>(
 
         code_part_end_pos += command_start + command.len();
     }
-    parts.push(config.style.example_code.paint(&example_code[code_part_end_pos..]));
+    parts.push(
+        config
+            .style
+            .example_code
+            .paint(&example_code[code_part_end_pos..]),
+    );
 }
 
 /// Format and highlight code examples including variables in {{ curly braces }}.
@@ -44,11 +49,14 @@ fn format_code(command: &str, text: &str, config: &Config) -> String {
 }
 
 /// Print a token stream to an ANSI terminal.
-pub fn print_lines<R>(tokenizer: &mut Tokenizer<R>, config: &Config) where R: BufRead {
+pub fn print_lines<R>(tokenizer: &mut Tokenizer<R>, config: &Config)
+where
+    R: BufRead,
+{
     let mut command = String::new();
     while let Some(token) = tokenizer.next_token() {
         match token {
-            LineType::Empty => println!(""),
+            LineType::Empty => println!(),
             LineType::Title(title) => {
                 debug!("Ignoring title");
 
@@ -56,12 +64,14 @@ pub fn print_lines<R>(tokenizer: &mut Tokenizer<R>, config: &Config) where R: Bu
                 // and tokenizer yields values in order of appearance.
                 command = title;
                 debug!("Detected command name: {}", &command);
-            },
+            }
             LineType::Description(text) => println!("  {}", config.style.description.paint(text)),
             LineType::ExampleText(text) => println!("  {}", config.style.example_text.paint(text)),
-            LineType::ExampleCode(text) => println!("      {}", &format_code(&command, &text, &config)),
+            LineType::ExampleCode(text) => {
+                println!("      {}", &format_code(&command, &text, &config))
+            }
             LineType::Other(text) => debug!("Unknown line type: {:?}", text),
         }
     }
-    println!("");
+    println!();
 }

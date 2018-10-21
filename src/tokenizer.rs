@@ -28,7 +28,10 @@ pub struct Tokenizer<R: BufRead> {
     format: TldrFormat,
 }
 
-impl<R> Tokenizer<R> where R: BufRead {
+impl<R> Tokenizer<R>
+where
+    R: BufRead,
+{
     pub fn new(reader: R) -> Tokenizer<R> {
         Tokenizer {
             reader: reader,
@@ -46,10 +49,10 @@ impl<R> Tokenizer<R> where R: BufRead {
             Err(e) => {
                 warn!("Could not read line from token reader: {:?}", e);
                 None
-            },
+            }
             Ok(_) => {
                 // Handle new titles
-                if self.first_line && !self.current_line.starts_with("#") {
+                if self.first_line && !self.current_line.starts_with('#') {
                     // It's the new format! Drop next line.
                     // (Hmm, is there a way to do this without an allocation?)
                     let mut devnull = String::new();

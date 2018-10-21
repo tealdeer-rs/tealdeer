@@ -50,19 +50,22 @@ fn test_missing_cache() {
 fn test_update_cache() {
     let testenv = TestEnv::new();
 
-    testenv.assert()
+    testenv
+        .assert()
         .with_args(&["sl"])
         .fails()
         .stderr().contains("Cache not found. Please run `tldr --update`.")
         .unwrap();
 
-    testenv.assert()
+    testenv
+        .assert()
         .with_args(&["--update"])
         .succeeds()
         .stdout().contains("Successfully updated cache.")
         .unwrap();
 
-    testenv.assert()
+    testenv
+        .assert()
         .with_args(&["sl"])
         .succeeds()
         .unwrap();
@@ -137,7 +140,8 @@ fn test_quiet_old_cache() {
 fn test_setup_seed_config() {
     let testenv = TestEnv::new();
 
-    testenv.assert()
+    testenv
+        .assert()
         .with_args(&["--seed-config"])
         .succeeds()
         .stdout().contains("Successfully created seed config file")
@@ -156,7 +160,8 @@ fn _test_correct_rendering(input_file: &str, filename: &str) {
     // Load expected output
     let expected = include_str!("inkscape-default.expected");
 
-    testenv.assert()
+    testenv
+        .assert()
         .with_args(&["-f", &file_path.to_str().unwrap()])
         .succeeds()
         .stdout().is(expected)
@@ -186,7 +191,9 @@ fn test_correct_rendering_with_config() {
     println!("Config path: {:?}", &config_file_path);
 
     let mut config_file = File::create(&config_file_path).unwrap();
-    config_file.write(include_str!("config.toml").as_bytes()).unwrap();
+    config_file
+        .write(include_str!("config.toml").as_bytes())
+        .unwrap();
 
     // Create input file
     let file_path = testenv.input_dir.path().join("inkscape-v2.md");
@@ -198,7 +205,8 @@ fn test_correct_rendering_with_config() {
     // Load expected output
     let expected = include_str!("inkscape-with-config.expected");
 
-    testenv.assert()
+    testenv
+        .assert()
         .with_args(&["-f", &file_path.to_str().unwrap()])
         .succeeds()
         .stdout().is(expected)

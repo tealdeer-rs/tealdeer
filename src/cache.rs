@@ -1,16 +1,17 @@
-use std::io::Read;
-use std::fs;
 use std::env;
+use std::fs;
+use std::io::Read;
 use std::path::PathBuf;
 
-#[cfg(unix)] use std::os::unix::fs::MetadataExt;
+#[cfg(unix)]
+use std::os::unix::fs::MetadataExt;
 
-use xdg::BaseDirectories;
+use curl::easy::Easy as CurlEasy;
 use flate2::read::GzDecoder;
 use tar::Archive;
-use curl::easy::Easy as CurlEasy;
-use walkdir::{WalkDir, DirEntry};
 use time;
+use walkdir::{DirEntry, WalkDir};
+use xdg::BaseDirectories;
 
 use error::TealdeerError::{self, CacheError, UpdateError};
 use types::OsType;
@@ -22,7 +23,10 @@ pub struct Cache {
 }
 
 impl Cache {
-    pub fn new<S>(url: S, os: OsType) -> Cache where S: Into<String> {
+    pub fn new<S>(url: S, os: OsType) -> Cache
+    where
+        S: Into<String>,
+    {
         Cache {
             url: url.into(),
             os: os,
@@ -37,11 +41,12 @@ impl Cache {
             let path = PathBuf::from(value);
 
             if path.exists() && path.is_dir() {
-                return Ok(path)
+                return Ok(path);
             } else {
                 return Err(CacheError(
                     "Path specified by $TEALDEER_CACHE_DIR \
-                     does not exist or is not a directory.".into()
+                     does not exist or is not a directory."
+                        .into(),
                 ));
             }
         };
@@ -90,9 +95,10 @@ impl Cache {
 
         // Make sure that cache directory exists
         debug!("Ensure cache directory {:?} exists", &cache_dir);
-        try!(fs::create_dir_all(&cache_dir).map_err(|e| {
-            UpdateError(format!("Could not create cache directory: {}", e))
-        }));
+        try!(
+            fs::create_dir_all(&cache_dir)
+                .map_err(|e| UpdateError(format!("Could not create cache directory: {}", e)))
+        );
 
         // Clear cache directory
         // Note: This is not the best solution. Ideally we would download the
@@ -103,9 +109,11 @@ impl Cache {
         try!(self.clear());
 
         // Extract archive
-        try!(archive.unpack(&cache_dir).map_err(|e| {
-            UpdateError(format!("Could not unpack compressed data: {}", e))
-        }));
+        try!(
+            archive
+                .unpack(&cache_dir)
+                .map_err(|e| UpdateError(format!("Could not unpack compressed data: {}", e)))
+        );
 
         Ok(())
     }
@@ -117,7 +125,7 @@ impl Cache {
             if let Ok(metadata) = fs::metadata(cache_dir.join("tldr-master")) {
                 let mtime = metadata.mtime();
                 let now = time::now_utc().to_timespec();
-                return Some(now.sec - mtime)
+                return Some(now.sec - mtime);
             };
         };
         None
@@ -190,27 +198,28 @@ impl Cache {
                     return file_name == platform;
                 }
             } else if file_type.is_file() {
-                return true
+                return true;
             }
             false
         };
 
         // Recursively walk through common and (if applicable) platform specific directory
         let mut pages = WalkDir::new(platforms_dir)
-                                .min_depth(1) // Skip root directory
-                                .into_iter()
-                                .filter_entry(|e| should_walk(e)) // Filter out pages for other architectures
-                                .filter_map(|e| e.ok()) // Convert results to options, filter out errors
-                                .filter_map(|e| {
-                                    let path = e.path();
-                                    let extension = &path.extension().and_then(|s| s.to_str()).unwrap_or("");
-                                    if e.file_type().is_file() && extension == &"md" {
-                                        path.file_stem().and_then(|stem| stem.to_str().map(|s| s.into()))
-                                    } else {
-                                        None
-                                    }
-                                })
-                                .collect::<Vec<String>>();
+            .min_depth(1) // Skip root directory
+            .into_iter()
+            .filter_entry(|e| should_walk(e)) // Filter out pages for other architectures
+            .filter_map(|e| e.ok()) // Convert results to options, filter out errors
+            .filter_map(|e| {
+                let path = e.path();
+                let extension = &path.extension().and_then(|s| s.to_str()).unwrap_or("");
+                if e.file_type().is_file() && extension == &"md" {
+                    path.file_stem()
+                        .and_then(|stem| stem.to_str().map(|s| s.into()))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<String>>();
         pages.sort();
         pages.dedup();
         Ok(pages)
@@ -220,13 +229,20 @@ impl Cache {
     pub fn clear(&self) -> Result<(), TealdeerError> {
         let path = try!(self.get_cache_dir());
         if path.exists() && path.is_dir() {
-            try!(fs::remove_dir_all(&path).map_err(|_| {
-                CacheError(format!("Could not remove cache directory ({}).", path.display()))
-            }));
+            try!(fs::remove_dir_all(&path).map_err(|_| CacheError(format!(
+                "Could not remove cache directory ({}).",
+                path.display()
+            ))));
         } else if path.exists() {
-            return Err(CacheError(format!("Cache path ({}) is not a directory.", path.display())));
+            return Err(CacheError(format!(
+                "Cache path ({}) is not a directory.",
+                path.display()
+            )));
         } else {
-            return Err(CacheError(format!("Cache path ({}) does not exist.", path.display())));
+            return Err(CacheError(format!(
+                "Cache path ({}) does not exist.",
+                path.display()
+            )));
         };
         Ok(())
     }
