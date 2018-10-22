@@ -148,6 +148,21 @@ fn test_setup_seed_config() {
         .unwrap();
 }
 
+#[test]
+fn test_show_config_path() {
+    let testenv = TestEnv::new();
+
+    testenv
+        .assert()
+        .with_args(&["--config-path"])
+        .succeeds()
+        .stdout().contains(format!(
+            "Config path is: {}/config.toml",
+            testenv.config_dir.path().to_str().unwrap(),
+        ))
+        .unwrap();
+}
+
 fn _test_correct_rendering(input_file: &str, filename: &str) {
     let testenv = TestEnv::new();
 

@@ -144,11 +144,11 @@ fn print_page(path: &Path) -> Result<(), String> {
     let config = match Config::load() {
         Ok(config) => config,
         Err(ConfigError(msg)) => {
-            eprintln!("Failed to create config: {}", msg);
+            eprintln!("Could not load config: {}", msg);
             process::exit(1);
         }
-        Err(_) => {
-            eprintln!("Unknown error while creating config");
+        Err(e) => {
+            eprintln!("Could not load config: {}", e);
             process::exit(1);
         }
     };
@@ -263,6 +263,45 @@ fn main() {
         }
     }
 
+    // Show config file and path, pass through
+    if args.flag_config_path {
+        match get_config_path() {
+            Ok(config_file_path) => {
+                println!("Config path is: {}", config_file_path.to_str().unwrap());
+            }
+            Err(ConfigError(msg)) => {
+                eprintln!("Could not look up config_path: {}", msg);
+                process::exit(1);
+            }
+            Err(_) => {
+                eprintln!("Unknown error");
+                process::exit(1);
+            }
+        }
+    }
+
+    // Create a basic config and exit
+    if args.flag_seed_config {
+        match make_default_config() {
+            Ok(config_file_path) => {
+                println!(
+                    "Successfully created seed config file here: {}",
+                    config_file_path.to_str().unwrap()
+                );
+                process::exit(0);
+            }
+            Err(ConfigError(msg)) => {
+                eprintln!("Could not create seed config: {}", msg);
+                process::exit(1);
+            }
+            Err(_) => {
+                eprintln!("Unkown error");
+                process::exit(1);
+            }
+        }
+    }
+
+
     // Render local file and exit
     if let Some(ref file) = args.flag_render {
         let path = PathBuf::from(file);
@@ -317,47 +356,8 @@ fn main() {
         }
     }
 
-    // Show config file and path and exit
-    if args.flag_config_path {
-        match get_config_path() {
-            Ok(config_file_path) => {
-                println!("Config path is: {}", config_file_path.to_str().unwrap());
-                process::exit(0);
-            }
-            Err(ConfigError(msg)) => {
-                eprintln!("Could not look up config_path: {}", msg);
-                process::exit(1);
-            }
-            Err(_) => {
-                eprintln!("Unknown error");
-                process::exit(1);
-            }
-        }
-    }
-
-    // Create a basic config and exit
-    if args.flag_seed_config {
-        match make_default_config() {
-            Ok(config_file_path) => {
-                println!(
-                    "Successfully created seed config file here: {}",
-                    config_file_path.to_str().unwrap()
-                );
-                process::exit(0);
-            }
-            Err(ConfigError(msg)) => {
-                eprintln!("Could not create seed config: {}", msg);
-                process::exit(1);
-            }
-            Err(_) => {
-                eprintln!("Unkown error");
-                process::exit(1);
-            }
-        }
-    }
-
     // Some flags can be run without a command.
-    if !(args.flag_update || args.flag_clear_cache) {
+    if !(args.flag_update || args.flag_clear_cache || args.flag_config_path) {
         eprintln!("{}", USAGE);
         process::exit(1);
     }
