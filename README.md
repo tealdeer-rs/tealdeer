@@ -36,12 +36,12 @@ invocation speed of `tldr <command>` for a few of the existing clients:
 
 | Client | Times (ms) | Avg of 5 (ms) |
 | --- | --- | --- |
-| [Tealdeer](https://github.com/dbrgn/tealdeer/) | `15/11/5/5/11` | `9.4` |
-| [C client](https://github.com/tldr-pages/tldr-cpp-client) | `11/5/12/11/15` | `10.8` |
-| [Bash client](https://github.com/pepa65/tldr-bash-client) | `15/19/22/25/24` | `21.0` |
-| [Go client by k3mist](https://github.com/k3mist/tldr/) | `98/96/100/95/101` | `98.8` |
-| [Python client](https://github.com/lord63/tldr.py) | `152/148/151/158/140` | `149.8` |
-| [NodeJS client](https://github.com/tldr-pages/tldr-node-client) | `169/171/170/170/170` | `170.0` |
+| [Tealdeer](https://github.com/dbrgn/tealdeer/) | `15/11/5/5/11` | `9.4` (100%) |
+| [C client](https://github.com/tldr-pages/tldr-cpp-client) | `11/5/12/11/15` | `10.8` (115%) |
+| [Bash client](https://github.com/pepa65/tldr-bash-client) | `15/19/22/25/24` | `21.0` (223%) |
+| [Go client by k3mist](https://github.com/k3mist/tldr/) | `98/96/100/95/101` | `98.8` (1'051%) |
+| [Python client](https://github.com/lord63/tldr.py) | `152/148/151/158/140` | `149.8` (1'594%) |
+| [NodeJS client](https://github.com/tldr-pages/tldr-node-client) | `169/171/170/170/170` | `170.0` (1'809%) |
 
 tealdeer was the winner here, although the C client and the Bash client are in
 the same speed class. Interpreted languages are clearly much slower to invoke,
