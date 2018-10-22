@@ -171,7 +171,7 @@ fn check_cache(args: &Args, cache: &Cache) {
                 println!(
                     "{}",
                     Color::Red.paint(format!(
-                        "Cache wasn't updated in {} days.\n\
+                        "Cache wasn't updated for more than {} days.\n\
                          You should probably run `tldr --update` soon.",
                         MAX_CACHE_AGE / 24 / 3600
                     ))
