@@ -107,7 +107,7 @@ Build and install the tool via cargo...
 
 ### From Source (any platform)
 
-tealdeer requires at least Rust 1.19.
+tealdeer requires at least Rust 1.28.
 
 Debug build with logging enabled:
 
@@ -131,7 +131,7 @@ If you're an Arch Linux user, you can also install the package from the AUR:
 ### From Homebrew (macOS)
 
  If you're a macOS user, you can install the package from the Homebrew with the following command:
- 
+
     $ brew install tealdeer
 
 ## Configuration
