@@ -1,5 +1,7 @@
 language: rust
-os: osx
+os:
+  - osx
+  - windows
 rust:
   - 1.28.0
   - stable
