@@ -134,6 +134,18 @@ If you're an Arch Linux user, you can also install the package from the AUR:
 
     $ brew install tealdeer
 
+### Through Nix (NixOS, Linux with Nix or macOS with Nix)
+
+If you have the Nix package manager, you can use [attribute `tealdeer` from Nixpkgs](https://nixos.org/nixos/packages.html#tealdeer).
+
+E.g. to run tealdeer without permanently installing it:
+
+    $ nix run nixpkgs.tealdeer -c tldr tar
+
+or to install tealdeer into the user environment:
+
+    $ nix-env -iA nixos.tealdeer
+
 ## Configuration
 
 The tldr command can be customized with a config file called `config.toml`.
