@@ -121,18 +121,6 @@ To enable the log output, set the `RUST_LOG` env variable:
 
     $ export RUST_LOG=tldr=debug
 
-### Through Nix (NixOS, Linux with Nix or macOS with Nix)
-
-If you have the Nix package manager, you can use [attribute `tealdeer` from Nixpkgs](https://nixos.org/nixos/packages.html#tealdeer).
-
-E.g. to run tealdeer without permanently installing it:
-
-    $ nix run nixpkgs.tealdeer -c tldr tar
-
-or to install tealdeer into the user environment:
-
-    $ nix-env -iA nixos.tealdeer
-
 ### From AUR (Arch Linux)
 
 If you're an Arch Linux user, you can also install the package from the AUR:
@@ -145,6 +133,18 @@ If you're an Arch Linux user, you can also install the package from the AUR:
  If you're a macOS user, you can install the package from the Homebrew with the following command:
 
     $ brew install tealdeer
+
+### Through Nix (NixOS, Linux with Nix or macOS with Nix)
+
+If you have the Nix package manager, you can use [attribute `tealdeer` from Nixpkgs](https://nixos.org/nixos/packages.html#tealdeer).
+
+E.g. to run tealdeer without permanently installing it:
+
+    $ nix run nixpkgs.tealdeer -c tldr tar
+
+or to install tealdeer into the user environment:
+
+    $ nix-env -iA nixos.tealdeer
 
 ## Configuration
 
