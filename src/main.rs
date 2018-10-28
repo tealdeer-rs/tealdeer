@@ -199,12 +199,21 @@ fn get_os() -> OsType {
     OsType::Linux
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos",
+          target_os = "freebsd",
+          target_os = "netbsd",
+          target_os = "openbsd",
+          target_os = "dragonfly"))]
 fn get_os() -> OsType {
     OsType::OsX
 }
 
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+#[cfg(not(any(target_os = "linux",
+              target_os = "macos",
+              target_os = "freebsd",
+              target_os = "netbsd",
+              target_os = "openbsd",
+              target_os = "dragonfly")))]
 fn get_os() -> OsType {
     OsType::Other
 }
