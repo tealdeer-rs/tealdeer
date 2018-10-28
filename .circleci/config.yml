@@ -17,6 +17,8 @@ jobs:
 
       # Build
       - run: cargo build
+      - run: cargo build --features logging
+
       # Run tests
       - run: cargo test
 
