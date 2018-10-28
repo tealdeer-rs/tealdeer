@@ -220,7 +220,8 @@ fn main() {
 
     // Show version and exit
     if args.flag_version {
-        println!("{} v{}", NAME, VERSION);
+        let os = get_os();
+        println!("{} v{} ({})", NAME, VERSION, os);
         process::exit(0);
     }
 

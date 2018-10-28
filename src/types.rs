@@ -1,5 +1,7 @@
 //! Types used in the client.
 
+use std::fmt;
+
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[allow(dead_code)]
@@ -8,6 +10,17 @@ pub enum OsType {
     OsX,
     SunOs,
     Other,
+}
+
+impl fmt::Display for OsType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            OsType::Linux => write!(f, "Linux"),
+            OsType::OsX => write!(f, "macOS / BSD"),
+            OsType::SunOs => write!(f, "SunOS"),
+            OsType::Other => write!(f, "Unknown OS"),
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq)]
