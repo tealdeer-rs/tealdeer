@@ -188,7 +188,7 @@ fn check_cache(args: &Args, cache: &Cache) {
 
 #[cfg(feature = "logging")]
 fn init_log() {
-    env_logger::init().unwrap();
+    env_logger::init();
 }
 
 #[cfg(not(feature = "logging"))]
