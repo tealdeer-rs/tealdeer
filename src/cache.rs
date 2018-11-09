@@ -9,10 +9,10 @@ use std::os::unix::fs::MetadataExt;
 use reqwest::{Client, Proxy};
 use flate2::read::GzDecoder;
 use log::debug;
+use app_dirs::{get_app_root, AppDataType};
+use std::time::{Duration, SystemTime};
 use tar::Archive;
-use time;
 use walkdir::{DirEntry, WalkDir};
-use xdg::BaseDirectories;
 
 use crate::error::TealdeerError::{self, CacheError, UpdateError};
 use crate::types::OsType;
@@ -52,12 +52,11 @@ impl Cache {
             }
         };
 
-        // Otherwise, fall back to $XDG_CACHE_HOME/tealdeer.
-        let xdg_dirs = match BaseDirectories::with_prefix(crate::NAME) {
-            Ok(dirs) => dirs,
-            Err(_) => return Err(CacheError("Could not determine XDG base directory.".into())),
-        };
-        Ok(xdg_dirs.get_cache_home())
+        // Otherwise, fall back to user cache directory.
+        match get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
+            Ok(dirs) => Ok(dirs),
+            Err(_) => Err(CacheError("Could not determine user cache directory.".into())),
+        }
     }
 
     /// Download the archive
@@ -118,14 +117,14 @@ impl Cache {
         Ok(())
     }
 
-    #[cfg(unix)]
-    /// Return the number of seconds since the cache directory was last modified.
-    pub fn last_update(&self) -> Option<i64> {
+    /// Return the duration since the cache directory was last modified.
+    pub fn last_update(&self) -> Option<Duration> {
         if let Ok(cache_dir) = self.get_cache_dir() {
             if let Ok(metadata) = fs::metadata(cache_dir.join("tldr-master")) {
-                let mtime = metadata.mtime();
-                let now = time::now_utc().to_timespec();
-                return Some(now.sec - mtime);
+                if let Ok(mtime) = metadata.modified() {
+                    let now = SystemTime::now();
+                    return now.duration_since(mtime).ok();
+                };
             };
         };
         None

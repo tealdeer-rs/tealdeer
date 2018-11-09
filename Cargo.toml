@@ -16,6 +16,7 @@ path = "src/main.rs"
 
 [dependencies]
 ansi_term = "0.10.2"
+app_dirs = "1.2.1"
 clippy = { version = "0.0.174", optional = true }
 docopt = "0.8.1"
 env_logger = { version = "0.5", optional = true }
@@ -24,10 +25,8 @@ log = "0.4"
 serde = "1.0.21"
 serde_derive = "1.0.21"
 tar = "0.4.14"
-time = "0.1.38"
 toml = "0.4.6"
 walkdir = "2.0.1"
-xdg = "2.1.0"
 reqwest = "0.9.5"
 
 [dev-dependencies]

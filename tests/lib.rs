@@ -188,8 +188,8 @@ fn test_show_config_path() {
         .assert()
         .success()
         .stdout(contains(format!(
-            "Config path is: {}/config.toml",
-            testenv.config_dir.path().to_str().unwrap(),
+            "Config path is: {}",
+            testenv.config_dir.path().join("config.toml").to_str().unwrap(),
         )));
 }
 

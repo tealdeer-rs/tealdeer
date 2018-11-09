@@ -4,10 +4,10 @@ use std::io::{Error as IoError, Read, Write};
 use std::path::PathBuf;
 
 use ansi_term::{Color, Style};
+use app_dirs::{get_app_root, AppDataType};
 use log::debug;
 use serde_derive::{Deserialize, Serialize};
 use toml;
-use xdg::BaseDirectories;
 
 use crate::error::TealdeerError::{self, ConfigError};
 
@@ -190,7 +190,7 @@ impl Config {
 /// Return the path to the config directory.
 ///
 /// The config dir path can be overridden using the `TEALDEER_CONFIG_DIR` env
-/// variable. Otherwise, `$XDG_CONFIG_hOME/tealdeer` is returned.
+/// variable. Otherwise, the user config directory is returned.
 ///
 /// Note that this function does not verify whether the directory at that
 /// loation exists, or is a directory.
@@ -201,14 +201,13 @@ pub fn get_config_dir() -> Result<PathBuf, TealdeerError> {
         return Ok(PathBuf::from(value));
     };
 
-    // Otherwise, fall back to $XDG_CONFIG_HOME/tealdeer.
-    let xdg_dirs = match BaseDirectories::with_prefix(crate::NAME) {
-        Ok(dirs) => dirs,
-        Err(_) => {
-            return Err(ConfigError("Could not determine XDG base directory.".into()))
-        }
-    };
-    Ok(xdg_dirs.get_config_home())
+    // Otherwise, fall back to the user config directory.
+    match get_app_root(AppDataType::UserConfig, &crate::APP_INFO) {
+        Ok(dirs) => Ok(dirs),
+        Err(_) => Err(ConfigError(
+            "Could not determine the user config directory.".into(),
+        )),
+    }
 }
 
 /// Return the path to the config file.

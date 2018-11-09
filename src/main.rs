@@ -20,8 +20,10 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::process;
+use std::time::Duration;
 
 use ansi_term::Color;
+use app_dirs::AppInfo;
 use docopt::Docopt;
 use serde_derive::Deserialize;
 
@@ -40,6 +42,10 @@ use crate::tokenizer::Tokenizer;
 use crate::types::OsType;
 
 const NAME: &str = "tealdeer";
+const APP_INFO: AppInfo = AppInfo {
+    name: NAME,
+    author: NAME,
+};
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const USAGE: &str = "
 Usage:
@@ -75,7 +81,7 @@ To render a local file (for testing):
     $ tldr --render /path/to/file.md
 ";
 const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
-const MAX_CACHE_AGE: i64 = 2_592_000; // 30 days
+const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
 
 #[derive(Debug, Deserialize)]
 struct Args {
@@ -131,7 +137,7 @@ fn check_cache(args: &Args, cache: &Cache) {
                     Color::Red.paint(format!(
                         "Cache wasn't updated for more than {} days.\n\
                          You should probably run `tldr --update` soon.",
-                        MAX_CACHE_AGE / 24 / 3600
+                        MAX_CACHE_AGE.as_secs() / 24 / 3600
                     ))
                 );
             }
