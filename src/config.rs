@@ -4,8 +4,8 @@ use std::io::{Error as IoError, Read, Write};
 use std::path::PathBuf;
 
 use ansi_term::{Color, Style};
+use app_dirs::{get_app_root, AppDataType};
 use toml;
-use xdg::BaseDirectories;
 
 use error::TealdeerError::{self, ConfigError};
 
@@ -199,13 +199,12 @@ pub fn get_config_dir() -> Result<PathBuf, TealdeerError> {
     };
 
     // Otherwise, fall back to $XDG_CONFIG_HOME/tealdeer.
-    let xdg_dirs = match BaseDirectories::with_prefix(::NAME) {
-        Ok(dirs) => dirs,
-        Err(_) => {
-            return Err(ConfigError("Could not determine XDG base directory.".into()))
-        }
-    };
-    Ok(xdg_dirs.get_config_home())
+    match get_app_root(AppDataType::UserConfig, &::APP_INFO) {
+        Ok(dirs) => Ok(dirs),
+        Err(_) => Err(ConfigError(
+            "Could not determine XDG base directory.".into(),
+        )),
+    }
 }
 
 /// Return the path to the config file.

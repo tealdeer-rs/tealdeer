@@ -156,11 +156,16 @@ fn test_show_config_path() {
         .assert()
         .with_args(&["--config-path"])
         .succeeds()
-        .stdout().contains(format!(
-            "Config path is: {}/config.toml",
-            testenv.config_dir.path().to_str().unwrap(),
-        ))
-        .unwrap();
+        .stdout()
+        .contains(format!(
+            "Config path is: {}",
+            testenv
+                .config_dir
+                .path()
+                .join("config.toml")
+                .to_str()
+                .unwrap(),
+        )).unwrap();
 }
 
 fn _test_correct_rendering(input_file: &str, filename: &str) {
