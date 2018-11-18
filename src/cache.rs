@@ -6,7 +6,7 @@ use std::path::PathBuf;
 #[cfg(unix)]
 use std::os::unix::fs::MetadataExt;
 
-use curl::easy::Easy as CurlEasy;
+use reqwest;
 use flate2::read::GzDecoder;
 use tar::Archive;
 use time;
@@ -61,19 +61,9 @@ impl Cache {
 
     /// Download the archive
     fn download(&self) -> Result<Vec<u8>, TealdeerError> {
-        let mut handle = CurlEasy::new();
-        try!(handle.url(&self.url));
-        try!(handle.follow_location(true));
-        try!(handle.fail_on_error(true));
-        let mut buf = Vec::new();
-        {
-            let mut transfer = handle.transfer();
-            try!(transfer.write_function(|data| {
-                buf.extend_from_slice(data);
-                Ok(data.len())
-            }));
-            try!(transfer.perform());
-        }
+        let mut resp = reqwest::get(&self.url)?;
+        let mut buf: Vec<u8> = vec![];
+        resp.copy_to(&mut buf)?;
         Ok(buf)
     }
 
