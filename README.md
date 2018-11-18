@@ -107,7 +107,7 @@ Build and install the tool via cargo...
 
 ### From Source (any platform)
 
-tealdeer requires at least Rust 1.28.
+tealdeer requires at least Rust 1.30.
 
 Debug build with logging enabled:
 
