@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: rust:1.28
+      - image: rust:1.30
     steps:
       - checkout
       # Load cargo target from cache if possible.
