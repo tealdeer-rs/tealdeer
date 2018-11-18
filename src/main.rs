@@ -46,7 +46,7 @@
 #[macro_use]
 extern crate log;
 extern crate ansi_term;
-extern crate curl;
+extern crate reqwest;
 extern crate docopt;
 #[cfg(feature = "logging")]
 extern crate env_logger;
