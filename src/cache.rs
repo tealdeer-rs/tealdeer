@@ -63,7 +63,8 @@ impl Cache {
     fn download(&self) -> Result<Vec<u8>, TealdeerError> {
         let mut resp = reqwest::get(&self.url)?;
         let mut buf: Vec<u8> = vec![];
-        resp.copy_to(&mut buf)?;
+        let bytes_downloaded = resp.copy_to(&mut buf)?;
+        debug!("{} bytes downloaded", bytes_downloaded);
         Ok(buf)
     }
 
