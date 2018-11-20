@@ -128,6 +128,12 @@ If you're an Arch Linux user, you can also install the package from the AUR:
 - [tealdeer](https://aur.archlinux.org/packages/tealdeer/)
 - [tealdeer-git](https://aur.archlinux.org/packages/tealdeer-git/)
 
+### Through xbps (Void Linux)
+
+If you're a Void Linux user, you can install the package using xbps:
+
+    $ xbps-install -Sy tealdeer
+
 ### From Homebrew (macOS)
 
  If you're a macOS user, you can install the package from the Homebrew with the following command:
