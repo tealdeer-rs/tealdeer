@@ -105,6 +105,16 @@ Build and install the tool via cargo...
 
     $ cargo install tealdeer
 
+### From Package Manager
+
+tealdeer has been added to a few package managers:
+
+- Arch Linux AUR: [`tealdeer`](https://aur.archlinux.org/packages/tealdeer/)
+  or [`tealdeer-git`](https://aur.archlinux.org/packages/tealdeer-git/)
+- macOS Homebrew: [`tealdeer`](https://formulae.brew.sh/formula/tealdeer)
+- Nix: [`tealdeer`](https://nixos.org/nixos/packages.html#tealdeer)
+- Void Linux XBPS: [`tealdeer`](https://github.com/void-linux/void-packages/tree/master/srcpkgs/tealdeer)
+
 ### From Source (any platform)
 
 tealdeer requires at least Rust 1.30.
@@ -121,36 +131,6 @@ To enable the log output, set the `RUST_LOG` env variable:
 
     $ export RUST_LOG=tldr=debug
 
-### From AUR (Arch Linux)
-
-If you're an Arch Linux user, you can also install the package from the AUR:
-
-- [tealdeer](https://aur.archlinux.org/packages/tealdeer/)
-- [tealdeer-git](https://aur.archlinux.org/packages/tealdeer-git/)
-
-### Through xbps (Void Linux)
-
-If you're a Void Linux user, you can install the package using xbps:
-
-    $ xbps-install -Sy tealdeer
-
-### From Homebrew (macOS)
-
- If you're a macOS user, you can install the package from the Homebrew with the following command:
-
-    $ brew install tealdeer
-
-### Through Nix (NixOS, Linux with Nix or macOS with Nix)
-
-If you have the Nix package manager, you can use [attribute `tealdeer` from Nixpkgs](https://nixos.org/nixos/packages.html#tealdeer).
-
-E.g. to run tealdeer without permanently installing it:
-
-    $ nix run nixpkgs.tealdeer -c tldr tar
-
-or to install tealdeer into the user environment:
-
-    $ nix-env -iA nixos.tealdeer
 
 ## Configuration
 
