@@ -1,19 +1,26 @@
 //! Integration tests.
 
-extern crate assert_cli;
+extern crate assert_cmd;
+extern crate escargot;
+extern crate predicates;
 extern crate tempdir;
 extern crate utime;
 
 use std::fs::File;
 use std::io::Write;
+use std::process::Command;
 
-use assert_cli::{Assert, Environment};
+use assert_cmd::prelude::*;
 use tempdir::TempDir;
+use predicates::boolean::PredicateBooleanExt;
+use predicates::prelude::predicate::str::{contains, is_empty, similar};
 
 struct TestEnv {
     pub cache_dir: TempDir,
     pub config_dir: TempDir,
     pub input_dir: TempDir,
+    pub default_features: bool,
+    pub features: Vec<String>,
 }
 
 impl TestEnv {
@@ -22,28 +29,51 @@ impl TestEnv {
             cache_dir: TempDir::new(".tldr.test.cache").unwrap(),
             config_dir: TempDir::new(".tldr.test.config").unwrap(),
             input_dir: TempDir::new(".tldr.test.input").unwrap(),
+            default_features: true,
+            features: vec![],
         }
     }
 
-    /// Return a new [`Assert`](../assert_cli/struct.Assert.html) instance for
-    /// the main binary with env vars set.
-    fn assert(&self) -> Assert {
-        let env = Environment::inherit()
-            .insert("TEALDEER_CACHE_DIR", self.cache_dir.path().to_str().unwrap())
-            .insert("TEALDEER_CONFIG_DIR", self.config_dir.path().to_str().unwrap());
-        Assert::main_binary()
-            .with_env(env)
+    /// Disable default features.
+    fn no_default_features(mut self) -> Self {
+        self.default_features = false;
+        self
+    }
+
+    /// Add the specified feature.
+    fn with_feature<S: Into<String>>(mut self, feature: S) -> Self {
+        self.features.push(feature.into());
+        self
+    }
+
+    /// Return a new `Command` with env vars set.
+    fn command(&self) -> Command {
+        let mut build = escargot::CargoBuild::new()
+            .bin("tldr")
+            .current_release()
+            .current_target();
+        if !self.default_features {
+            build = build.arg("--no-default-features");
+        }
+        if !self.features.is_empty() {
+            build = build.arg(&format!("--feature {}", self.features.join(",")));
+        }
+        let run = build.run().unwrap();
+        let mut cmd = run.command();
+        cmd.env("TEALDEER_CACHE_DIR", self.cache_dir.path().to_str().unwrap());
+        cmd.env("TEALDEER_CONFIG_DIR", self.config_dir.path().to_str().unwrap());
+        cmd
     }
 }
 
 #[test]
 fn test_missing_cache() {
     TestEnv::new()
+        .command()
+        .args(&["sl"])
         .assert()
-        .with_args(&["sl"])
-        .fails()
-        .stderr().contains("Cache not found. Please run `tldr --update`.")
-        .unwrap();
+        .failure()
+        .stderr(contains("Cache not found. Please run `tldr --update`."));
 }
 
 #[test]
@@ -51,42 +81,42 @@ fn test_update_cache() {
     let testenv = TestEnv::new();
 
     testenv
+        .command()
+        .args(&["sl"])
         .assert()
-        .with_args(&["sl"])
-        .fails()
-        .stderr().contains("Cache not found. Please run `tldr --update`.")
-        .unwrap();
+        .failure()
+        .stderr(contains("Cache not found. Please run `tldr --update`."));
 
     testenv
+        .command()
+        .args(&["--update"])
         .assert()
-        .with_args(&["--update"])
-        .succeeds()
-        .stdout().contains("Successfully updated cache.")
-        .unwrap();
+        .success()
+        .stdout(contains("Successfully updated cache."));
 
     testenv
+        .command()
+        .args(&["sl"])
         .assert()
-        .with_args(&["sl"])
-        .succeeds()
-        .unwrap();
+        .success();
 }
 
 #[test]
 fn test_quiet_cache() {
     let testenv = TestEnv::new();
     testenv
+        .command()
+        .args(&["--update", "--quiet"])
         .assert()
-        .with_args(&["--update", "--quiet"])
-        .succeeds()
-        .stdout().is("")
-        .unwrap();
+        .success()
+        .stdout(is_empty());
 
     testenv
+        .command()
+        .args(&["--clear-cache", "--quiet"])
         .assert()
-        .with_args(&["--clear-cache", "--quiet"])
-        .succeeds()
-        .stdout().is("")
-        .unwrap();
+        .success()
+        .stdout(is_empty());
 }
 
 #[test]
@@ -94,18 +124,18 @@ fn test_quiet_failures() {
     let testenv = TestEnv::new();
 
     testenv
+        .command()
+        .args(&["--update", "-q"])
         .assert()
-        .with_args(&["--update", "-q"])
-        .succeeds()
-        .stdout().is("")
-        .unwrap();
+        .success()
+        .stdout(is_empty());
 
     testenv
+        .command()
+        .args(&["fakeprogram", "-q"])
         .assert()
-        .with_args(&["fakeprogram", "-q"])
-        .fails()
-        .stdout().is("")
-        .unwrap();
+        .failure()
+        .stdout(is_empty());
 }
 
 #[test]
@@ -113,27 +143,27 @@ fn test_quiet_old_cache() {
     let testenv = TestEnv::new();
 
     testenv
+        .command()
+        .args(&["--update", "-q"])
         .assert()
-        .with_args(&["--update", "-q"])
-        .succeeds()
-        .stdout().is("")
-        .unwrap();
+        .success()
+        .stdout(is_empty());
 
     let _ = utime::set_file_times(testenv.cache_dir.path().join("tldr-master"), 1, 1).unwrap();
 
     testenv
+        .command()
+        .args(&["tldr"])
         .assert()
-        .with_args(&["tldr"])
-        .succeeds()
-        .stdout().contains("Cache wasn't updated for more than ")
-        .unwrap();
+        .success()
+        .stdout(contains("Cache wasn't updated for more than "));
 
     testenv
+        .command()
+        .args(&["tldr", "--quiet"])
         .assert()
-        .with_args(&["tldr", "--quiet"])
-        .succeeds()
-        .stdout().doesnt_contain("Cache wasn't updated for more than ")
-        .unwrap();
+        .success()
+        .stdout(contains("Cache wasn't updated for more than ").not());
 }
 
 #[test]
@@ -141,11 +171,11 @@ fn test_setup_seed_config() {
     let testenv = TestEnv::new();
 
     testenv
+        .command()
+        .args(&["--seed-config"])
         .assert()
-        .with_args(&["--seed-config"])
-        .succeeds()
-        .stdout().contains("Successfully created seed config file")
-        .unwrap();
+        .success()
+        .stdout(contains("Successfully created seed config file"));
 }
 
 #[test]
@@ -153,14 +183,14 @@ fn test_show_config_path() {
     let testenv = TestEnv::new();
 
     testenv
+        .command()
+        .args(&["--config-path"])
         .assert()
-        .with_args(&["--config-path"])
-        .succeeds()
-        .stdout().contains(format!(
+        .success()
+        .stdout(contains(format!(
             "Config path is: {}/config.toml",
             testenv.config_dir.path().to_str().unwrap(),
-        ))
-        .unwrap();
+        )));
 }
 
 fn _test_correct_rendering(input_file: &str, filename: &str) {
@@ -176,11 +206,11 @@ fn _test_correct_rendering(input_file: &str, filename: &str) {
     let expected = include_str!("inkscape-default.expected");
 
     testenv
+        .command()
+        .args(&["-f", &file_path.to_str().unwrap()])
         .assert()
-        .with_args(&["-f", &file_path.to_str().unwrap()])
-        .succeeds()
-        .stdout().is(expected)
-        .unwrap();
+        .success()
+        .stdout(similar(expected));
 }
 
 /// An end-to-end integration test for direct file rendering (v1 syntax).
@@ -221,9 +251,9 @@ fn test_correct_rendering_with_config() {
     let expected = include_str!("inkscape-with-config.expected");
 
     testenv
+        .command()
+        .args(&["-f", &file_path.to_str().unwrap()])
         .assert()
-        .with_args(&["-f", &file_path.to_str().unwrap()])
-        .succeeds()
-        .stdout().is(expected)
-        .unwrap();
+        .success()
+        .stdout(similar(expected));
 }
