@@ -6,7 +6,7 @@ use std::path::PathBuf;
 #[cfg(unix)]
 use std::os::unix::fs::MetadataExt;
 
-use reqwest;
+use reqwest::{Client, Proxy};
 use flate2::read::GzDecoder;
 use tar::Archive;
 use time;
@@ -61,7 +61,19 @@ impl Cache {
 
     /// Download the archive
     fn download(&self) -> Result<Vec<u8>, TealdeerError> {
-        let mut resp = reqwest::get(&self.url)?;
+        let mut builder = Client::builder();
+        if let Ok(ref host) = env::var("HTTP_PROXY") {
+            if let Ok(proxy) = Proxy::http(host) {
+                builder = builder.proxy(proxy);
+            }
+        }
+        if let Ok(ref host) = env::var("HTTPS_PROXY") {
+            if let Ok(proxy) = Proxy::https(host) {
+                builder = builder.proxy(proxy);
+            }
+        }
+        let client = builder.build().unwrap_or_else(|_| Client::new());
+        let mut resp = client.get(&self.url).send()?;
         let mut buf: Vec<u8> = vec![];
         let bytes_downloaded = resp.copy_to(&mut buf)?;
         debug!("{} bytes downloaded", bytes_downloaded);
