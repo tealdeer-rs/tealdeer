@@ -63,10 +63,14 @@ impl Cache {
     fn download(&self) -> Result<Vec<u8>, TealdeerError> {
         let mut builder = Client::builder();
         if let Ok(ref host) = env::var("HTTP_PROXY") {
-            builder = builder.proxy(Proxy::http(host)?);
+            if let Ok(proxy) = Proxy::http(host) {
+                builder = builder.proxy(proxy);
+            }
         }
         if let Ok(ref host) = env::var("HTTPS_PROXY") {
-            builder = builder.proxy(Proxy::https(host)?);
+            if let Ok(proxy) = Proxy::https(host) {
+                builder = builder.proxy(proxy);
+            }
         }
         let client = builder.build().unwrap_or_else(|_| Client::new());
         let mut resp = client.get(&self.url).send()?;
