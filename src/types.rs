@@ -37,7 +37,7 @@ pub enum LineType {
 
 impl<'a> From<&'a str> for LineType {
     /// Convert a string slice to a LineType. Newlines and trailing whitespace are trimmed.
-    fn from(line: &'a str) -> LineType {
+    fn from(line: &'a str) -> Self {
         let trimmed: &str = line.trim_right();
         let mut chars = trimmed.chars();
         match chars.next() {
@@ -65,7 +65,7 @@ impl<'a> From<&'a str> for LineType {
 impl LineType {
     /// Support for old format.
     /// TODO: Remove once old format has been phased out!
-    pub fn from_v1(line: &str) -> LineType {
+    pub fn from_v1(line: &str) -> Self {
         let trimmed = line.trim();
         let mut chars = trimmed.chars();
         match chars.next() {

@@ -35,7 +35,7 @@ pub enum RawColor {
 }
 
 impl From<RawColor> for Color {
-    fn from(raw_color: RawColor) -> Color {
+    fn from(raw_color: RawColor) -> Self {
         match raw_color {
             RawColor::Black => Color::Black,
             RawColor::Red => Color::Red,
@@ -60,8 +60,8 @@ struct RawStyle {
 }
 
 impl Default for RawStyle {
-    fn default() -> RawStyle {
-        RawStyle {
+    fn default() -> Self {
+        Self {
             foreground: None,
             background: None,
             underline: false,
@@ -71,8 +71,8 @@ impl Default for RawStyle {
 } // impl RawStyle
 
 impl From<RawStyle> for Style {
-    fn from(raw_style: RawStyle) -> Style {
-        let mut style = Style::default();
+    fn from(raw_style: RawStyle) -> Self {
+        let mut style = Self::default();
 
         if let Some(foreground) = raw_style.foreground {
             style = style.fg(Color::from(foreground));
@@ -114,8 +114,8 @@ struct RawConfig {
 }
 
 impl RawConfig {
-    fn new() -> RawConfig {
-        let mut raw_config = RawConfig::default();
+    fn new() -> Self {
+        let mut raw_config = Self::default();
 
         // Set default config
         raw_config.style.example_text.foreground = Some(RawColor::Green);
@@ -143,8 +143,8 @@ pub struct Config {
 }
 
 impl From<RawConfig> for Config {
-    fn from(raw_config: RawConfig) -> Config {
-        Config {
+    fn from(raw_config: RawConfig) -> Self {
+        Self {
             style: StyleConfig {
                 command_name: raw_config.style.command_name.into(),
                 description: raw_config.style.description.into(),
@@ -156,12 +156,13 @@ impl From<RawConfig> for Config {
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn map_io_err_to_config_err(e: IoError) -> TealdeerError {
     ConfigError(format!("Io Error: {}", e))
 }
 
 impl Config {
-    pub fn load() -> Result<Config, TealdeerError> {
+    pub fn load() -> Result<Self, TealdeerError> {
         debug!("Loading config");
 
         // Determine path
@@ -182,7 +183,7 @@ impl Config {
             RawConfig::new()
         };
 
-        Ok(Config::from(raw_config))
+        Ok(Self::from(raw_config))
     }
 } // impl Config
 

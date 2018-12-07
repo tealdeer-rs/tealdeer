@@ -2,6 +2,7 @@ use std::fmt;
 use reqwest::Error as ReqwestError;
 
 #[derive(Debug)]
+#[allow(clippy::pub_enum_variant_names)]
 pub enum TealdeerError {
     CacheError(String),
     ConfigError(String),
@@ -9,7 +10,7 @@ pub enum TealdeerError {
 }
 
 impl From<ReqwestError> for TealdeerError {
-    fn from(err: ReqwestError) -> TealdeerError {
+    fn from(err: ReqwestError) -> Self {
         TealdeerError::UpdateError(format!("HTTP error: {}", err.to_string()))
     }
 }

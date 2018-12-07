@@ -15,7 +15,7 @@ pub enum TldrFormat {
     V2,
 }
 
-/// A tokenizer is initialized with a BufReader instance that contains the
+/// A tokenizer is initialized with a `BufReader` instance that contains the
 /// entire Tldr page. It then returns tokens as `Option<LineType>`.
 #[derive(Debug)]
 pub struct Tokenizer<R: BufRead> {
@@ -33,9 +33,9 @@ impl<R> Tokenizer<R>
 where
     R: BufRead,
 {
-    pub fn new(reader: R) -> Tokenizer<R> {
-        Tokenizer {
-            reader: reader,
+    pub fn new(reader: R) -> Self {
+        Self {
+            reader,
             first_line: true,
             current_line: String::new(),
             format: TldrFormat::Undecided,
