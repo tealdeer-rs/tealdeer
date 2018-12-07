@@ -3,10 +3,11 @@
 use std::io::BufRead;
 
 use ansi_term::{ANSIString, ANSIStrings};
+use log::debug;
 
-use config::Config;
-use tokenizer::Tokenizer;
-use types::LineType;
+use crate::config::Config;
+use crate::tokenizer::Tokenizer;
+use crate::types::LineType;
 
 fn highlight_command<'a>(
     command: &'a str,

@@ -8,13 +8,14 @@ use std::os::unix::fs::MetadataExt;
 
 use reqwest::{Client, Proxy};
 use flate2::read::GzDecoder;
+use log::debug;
 use tar::Archive;
 use time;
 use walkdir::{DirEntry, WalkDir};
 use xdg::BaseDirectories;
 
-use error::TealdeerError::{self, CacheError, UpdateError};
-use types::OsType;
+use crate::error::TealdeerError::{self, CacheError, UpdateError};
+use crate::types::OsType;
 
 #[derive(Debug)]
 pub struct Cache {
@@ -52,7 +53,7 @@ impl Cache {
         };
 
         // Otherwise, fall back to $XDG_CACHE_HOME/tealdeer.
-        let xdg_dirs = match BaseDirectories::with_prefix(::NAME) {
+        let xdg_dirs = match BaseDirectories::with_prefix(crate::NAME) {
             Ok(dirs) => dirs,
             Err(_) => return Err(CacheError("Could not determine XDG base directory.".into())),
         };
@@ -88,20 +89,18 @@ impl Cache {
     /// Update the pages cache.
     pub fn update(&self) -> Result<(), TealdeerError> {
         // First, download the compressed data
-        let bytes: Vec<u8> = try!(self.download());
+        let bytes: Vec<u8> = self.download()?;
 
         // Decompress the response body into an `Archive`
         let mut archive = self.decompress(&bytes[..]);
 
         // Determine paths
-        let cache_dir = try!(self.get_cache_dir());
+        let cache_dir = self.get_cache_dir()?;
 
         // Make sure that cache directory exists
         debug!("Ensure cache directory {:?} exists", &cache_dir);
-        try!(
-            fs::create_dir_all(&cache_dir)
-                .map_err(|e| UpdateError(format!("Could not create cache directory: {}", e)))
-        );
+        fs::create_dir_all(&cache_dir)
+            .map_err(|e| UpdateError(format!("Could not create cache directory: {}", e)))?;
 
         // Clear cache directory
         // Note: This is not the best solution. Ideally we would download the
@@ -109,14 +108,12 @@ impl Cache {
         // But renaming a directory doesn't work across filesystems and Rust
         // does not yet offer a recursive directory copying function. So for
         // now, we'll use this approach.
-        try!(self.clear());
+        self.clear()?;
 
         // Extract archive
-        try!(
-            archive
-                .unpack(&cache_dir)
-                .map_err(|e| UpdateError(format!("Could not unpack compressed data: {}", e)))
-        );
+        archive
+            .unpack(&cache_dir)
+            .map_err(|e| UpdateError(format!("Could not unpack compressed data: {}", e)))?;
 
         Ok(())
     }
@@ -181,7 +178,7 @@ impl Cache {
     /// Return the available pages.
     pub fn list_pages(&self) -> Result<Vec<String>, TealdeerError> {
         // Determine platforms directory and platform
-        let cache_dir = try!(self.get_cache_dir());
+        let cache_dir = self.get_cache_dir()?;
         let platforms_dir = cache_dir.join("tldr-master").join("pages");
         let platform_dir = self.get_platform_dir();
 
@@ -230,12 +227,12 @@ impl Cache {
 
     /// Delete the cache directory.
     pub fn clear(&self) -> Result<(), TealdeerError> {
-        let path = try!(self.get_cache_dir());
+        let path = self.get_cache_dir()?;
         if path.exists() && path.is_dir() {
-            try!(fs::remove_dir_all(&path).map_err(|_| CacheError(format!(
+            fs::remove_dir_all(&path).map_err(|_| CacheError(format!(
                 "Could not remove cache directory ({}).",
                 path.display()
-            ))));
+            )))?;
         } else if path.exists() {
             return Err(CacheError(format!(
                 "Cache path ({}) is not a directory.",

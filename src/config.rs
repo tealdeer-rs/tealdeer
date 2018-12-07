@@ -4,10 +4,12 @@ use std::io::{Error as IoError, Read, Write};
 use std::path::PathBuf;
 
 use ansi_term::{Color, Style};
+use log::debug;
+use serde_derive::{Deserialize, Serialize};
 use toml;
 use xdg::BaseDirectories;
 
-use error::TealdeerError::{self, ConfigError};
+use crate::error::TealdeerError::{self, ConfigError};
 
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 
@@ -199,7 +201,7 @@ pub fn get_config_dir() -> Result<PathBuf, TealdeerError> {
     };
 
     // Otherwise, fall back to $XDG_CONFIG_HOME/tealdeer.
-    let xdg_dirs = match BaseDirectories::with_prefix(::NAME) {
+    let xdg_dirs = match BaseDirectories::with_prefix(crate::NAME) {
         Ok(dirs) => dirs,
         Err(_) => {
             return Err(ConfigError("Could not determine XDG base directory.".into()))

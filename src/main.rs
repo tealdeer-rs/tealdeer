@@ -43,21 +43,8 @@
     )
 )]
 
-#[macro_use]
-extern crate log;
-extern crate ansi_term;
-extern crate reqwest;
-extern crate docopt;
 #[cfg(feature = "logging")]
 extern crate env_logger;
-extern crate flate2;
-extern crate tar;
-extern crate time;
-extern crate toml;
-extern crate walkdir;
-extern crate xdg;
-#[macro_use]
-extern crate serde_derive;
 
 use std::fs::File;
 use std::io::BufReader;
@@ -66,6 +53,7 @@ use std::process;
 
 use ansi_term::Color;
 use docopt::Docopt;
+use serde_derive::Deserialize;
 
 mod cache;
 mod config;
@@ -74,12 +62,12 @@ mod formatter;
 mod tokenizer;
 mod types;
 
-use cache::Cache;
-use config::{get_config_path, make_default_config, Config};
-use error::TealdeerError::{CacheError, ConfigError, UpdateError};
-use formatter::print_lines;
-use tokenizer::Tokenizer;
-use types::OsType;
+use crate::cache::Cache;
+use crate::config::{get_config_path, make_default_config, Config};
+use crate::error::TealdeerError::{CacheError, ConfigError, UpdateError};
+use crate::formatter::print_lines;
+use crate::tokenizer::Tokenizer;
+use crate::types::OsType;
 
 const NAME: &str = "tealdeer";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -137,7 +125,7 @@ struct Args {
 /// Print page by path
 fn print_page(path: &Path) -> Result<(), String> {
     // Open file
-    let file = try!(File::open(path).map_err(|msg| format!("Could not open file: {}", msg)));
+    let file = File::open(path).map_err(|msg| format!("Could not open file: {}", msg))?;
     let reader = BufReader::new(file);
 
     // Look up config file, if none is found fall back to default config.
@@ -375,11 +363,8 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use docopt::Docopt;
-    use docopt::Error;
-    use Args;
-    use OsType;
-    use USAGE;
+    use docopt::{Docopt, Error};
+    use crate::{Args, OsType, USAGE};
 
     fn test_helper(argv: &[&str]) -> Result<Args, Error> {
         Docopt::new(USAGE).and_then(|d| d.argv(argv.iter()).deserialize())
