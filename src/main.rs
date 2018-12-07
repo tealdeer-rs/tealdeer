@@ -8,40 +8,10 @@
 // option. All files in the project carrying such notice may not be
 // copied, modified, or distributed except according to those terms.
 
-#![deny(
-    missing_docs,
-    missing_debug_implementations,
-    unsafe_code,
-    unused_import_braces,
-    unused_qualifications
-)]
-#![warn(
-    trivial_casts,
-    trivial_numeric_casts,
-    missing_copy_implementations,
-    unused_extern_crates,
-    unused_results
-)]
-#![cfg_attr(feature = "dev", feature(plugin))]
-#![cfg_attr(feature = "dev", plugin(clippy))]
-#![cfg_attr(
-    feature = "dev",
-    warn(
-        cast_possible_truncation,
-        cast_possible_wrap,
-        cast_precision_loss,
-        cast_sign_loss,
-        mut_mut,
-        non_ascii_literal,
-        option_unwrap_used,
-        result_unwrap_used,
-        shadow_reuse,
-        shadow_same,
-        unicode_not_nfc,
-        wrong_self_convention,
-        wrong_pub_self_convention
-    )
-)]
+#![deny(clippy::all)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::stutter)]
 
 #[cfg(feature = "logging")]
 extern crate env_logger;
@@ -105,7 +75,7 @@ To render a local file (for testing):
     $ tldr --render /path/to/file.md
 ";
 const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
-const MAX_CACHE_AGE: i64 = 2592000; // 30 days
+const MAX_CACHE_AGE: i64 = 2_592_000; // 30 days
 
 #[derive(Debug, Deserialize)]
 struct Args {

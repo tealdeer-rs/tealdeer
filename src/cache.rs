@@ -24,13 +24,13 @@ pub struct Cache {
 }
 
 impl Cache {
-    pub fn new<S>(url: S, os: OsType) -> Cache
+    pub fn new<S>(url: S, os: OsType) -> Self
     where
         S: Into<String>,
     {
-        Cache {
+        Self {
             url: url.into(),
-            os: os,
+            os,
         }
     }
 
@@ -132,6 +132,7 @@ impl Cache {
     }
 
     /// Return the platform directory.
+    #[allow(clippy::match_same_arms)]
     fn get_platform_dir(&self) -> Option<&'static str> {
         match self.os {
             OsType::Linux => Some("linux"),

@@ -1,5 +1,9 @@
 # Releasing
 
+Run linting:
+
+    $ cargo clean && cargo clippy
+
 Set variables:
 
     $ export VERSION=X.Y.Z

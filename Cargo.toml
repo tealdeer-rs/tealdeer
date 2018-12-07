@@ -38,7 +38,6 @@ tempdir = "^0.3"
 utime = "0.2.0"
 
 [features]
-dev = ["clippy"]
 logging = ["env_logger"]
 
 [profile.release]

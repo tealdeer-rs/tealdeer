@@ -184,6 +184,18 @@ To get bash autocompletion, simply rename the file `bash_tealdeer` to `tldr`
 and copy it to `/usr/share/bash-completion/completions/tldr`.
 
 
+## Development
+
+To run tests:
+
+    $ cargo test
+
+To run lints:
+
+    $ rustup component add clippy
+    $ cargo clean && cargo clippy
+
+
 ## License
 
 Licensed under either of
