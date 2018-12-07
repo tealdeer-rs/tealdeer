@@ -2,6 +2,8 @@
 
 use std::fmt;
 
+use serde_derive::{Deserialize, Serialize};
+
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[allow(dead_code)]

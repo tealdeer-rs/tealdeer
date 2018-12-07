@@ -2,7 +2,8 @@
 
 use std::io::BufRead;
 
-use types::LineType;
+use log::warn;
+use crate::types::LineType;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum TldrFormat {
@@ -87,7 +88,7 @@ where
 #[cfg(test)]
 mod test {
     use super::Tokenizer;
-    use types::LineType;
+    use crate::types::LineType;
 
     #[test]
     fn test_first_line_old_format() {
