@@ -180,15 +180,8 @@ Example customization:
 
 ## Autocompletion
 
-### Bash
-
-To get bash autocompletion, simply rename the file `bash_tealdeer` to `tldr`
-and copy it to `/usr/share/bash-completion/completions/tldr`.
-
-### Fish
-
-To get fish autocompletion, simply rename the file `fish_tealdeer` to `tldr.fish`
-and copy it to `~/.config/fish/completions/tldr.fish`.
+- *Bash*: copy `bash_tealdeer` to `/usr/share/bash-completion/completions/tldr`
+- *Fish*: copy `fish_tealdeer` to `~/.config/fish/completions/tldr.fish`
 
 ## Development
 
