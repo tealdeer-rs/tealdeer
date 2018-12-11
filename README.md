@@ -178,11 +178,10 @@ Example customization:
 <img src="screenshot-custom.png" alt="Screenshot of customized version" width="600">
 
 
-## Bash Autocompletion
+## Autocompletion
 
-To get bash autocompletion, simply rename the file `bash_tealdeer` to `tldr`
-and copy it to `/usr/share/bash-completion/completions/tldr`.
-
+- *Bash*: copy `bash_tealdeer` to `/usr/share/bash-completion/completions/tldr`
+- *Fish*: copy `fish_tealdeer` to `~/.config/fish/completions/tldr.fish`
 
 ## Development
 
