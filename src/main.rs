@@ -16,11 +16,14 @@
 #[cfg(feature = "logging")]
 extern crate env_logger;
 
+#[cfg(feature = "networking")]
+use std::borrow::Cow;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::process;
 
+#[cfg(feature = "networking")]
 use ansi_term::Color;
 use docopt::Docopt;
 use serde_derive::Deserialize;
@@ -32,7 +35,7 @@ mod formatter;
 mod tokenizer;
 mod types;
 
-use crate::cache::Cache;
+use crate::cache::{Cache, Source};
 use crate::config::{get_config_path, make_default_config, Config};
 use crate::error::TealdeerError::{CacheError, ConfigError, UpdateError};
 use crate::formatter::print_lines;
@@ -42,6 +45,8 @@ use crate::types::OsType;
 const NAME: &str = "tealdeer";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const USAGE: &str = "
+tealdeer, a fast tldr implementation written in Rust.
+
 Usage:
 
     tldr [options] <command>
@@ -49,16 +54,17 @@ Usage:
 
 Options:
 
-    -h --help           Show this screen
-    -v --version        Show version information
-    -l --list           List all commands in the cache
-    -f --render <file>  Render a specific markdown file
-    -o --os <type>      Override the operating system [linux, osx, sunos]
-    -u --update         Update the local cache
-    -c --clear-cache    Clear the local cache
-    -q --quiet          Suppress informational messages
-    --config-path       Show config file path
-    --seed-config       Create a basic config
+    -h --help               Show this screen
+    -v --version            Show version information
+    -l --list               List all commands in the cache
+    -f --render <file>      Render a specific markdown file
+    -o --os <type>          Override the operating system [linux, osx, sunos]
+    -u --update             Update the local cache from the network
+    -U --update-from <src>  Update the local cache from the specified URL or path
+    -c --clear-cache        Clear the local cache
+    -q --quiet              Suppress informational messages
+    --config-path           Show config file path
+    --seed-config           Create a basic config
 
 Examples:
 
@@ -70,11 +76,19 @@ To control the cache:
     $ tldr --update
     $ tldr --clear-cache
 
+You can also manually specify the archive to be used for updating the cache:
+
+    $ tldr --update-from https://github.com/tldr-pages/tldr/archive/master.tar.gz
+    $ tldr --update-from master.tar.gz
+
 To render a local file (for testing):
 
     $ tldr --render /path/to/file.md
 ";
+
+#[cfg(feature = "networking")]
 const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
+#[cfg(feature = "networking")]
 const MAX_CACHE_AGE: i64 = 2_592_000; // 30 days
 
 #[derive(Debug, Deserialize)]
@@ -86,6 +100,7 @@ struct Args {
     flag_render: Option<String>,
     flag_os: Option<OsType>,
     flag_update: bool,
+    flag_update_from: Option<String>,
     flag_clear_cache: bool,
     flag_quiet: bool,
     flag_config_path: bool,
@@ -119,6 +134,7 @@ fn print_page(path: &Path) -> Result<(), String> {
 }
 
 /// Check the cache for freshness
+#[cfg(feature = "networking")]
 fn check_cache(args: &Args, cache: &Cache) {
     if !args.flag_update {
         match cache.last_update() {
@@ -142,6 +158,14 @@ fn check_cache(args: &Args, cache: &Cache) {
             _ => {}
         }
     };
+}
+
+/// Check the cache for freshness
+///
+/// No-op when networking support is disabled.
+#[cfg(not(feature = "networking"))]
+fn check_cache(_args: &Args, _cache: &Cache) {
+    // No-op when no networking support is enabled.
 }
 
 #[cfg(feature = "logging")]
@@ -176,6 +200,28 @@ fn get_os() -> OsType {
     OsType::Other
 }
 
+#[cfg(feature = "networking")]
+fn get_url_source(source: &str) -> Source {
+    Source::Url(Cow::Owned(source.to_string()))
+}
+
+#[cfg(not(feature = "networking"))]
+fn get_url_source(_source: &str) -> Source {
+    eprintln!("tealdeer has been compiled without networking support,");
+    eprintln!("cannot update the cache from a network URL.");
+    process::exit(1);
+}
+
+#[cfg(feature = "networking")]
+fn get_default_source() -> Source {
+    Source::Url(Cow::Borrowed(ARCHIVE_URL))
+}
+
+#[cfg(not(feature = "networking"))]
+fn get_default_source() -> Source {
+    Source::None
+}
+
 fn main() {
     // Initialize logger
     init_log();
@@ -198,8 +244,15 @@ fn main() {
         None => get_os(),
     };
 
+    // Validate cache source
+    let cache_source: Source = match args.flag_update_from {
+        Some(ref src) if src.starts_with("http") => get_url_source(src),
+        Some(ref src) => Source::File(PathBuf::from(src)),
+        None => get_default_source(),
+    };
+
     // Initialize cache
-    let cache = Cache::new(ARCHIVE_URL, os);
+    let cache = Cache::new(cache_source, os);
 
     // Clear cache, pass through
     if args.flag_clear_cache {
@@ -217,7 +270,7 @@ fn main() {
     }
 
     // Update cache, pass through
-    if args.flag_update {
+    if args.flag_update || args.flag_update_from.is_some() {
         cache.update().unwrap_or_else(|e| {
             match e {
                 CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {

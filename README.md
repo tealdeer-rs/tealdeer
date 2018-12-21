@@ -132,6 +132,7 @@ To enable the log output, set the `RUST_LOG` env variable:
     $ export RUST_LOG=tldr=debug
 
 
+
 ## Configuration
 
 The tldr command can be customized with a config file called `config.toml`.
@@ -189,10 +190,23 @@ To run tests:
 
     $ cargo test
 
+(Note that integration tests are a bit slow, since they invoke `cargo build` in different configurations.)
+
 To run lints:
 
     $ rustup component add clippy
     $ cargo clean && cargo clippy
+
+
+## Build Flags
+
+tealdeer knows the following feature flags:
+
+- `logging`: This enables logging support through [env_logger](https://docs.rs/env_logger/*/env_logger/)
+- `networking`: This enables support for updating the cache from the internet
+
+By default, only the `networking` feature is enabled. To build tealdeer without
+networking support, use the `--no-default-features` Cargo flag.
 
 
 ## License

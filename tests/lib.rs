@@ -1,11 +1,5 @@
 //! Integration tests.
 
-extern crate assert_cmd;
-extern crate escargot;
-extern crate predicates;
-extern crate tempdir;
-extern crate utime;
-
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
@@ -20,7 +14,6 @@ struct TestEnv {
     pub config_dir: TempDir,
     pub input_dir: TempDir,
     pub default_features: bool,
-    pub features: Vec<String>,
 }
 
 impl TestEnv {
@@ -30,19 +23,12 @@ impl TestEnv {
             config_dir: TempDir::new(".tldr.test.config").unwrap(),
             input_dir: TempDir::new(".tldr.test.input").unwrap(),
             default_features: true,
-            features: vec![],
         }
     }
 
     /// Disable default features.
     fn no_default_features(mut self) -> Self {
         self.default_features = false;
-        self
-    }
-
-    /// Add the specified feature.
-    fn with_feature<S: Into<String>>(mut self, feature: S) -> Self {
-        self.features.push(feature.into());
         self
     }
 
@@ -53,10 +39,9 @@ impl TestEnv {
             .current_release()
             .current_target();
         if !self.default_features {
-            build = build.arg("--no-default-features");
-        }
-        if !self.features.is_empty() {
-            build = build.arg(&format!("--feature {}", self.features.join(",")));
+            build = build
+                .arg("--no-default-features")
+                .target_dir("target/no-default-features");
         }
         let run = build.run().unwrap();
         let mut cmd = run.command();
@@ -256,4 +241,58 @@ fn test_correct_rendering_with_config() {
         .assert()
         .success()
         .stdout(similar(expected));
+}
+
+/// Updating from a network URL should not be possible when networking support
+/// is not enabled.
+#[test]
+fn test_update_from_no_networking() {
+    let testenv = TestEnv::new();
+    testenv
+        .no_default_features()  // Disable networking
+        .command()
+        .args(&["--update-from", "https://github.com/tldr-pages/tldr/archive/master.tar.gz"])
+        .assert()
+        .failure()
+        .stderr(contains("compiled without networking support"))
+        .stderr(contains("cannot update the cache from a network URL"));
+}
+
+/// Updating from an invalid URL should result in an error message.
+#[test]
+fn test_update_from_invalid_url() {
+    let testenv = TestEnv::new();
+    testenv
+        .command()
+        .args(&["--update-from", "httpsss:github.com/tldr-pages/tldr/archive/master.tar.gz"])
+        .assert()
+        .failure()
+        .stderr(contains("Could not update cache: HTTP error"))
+        .stderr(contains("URL scheme is not allowed"));
+}
+
+/// Updating from the wrong (non-gzip-archive) URL should result in an error.
+#[test]
+fn test_update_from_wrong_url() {
+    let testenv = TestEnv::new();
+    testenv
+        .command()
+        .args(&["--update-from", "https://tldr.sh/"])
+        .assert()
+        .failure()
+        .stderr(contains("Could not update cache: Could not unpack compressed data"));
+}
+
+/// When a path is specified that does not exist, an error message should be shown.
+#[test]
+fn test_update_from_missing_path() {
+    let testenv = TestEnv::new();
+    testenv
+        .no_default_features()
+        .command()
+        .args(&["--update-from", "ajsdfasjdkfljasdf"])  // Invalid path
+        .assert()
+        .failure()
+        .stderr(contains("Could not update cache: Could not open file:"))
+        .stderr(contains("No such file or directory"));
 }

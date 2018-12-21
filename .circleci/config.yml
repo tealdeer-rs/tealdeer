@@ -18,9 +18,11 @@ jobs:
       # Build
       - run: cargo build
       - run: cargo build --features logging
+      - run: cargo build --no-default-features
 
       # Run tests
       - run: cargo test
+      - run: cargo test --no-default-features
 
       - save_cache:
           key: v1-cargo-cache-{{ arch }}-{{ .Branch }}

@@ -28,17 +28,19 @@ time = "0.1.38"
 toml = "0.4.6"
 walkdir = "2.0.1"
 xdg = "2.1.0"
-reqwest = "0.9.5"
+reqwest = { version = "0.9.5", optional = true }
 
 [dev-dependencies]
 assert_cmd = "0.10"
-escargot = "0.3"
+escargot = "0.4"
 predicates = "1.0"
 tempdir = "^0.3"
 utime = "0.2.0"
 
 [features]
+default = ["networking"]
 logging = ["env_logger"]
+networking = ["reqwest"]
 
 [profile.release]
 lto = true

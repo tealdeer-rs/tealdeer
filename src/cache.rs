@@ -1,15 +1,19 @@
+#[cfg(feature = "networking")]
+use std::borrow::Cow;
 use std::env;
 use std::fs;
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-#[cfg(unix)]
+#[cfg(all(unix, feature = "networking"))]
 use std::os::unix::fs::MetadataExt;
 
+#[cfg(feature = "networking")]
 use reqwest::{Client, Proxy};
 use flate2::read::GzDecoder;
 use log::debug;
 use tar::Archive;
+#[cfg(feature = "networking")]
 use time;
 use walkdir::{DirEntry, WalkDir};
 use xdg::BaseDirectories;
@@ -17,19 +21,36 @@ use xdg::BaseDirectories;
 use crate::error::TealdeerError::{self, CacheError, UpdateError};
 use crate::types::OsType;
 
+/// A cache update source.
+#[derive(Debug)]
+pub enum Source {
+    /// Load the archive from the file system.
+    File(PathBuf),
+
+    /// Load the archive from the network.
+    #[cfg(feature = "networking")]
+    Url(Cow<'static, str>),
+
+    /// No source is defined.
+    #[cfg(not(feature = "networking"))]
+    None,
+}
+
 #[derive(Debug)]
 pub struct Cache {
-    url: String,
+    /// The cache source. Either an URL or a file path.
+    source: Source,
+    /// The target OS type.
     os: OsType,
 }
 
 impl Cache {
-    pub fn new<S>(url: S, os: OsType) -> Self
+    pub fn new<S>(source: S, os: OsType) -> Self
     where
-        S: Into<String>,
+        S: Into<Source>,
     {
         Self {
-            url: url.into(),
+            source: source.into(),
             os,
         }
     }
@@ -60,8 +81,20 @@ impl Cache {
         Ok(xdg_dirs.get_cache_home())
     }
 
-    /// Download the archive
-    fn download(&self) -> Result<Vec<u8>, TealdeerError> {
+    /// Load the archive from the file system.
+    fn load_from_file(path: &Path) -> Result<Vec<u8>, TealdeerError> {
+        let mut f = fs::File::open(path)
+            .map_err(|e| UpdateError(format!("Could not open file: {}", e)))?;
+        let mut buf: Vec<u8> = vec![];
+        let bytes_read = f.read_to_end(&mut buf)
+            .map_err(|e| UpdateError(format!("Could not read file: {}", e)))?;
+        debug!("{} bytes loaded from filesystem", bytes_read);
+        Ok(buf)
+    }
+
+    /// Load the archive from the network.
+    #[cfg(feature = "networking")]
+    fn load_from_network(url: &str) -> Result<Vec<u8>, TealdeerError> {
         let mut builder = Client::builder();
         if let Ok(ref host) = env::var("HTTP_PROXY") {
             if let Ok(proxy) = Proxy::http(host) {
@@ -74,11 +107,29 @@ impl Cache {
             }
         }
         let client = builder.build().unwrap_or_else(|_| Client::new());
-        let mut resp = client.get(&self.url).send()?;
+        let mut resp = client.get(url).send()?;
         let mut buf: Vec<u8> = vec![];
         let bytes_downloaded = resp.copy_to(&mut buf)?;
         debug!("{} bytes downloaded", bytes_downloaded);
         Ok(buf)
+    }
+
+    /// Download the archive from the network or load it from a file.
+    #[cfg(feature = "networking")]
+    fn load(&self) -> Result<Vec<u8>, TealdeerError> {
+        match self.source {
+            Source::File(ref path) => Self::load_from_file(path),
+            Source::Url(ref url) => Self::load_from_network(url),
+        }
+    }
+
+    /// Load the archive from the file system.
+    #[cfg(not(feature = "networking"))]
+    fn load(&self) -> Result<Vec<u8>, TealdeerError> {
+        match self.source {
+            Source::File(ref path) => Self::load_from_file(path),
+            Source::None => Err(TealdeerError::UpdateError("No update source defined".into())),
+        }
     }
 
     /// Decompress and open the archive
@@ -88,8 +139,8 @@ impl Cache {
 
     /// Update the pages cache.
     pub fn update(&self) -> Result<(), TealdeerError> {
-        // First, download the compressed data
-        let bytes: Vec<u8> = self.download()?;
+        // First, load the compressed data
+        let bytes: Vec<u8> = self.load()?;
 
         // Decompress the response body into an `Archive`
         let mut archive = self.decompress(&bytes[..]);
@@ -118,7 +169,7 @@ impl Cache {
         Ok(())
     }
 
-    #[cfg(unix)]
+    #[cfg(all(unix, feature = "networking"))]
     /// Return the number of seconds since the cache directory was last modified.
     pub fn last_update(&self) -> Option<i64> {
         if let Ok(cache_dir) = self.get_cache_dir() {

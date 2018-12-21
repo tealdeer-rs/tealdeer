@@ -1,4 +1,6 @@
 use std::fmt;
+
+#[cfg(feature = "networking")]
 use reqwest::Error as ReqwestError;
 
 #[derive(Debug)]
@@ -9,6 +11,7 @@ pub enum TealdeerError {
     UpdateError(String),
 }
 
+#[cfg(feature = "networking")]
 impl From<ReqwestError> for TealdeerError {
     fn from(err: ReqwestError) -> Self {
         TealdeerError::UpdateError(format!("HTTP error: {}", err.to_string()))
