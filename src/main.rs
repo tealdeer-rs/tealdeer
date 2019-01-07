@@ -55,6 +55,7 @@ Options:
     -f --render <file>  Render a specific markdown file
     -o --os <type>      Override the operating system [linux, osx, sunos]
     -u --update         Update the local cache
+    -a --auto-update    Update the local cache automatically if out of date
     -c --clear-cache    Clear the local cache
     -q --quiet          Suppress informational messages
     --config-path       Show config file path
@@ -86,6 +87,7 @@ struct Args {
     flag_render: Option<String>,
     flag_os: Option<OsType>,
     flag_update: bool,
+    flag_auto_update: bool,
     flag_clear_cache: bool,
     flag_quiet: bool,
     flag_config_path: bool,
@@ -123,6 +125,17 @@ fn check_cache(args: &Args, cache: &Cache) {
     if !args.flag_update {
         match cache.last_update() {
             Some(ago) if ago > MAX_CACHE_AGE => {
+                if args.flag_auto_update {
+                    cache.update().unwrap_or_else(|e| {
+                        match e {
+                            CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
+                                eprintln!("Could not update cache: {}", msg)
+                            }
+                        };
+                    });
+                    return;
+                }
+
                 if args.flag_quiet {
                     return;
                 }
