@@ -55,7 +55,7 @@ Options:
     -f --render <file>  Render a specific markdown file
     -o --os <type>      Override the operating system [linux, osx, sunos]
     -u --update         Update the local cache
-    -a --auto-update    Update the local cache automatically if out of date
+    -a --auto-update    Update the local cache automatically if older than 30 days
     -c --clear-cache    Clear the local cache
     -q --quiet          Suppress informational messages
     --config-path       Show config file path
