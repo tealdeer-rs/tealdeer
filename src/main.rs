@@ -126,19 +126,20 @@ fn check_cache(args: &Args, cache: &Cache) {
         match cache.last_update() {
             Some(ago) if ago > MAX_CACHE_AGE => {
                 if args.flag_auto_update {
-                    cache.update()
-                        .map(|()| {
+                    match cache.update() {
+                        Ok(()) => {
                             if !args.flag_quiet {
                                 println!("Successfully updated cache.");
                             }
-                        })
-                        .unwrap_or_else(|e| {
-                            match e {
+                        }
+                        Err(err) => {
+                            match err {
                                 CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
                                     eprintln!("Could not update cache: {}", msg)
                                 }
                             };
-                        });
+                        }
+                    }
                     return;
                 }
 
