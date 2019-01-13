@@ -257,3 +257,21 @@ fn test_correct_rendering_with_config() {
         .success()
         .stdout(similar(expected));
 }
+
+#[test]
+fn test_spaces_find_command() {
+    let testenv = TestEnv::new();
+
+    testenv
+        .command()
+        .args(&["--update"])
+        .assert()
+        .success()
+        .stdout(contains("Successfully updated cache."));
+
+    testenv
+        .command()
+        .args(&["git", "checkout"])
+        .assert()
+        .success();
+}
