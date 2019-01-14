@@ -44,7 +44,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 const USAGE: &str = "
 Usage:
 
-    tldr [options] <command>
+    tldr [options] <command>...
     tldr [options]
 
 Options:
@@ -79,7 +79,7 @@ const MAX_CACHE_AGE: i64 = 2_592_000; // 30 days
 
 #[derive(Debug, Deserialize)]
 struct Args {
-    arg_command: Option<String>,
+    arg_command: Option<Vec<String>>,
     flag_help: bool,
     flag_version: bool,
     flag_list: bool,
@@ -303,6 +303,7 @@ fn main() {
 
     // Show command from cache
     if let Some(ref command) = args.arg_command {
+        let command = command.join("-");
         // Check cache for freshness
         check_cache(&args, &cache);
 
