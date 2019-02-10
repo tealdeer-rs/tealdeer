@@ -59,7 +59,7 @@ Options:
     -v --version        Show version information
     -l --list           List all commands in the cache
     -f --render <file>  Render a specific markdown file
-    -o --os <type>      Override the operating system [linux, osx, sunos]
+    -o --os <type>      Override the operating system [linux, osx, sunos, windows]
     -u --update         Update the local cache
     -c --clear-cache    Clear the local cache
     -q --quiet          Suppress informational messages
@@ -99,13 +99,13 @@ struct Args {
 }
 
 /// Print page by path
-fn print_page(path: &Path) -> Result<(), String> {
+fn print_page(path: &Path, enable_styles: bool) -> Result<(), String> {
     // Open file
     let file = File::open(path).map_err(|msg| format!("Could not open file: {}", msg))?;
     let reader = BufReader::new(file);
 
     // Look up config file, if none is found fall back to default config.
-    let config = match Config::load() {
+    let config = match Config::load(enable_styles) {
         Ok(config) => config,
         Err(ConfigError(msg)) => {
             eprintln!("Could not load config: {}", msg);
@@ -172,12 +172,18 @@ fn get_os() -> OsType {
     OsType::OsX
 }
 
+#[cfg(target_os = "windows")]
+fn get_os() -> OsType {
+    OsType::Windows
+}
+
 #[cfg(not(any(target_os = "linux",
               target_os = "macos",
               target_os = "freebsd",
               target_os = "netbsd",
               target_os = "openbsd",
-              target_os = "dragonfly")))]
+              target_os = "dragonfly",
+              target_os = "windows")))]
 fn get_os() -> OsType {
     OsType::Other
 }
@@ -203,6 +209,11 @@ fn main() {
         Some(os) => os,
         None => get_os(),
     };
+
+    #[cfg(target_os = "windows")]
+    let enable_styles = ansi_term::enable_ansi_support().is_ok();
+    #[cfg(not(target_os = "windows"))]
+    let enable_styles = true;
 
     // Initialize cache
     let cache = Cache::new(ARCHIVE_URL, os);
@@ -279,7 +290,7 @@ fn main() {
     // Render local file and exit
     if let Some(ref file) = args.flag_render {
         let path = PathBuf::from(file);
-        if let Err(msg) = print_page(&path) {
+        if let Err(msg) = print_page(&path, enable_styles) {
             eprintln!("{}", msg);
             process::exit(1);
         } else {
@@ -315,7 +326,7 @@ fn main() {
 
         // Search for command in cache
         if let Some(path) = cache.find_page(&command) {
-            if let Err(msg) = print_page(&path) {
+            if let Err(msg) = print_page(&path, enable_styles) {
                 eprintln!("{}", msg);
                 process::exit(1);
             } else {

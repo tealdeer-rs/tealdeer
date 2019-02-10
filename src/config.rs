@@ -162,7 +162,7 @@ fn map_io_err_to_config_err(e: IoError) -> TealdeerError {
 }
 
 impl Config {
-    pub fn load() -> Result<Self, TealdeerError> {
+    pub fn load(enable_styles: bool) -> Result<Self, TealdeerError> {
         debug!("Loading config");
 
         // Determine path
@@ -183,7 +183,19 @@ impl Config {
             RawConfig::new()
         };
 
-        Ok(Self::from(raw_config))
+        Ok(if enable_styles {
+            Self::from(raw_config)
+        } else {
+            Self {
+                style: StyleConfig {
+                    command_name: Style::default(),
+                    description: Style::default(),
+                    example_text: Style::default(),
+                    example_code: Style::default(),
+                    example_variable: Style::default(),
+                }
+            }
+        })
     }
 } // impl Config
 

@@ -13,8 +13,11 @@ dependencies = [
 
 [[package]]
 name = "ansi_term"
-version = "0.10.2"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "winapi 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "app_dirs"
@@ -1172,7 +1175,7 @@ dependencies = [
 name = "tealdeer"
 version = "1.1.0"
 dependencies = [
- "ansi_term 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ansi_term 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "app_dirs 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "assert_cmd 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "clippy 0.0.174 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1612,7 +1615,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [metadata]
 "checksum adler32 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "7e522997b529f05601e05166c07ed17789691f562762c7f3b987263d2dedee5c"
 "checksum aho-corasick 0.6.8 (registry+https://github.com/rust-lang/crates.io-index)" = "68f56c7353e5a9547cbd76ed90f7bb5ffc3ba09d4ea9bd1d8c06c8b1142eeb5a"
-"checksum ansi_term 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6b3568b48b7cefa6b8ce125f9bb4989e52fbcc29ebea88df04cc7c5f12f70455"
+"checksum ansi_term 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ee49baf6cb617b853aa8d93bf420db2383fab46d314482ca2803b40d5fde979b"
 "checksum app_dirs 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "e73a24bad9bd6a94d6395382a6c69fe071708ae4409f763c5475e14ee896313d"
 "checksum arrayvec 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)" = "a1e964f9e24d588183fcb43503abda40d288c8657dfc27311516ce2f05675aef"
 "checksum assert_cmd 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)" = "b7ac5c260f75e4e4ba87b7342be6edcecbcb3eb6741a0507fda7ad115845cc65"

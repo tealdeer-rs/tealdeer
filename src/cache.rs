@@ -137,6 +137,7 @@ impl Cache {
             OsType::Linux => Some("linux"),
             OsType::OsX => Some("osx"),
             OsType::SunOs => None, // TODO: Does Rust support SunOS?
+            OsType::Windows => Some("windows"),
             OsType::Other => None,
         }
     }

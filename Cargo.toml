@@ -15,7 +15,7 @@ name = "tldr"
 path = "src/main.rs"
 
 [dependencies]
-ansi_term = "0.10.2"
+ansi_term = "0.11.0"
 app_dirs = "1.2.1"
 clippy = { version = "0.0.174", optional = true }
 docopt = "0.8.1"

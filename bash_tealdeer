@@ -14,7 +14,7 @@ _tealdeer()
 			return
 			;;
 		-o|--os)
-			COMPREPLY=( $(compgen -W 'linux osx sunos' -- "${cur}") )
+			COMPREPLY=( $(compgen -W 'linux osx sunos windows' -- "${cur}") )
 			return
 			;;
 	esac
