@@ -2,9 +2,9 @@
 
 ![teal deer](deer.png)
 
-|Crate|Linux|macOS|
-|:---:|:---:|:---:|
-|[![Crates.io][crates-io-badge]][crates-io]|[![Circle CI][circle-ci-badge]][circle-ci]|[![Travis CI][travis-ci-badge]][travis-ci]|
+|Crate|Linux|macOS|Windows|
+|:---:|:---:|:---:|:-----:|
+|[![Crates.io][crates-io-badge]][crates-io]|[![Circle CI][circle-ci-badge]][circle-ci]|[![Travis CI][travis-ci-badge]][travis-ci]|Should work™|
 
 A very fast implementation of [tldr](https://github.com/tldr-pages/tldr) in
 Rust: Simplified, example based and community-driven man pages.
