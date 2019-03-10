@@ -1,0 +1,4 @@
+* text=auto
+
+*.md eol=lf
+*.expected eol=lf

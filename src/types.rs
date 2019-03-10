@@ -11,6 +11,7 @@ pub enum OsType {
     Linux,
     OsX,
     SunOs,
+    Windows,
     Other,
 }
 
@@ -20,6 +21,7 @@ impl fmt::Display for OsType {
             OsType::Linux => write!(f, "Linux"),
             OsType::OsX => write!(f, "macOS / BSD"),
             OsType::SunOs => write!(f, "SunOS"),
+            OsType::Windows => write!(f, "Windows"),
             OsType::Other => write!(f, "Unknown OS"),
         }
     }

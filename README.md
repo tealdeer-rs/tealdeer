@@ -67,7 +67,7 @@ These are the clients I tried but failed to compile or run:
         -v --version         Show version information
         -l --list            List all commands in the cache
         -f --render <file>   Render a specific markdown file
-        -o --os <type>       Override the operating system [linux, osx, sunos]
+        -o --os <type>       Override the operating system [linux, osx, sunos, windows]
         -u --update          Update the local cache
         -c --clear-cache     Clear the local cache
         -q --quiet           Suppress informational messages
