@@ -109,8 +109,15 @@ struct RawStyleConfig {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+struct RawDisplayConfig {
+    #[serde(default)]
+    pub use_pager: bool,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawConfig {
     style: RawStyleConfig,
+    display: RawDisplayConfig,
 }
 
 impl RawConfig {
@@ -123,6 +130,7 @@ impl RawConfig {
         raw_config.style.example_code.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.underline = true;
+        raw_config.display.use_pager = false;
 
         raw_config
     }
@@ -138,8 +146,14 @@ pub struct StyleConfig {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+pub struct DisplayConfig {
+    pub use_pager: bool,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Config {
     pub style: StyleConfig,
+    pub display: DisplayConfig,
 }
 
 impl From<RawConfig> for Config {
@@ -151,6 +165,9 @@ impl From<RawConfig> for Config {
                 example_text: raw_config.style.example_text.into(),
                 example_code: raw_config.style.example_code.into(),
                 example_variable: raw_config.style.example_variable.into(),
+            },
+            display: DisplayConfig {
+                use_pager: false,
             },
         }
     }
@@ -193,6 +210,9 @@ impl Config {
                     example_text: Style::default(),
                     example_code: Style::default(),
                     example_variable: Style::default(),
+                },
+                display: DisplayConfig {
+                    use_pager: false,
                 }
             }
         })

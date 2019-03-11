@@ -15,3 +15,6 @@ underline = false
 [style.example_variable]
 underline = true
 bold = false
+
+[display]
+use_pager = false

@@ -25,6 +25,7 @@ use std::time::Duration;
 use ansi_term::Color;
 use app_dirs::AppInfo;
 use docopt::Docopt;
+use pager::Pager;
 use serde_derive::Deserialize;
 
 mod cache;
@@ -62,6 +63,7 @@ Options:
     -o --os <type>      Override the operating system [linux, osx, sunos, windows]
     -u --update         Update the local cache
     -c --clear-cache    Clear the local cache
+    -p --pager          Use a pager to page output
     -q --quiet          Suppress informational messages
     --config-path       Show config file path
     --seed-config       Create a basic config
@@ -81,6 +83,7 @@ To render a local file (for testing):
     $ tldr --render /path/to/file.md
 ";
 const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
+const PAGER_COMMAND: &str = "less -R";
 const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
 
 #[derive(Debug, Deserialize)]
@@ -93,6 +96,7 @@ struct Args {
     flag_os: Option<OsType>,
     flag_update: bool,
     flag_clear_cache: bool,
+    flag_pager: bool,
     flag_quiet: bool,
     flag_config_path: bool,
     flag_seed_config: bool,
@@ -122,6 +126,29 @@ fn print_page(path: &Path, enable_styles: bool) -> Result<(), String> {
     print_lines(&mut tokenizer, &config);
 
     Ok(())
+}
+
+/// Set up display pager
+fn configure_pager(args: &Args, enable_styles: bool) {
+    if args.flag_pager {
+        Pager::with_default_pager(PAGER_COMMAND).setup();
+    } else {
+        let config = match Config::load(enable_styles) {
+            Ok(config) => config,
+            Err(ConfigError(msg)) => {
+                eprintln!("Could not load config: {}", msg);
+                process::exit(1);
+            }
+            Err(e) => {
+                eprintln!("Could not load config: {}", e);
+                process::exit(1);
+            }
+        };
+
+        if config.display.use_pager {
+            Pager::with_default_pager(PAGER_COMMAND).setup();
+        }
+    }
 }
 
 /// Check the cache for freshness
@@ -204,16 +231,20 @@ fn main() {
         process::exit(0);
     }
 
+	// Determine the usage of styles
+    #[cfg(target_os = "windows")]
+    let enable_styles = ansi_term::enable_ansi_support().is_ok();
+    #[cfg(not(target_os = "windows"))]
+    let enable_styles = true;
+
+    // Configure pager
+    configure_pager(&args, enable_styles);
+
     // Specify target OS
     let os: OsType = match args.flag_os {
         Some(os) => os,
         None => get_os(),
     };
-
-    #[cfg(target_os = "windows")]
-    let enable_styles = ansi_term::enable_ansi_support().is_ok();
-    #[cfg(not(target_os = "windows"))]
-    let enable_styles = true;
 
     // Initialize cache
     let cache = Cache::new(ARCHIVE_URL, os);
