@@ -275,3 +275,21 @@ fn test_spaces_find_command() {
         .assert()
         .success();
 }
+
+#[test]
+fn test_pager_flag_enable() {
+    let testenv = TestEnv::new();
+
+    testenv
+        .command()
+        .args(&["--update"])
+        .assert()
+        .success()
+        .stdout(contains("Successfully updated cache."));
+
+    testenv
+        .command()
+        .args(&["--pager", "tar"])
+        .assert()
+        .success();
+}

@@ -70,6 +70,7 @@ These are the clients I tried but failed to compile or run:
         -o --os <type>       Override the operating system [linux, osx, sunos, windows]
         -u --update          Update the local cache
         -c --clear-cache     Clear the local cache
+        -p --pager           Use a pager to page output
         -q --quiet           Suppress informational messages
         --config-path        Show config file path
         --seed-config        Create a basic config
@@ -176,6 +177,17 @@ The currently supported colors are:
 Example customization:
 
 <img src="screenshot-custom.png" alt="Screenshot of customized version" width="600">
+
+### Display
+
+Using `display` config you can customize whether the pager should be use by
+default or not (default `false`).
+
+    [display]
+    use_pager = true
+
+When enabled, `less -R` is used as pager. To override the pager command used,
+set the `PAGER` environment variable.
 
 
 ## Autocompletion

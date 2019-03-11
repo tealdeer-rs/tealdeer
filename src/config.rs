@@ -109,8 +109,17 @@ struct RawStyleConfig {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+struct RawDisplayConfig {
+    #[serde(default)]
+    pub use_pager: bool,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawConfig {
+    #[serde(default)]
     style: RawStyleConfig,
+    #[serde(default)]
+    display: RawDisplayConfig,
 }
 
 impl RawConfig {
@@ -123,10 +132,11 @@ impl RawConfig {
         raw_config.style.example_code.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.underline = true;
+        raw_config.display.use_pager = false;
 
         raw_config
     }
-} // impl RawConfig
+}
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct StyleConfig {
@@ -138,8 +148,14 @@ pub struct StyleConfig {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+pub struct DisplayConfig {
+    pub use_pager: bool,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Config {
     pub style: StyleConfig,
+    pub display: DisplayConfig,
 }
 
 impl From<RawConfig> for Config {
@@ -151,6 +167,9 @@ impl From<RawConfig> for Config {
                 example_text: raw_config.style.example_text.into(),
                 example_code: raw_config.style.example_code.into(),
                 example_variable: raw_config.style.example_variable.into(),
+            },
+            display: DisplayConfig {
+                use_pager: raw_config.display.use_pager,
             },
         }
     }
@@ -169,7 +188,7 @@ impl Config {
         let config_file_path = get_config_path()
             .map_err(|e| ConfigError(format!("Could not determine config path: {}", e)))?;
 
-        // Load config
+        // Load raw config
         let raw_config: RawConfig = if config_file_path.exists() && config_file_path.is_file() {
             let mut config_file =
                 fs::File::open(config_file_path).map_err(map_io_err_to_config_err)?;
@@ -183,21 +202,23 @@ impl Config {
             RawConfig::new()
         };
 
-        Ok(if enable_styles {
-            Self::from(raw_config)
-        } else {
-            Self {
-                style: StyleConfig {
-                    command_name: Style::default(),
-                    description: Style::default(),
-                    example_text: Style::default(),
-                    example_code: Style::default(),
-                    example_variable: Style::default(),
-                }
-            }
-        })
+        // Convert to config
+        let mut config = Self::from(raw_config);
+
+        // Potentially override styles
+        if !enable_styles {
+            config.style = StyleConfig {
+                command_name: Style::default(),
+                description: Style::default(),
+                example_text: Style::default(),
+                example_code: Style::default(),
+                example_variable: Style::default(),
+            };
+        }
+
+        Ok(config)
     }
-} // impl Config
+}
 
 /// Return the path to the config directory.
 ///

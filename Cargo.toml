@@ -22,12 +22,14 @@ docopt = "0.8.1"
 env_logger = { version = "0.5", optional = true }
 flate2 = "1.0"
 log = "0.4"
+pager = "0.15"
+reqwest = "0.9.5"
 serde = "1.0.21"
 serde_derive = "1.0.21"
 tar = "0.4.14"
 toml = "0.4.6"
 walkdir = "2.0.1"
-reqwest = "0.9.5"
+xdg = "2.1.0"
 
 [dev-dependencies]
 assert_cmd = "0.10"
