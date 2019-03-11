@@ -188,7 +188,7 @@ impl Config {
         let config_file_path = get_config_path()
             .map_err(|e| ConfigError(format!("Could not determine config path: {}", e)))?;
 
-        // Load config
+        // Load raw config
         let raw_config: RawConfig = if config_file_path.exists() && config_file_path.is_file() {
             let mut config_file =
                 fs::File::open(config_file_path).map_err(map_io_err_to_config_err)?;
@@ -202,24 +202,23 @@ impl Config {
             RawConfig::new()
         };
 
-        Ok(if enable_styles {
-            Self::from(raw_config)
-        } else {
-            Self {
-                style: StyleConfig {
-                    command_name: Style::default(),
-                    description: Style::default(),
-                    example_text: Style::default(),
-                    example_code: Style::default(),
-                    example_variable: Style::default(),
-                },
-                display: DisplayConfig {
-                    use_pager: false,
-                }
-            }
-        })
+        // Convert to config
+        let mut config = Self::from(raw_config);
+
+        // Potentially override styles
+        if !enable_styles {
+            config.style = StyleConfig {
+                command_name: Style::default(),
+                description: Style::default(),
+                example_text: Style::default(),
+                example_code: Style::default(),
+                example_variable: Style::default(),
+            };
+        }
+
+        Ok(config)
     }
-} // impl Config
+}
 
 /// Return the path to the config directory.
 ///
