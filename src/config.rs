@@ -116,7 +116,9 @@ struct RawDisplayConfig {
 
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawConfig {
+    #[serde(default)]
     style: RawStyleConfig,
+    #[serde(default)]
     display: RawDisplayConfig,
 }
 
@@ -134,7 +136,7 @@ impl RawConfig {
 
         raw_config
     }
-} // impl RawConfig
+}
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct StyleConfig {
