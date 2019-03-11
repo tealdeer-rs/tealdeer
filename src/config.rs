@@ -169,7 +169,7 @@ impl From<RawConfig> for Config {
                 example_variable: raw_config.style.example_variable.into(),
             },
             display: DisplayConfig {
-                use_pager: false,
+                use_pager: raw_config.display.use_pager,
             },
         }
     }

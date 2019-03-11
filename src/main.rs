@@ -130,24 +130,27 @@ fn print_page(path: &Path, enable_styles: bool) -> Result<(), String> {
 
 /// Set up display pager
 fn configure_pager(args: &Args, enable_styles: bool) {
+    // Flags have precedence
     if args.flag_pager {
         Pager::with_default_pager(PAGER_COMMAND).setup();
-    } else {
-        let config = match Config::load(enable_styles) {
-            Ok(config) => config,
-            Err(ConfigError(msg)) => {
-                eprintln!("Could not load config: {}", msg);
-                process::exit(1);
-            }
-            Err(e) => {
-                eprintln!("Could not load config: {}", e);
-                process::exit(1);
-            }
-        };
+        return;
+    }
 
-        if config.display.use_pager {
-            Pager::with_default_pager(PAGER_COMMAND).setup();
+    // Then check config
+    let config = match Config::load(enable_styles) {
+        Ok(config) => config,
+        Err(ConfigError(msg)) => {
+            eprintln!("Could not load config: {}", msg);
+            process::exit(1);
         }
+        Err(e) => {
+            eprintln!("Could not load config: {}", e);
+            process::exit(1);
+        }
+    };
+
+    if config.display.use_pager {
+        Pager::with_default_pager(PAGER_COMMAND).setup();
     }
 }
 
