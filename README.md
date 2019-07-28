@@ -118,7 +118,7 @@ tealdeer has been added to a few package managers:
 
 ### From Source (any platform)
 
-tealdeer requires at least Rust 1.31.
+tealdeer requires at least Rust 1.32.
 
 Debug build with logging enabled:
 

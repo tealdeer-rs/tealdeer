@@ -21,9 +21,8 @@ docopt = "0.8.1"
 env_logger = { version = "0.5", optional = true }
 flate2 = "1.0"
 log = "0.4"
-miniz_oxide_c_api = "<=0.2.2"  # Dependency of flate2, used to keep compatibility with Rust 1.31
+miniz_oxide_c_api = "<=0.2.2"  # Dependency of flate2, used to keep compatibility with Rust 1.32
 pager = "0.15"
-getrandom = "<0.1.6"  # Dependency on macOS, used to keep compatibility with Rust 1.31
 reqwest = "0.9.5"
 serde = "1.0.21"
 serde_derive = "1.0.21"
