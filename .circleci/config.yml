@@ -9,8 +9,8 @@ jobs:
       # Multiple caches are used to increase the chance of a cache hit.
       - restore_cache:
           keys:
-            - v1-cargo-cache-{{ arch }}-{{ .Branch }}
-            - v1-cargo-cache-{{ arch }}
+            - v2-cargo-cache-{{ arch }}-{{ .Branch }}
+            - v2-cargo-cache-{{ arch }}
 
       # Show versions
       - run: rustc --version && cargo --version
@@ -23,12 +23,12 @@ jobs:
       - run: cargo test
 
       - save_cache:
-          key: v1-cargo-cache-{{ arch }}-{{ .Branch }}
+          key: v2-cargo-cache-{{ arch }}-{{ .Branch }}
           paths:
             - target
             - /usr/local/cargo
       - save_cache:
-          key: v1-cargo-cache-{{ arch }}
+          key: v2-cargo-cache-{{ arch }}
           paths:
             - target
             - /usr/local/cargo
