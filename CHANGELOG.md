@@ -104,6 +104,7 @@ Thanks!
 [i61]: https://github.com/dbrgn/tealdeer/issues/61
 [i68]: https://github.com/dbrgn/tealdeer/issues/68
 [i69]: https://github.com/dbrgn/tealdeer/issues/69
+[i71]: https://github.com/dbrgn/tealdeer/issues/71
 [i75]: https://github.com/dbrgn/tealdeer/issues/75
 [i77]: https://github.com/dbrgn/tealdeer/issues/77
 [i84]: https://github.com/dbrgn/tealdeer/issues/84
