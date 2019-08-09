@@ -79,9 +79,16 @@ Thanks!
 - First crates.io release
 
 
-[@equal-l2]: https://github.com/equal-l2
-[@jedahan]: https://github.com/jedahan
+[@Bassets]: https://github.com/Bassets
 [@Voultapher]: https://github.com/Voultapher
+[@aldanor]: https://github.com/aldanor
+[@das-g]: https://github.com/das-g
+[@equal-l2]: https://github.com/equal-l2
+[@jcgruenhage]: https://github.com/jcgruenhage
+[@jdvr]: https://github.com/jdvr
+[@jedahan]: https://github.com/jedahan
+[@mystal]: https://github.com/mystal
+[@natpen]: https://github.com/natpen
 
 [v1.0.0]: https://github.com/dbrgn/tealdeer/compare/v0.4.0...v1.0.0
 [v1.1.0]: https://github.com/dbrgn/tealdeer/compare/v1.0.0...v1.1.0
