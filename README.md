@@ -194,6 +194,7 @@ set the `PAGER` environment variable.
 
 - *Bash*: copy `bash_tealdeer` to `/usr/share/bash-completion/completions/tldr`
 - *Fish*: copy `fish_tealdeer` to `~/.config/fish/completions/tldr.fish`
+- *Zsh*: copy `zsh_tealdeer` to `/usr/share/zsh/site-functions/_tldr`
 
 ## Development
 

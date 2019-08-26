@@ -1,0 +1,37 @@
+#compdef tldr
+
+_applications() {
+  _values 'applications' "${(uonzf)$(tldr --list | sed -e 's/, /\n/g')}"
+}
+
+_tealdeer() {
+    local I="-h --help -v --version"
+    integer ret=1
+    local -a args
+    
+    args+=(
+        "($I -l --list)"{-l,--list}"[List all commands in the cache]"
+	"($I -f --render)"{-f,--render}"[Render a specific markdown file]:file:_files"
+	"($I -o --os)"{-o,--os}'[Override the operating system]:os:((
+             linux
+             osx
+       	     sunos
+	     windows
+        ))'
+	"($I -u --update)"{-u,--update}"[Update the local cache]"
+	"($I -c --clear-cache)"{-c,--clear-cache}"[Clear the local cache]"
+	"($I -p --pager)"{-p,--pager}"[Use a pager to page output]"
+	"($I -q --quiet)"{-q,--quiet}"[Suppress informational messages]"
+	"($I)--config-path[Show config file path]"
+	"($I)--seed-config[Create a basic config]"
+	'(- *)'{-h,--help}'[Display help]'
+    	'(- *)'{-v,--version}'[Show version information]'
+    	'*:file:_files'
+	'1: :_applications'
+    )
+    
+    _arguments $args[@] && ret=0
+    return ret
+}
+
+_tealdeer
