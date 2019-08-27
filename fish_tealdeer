@@ -15,7 +15,7 @@ complete -c tldr      -l config-path -d 'Show config file path.' -f
 complete -c tldr      -l seed-config -d 'Create a basic config.' -f
 
 function __tealdeer_entries
-    tldr --list | sed -e 's/, /\n/g'
+    tldr --list | string replace -a -i -r "\,\s" "\n"
 end
 
 complete -f -c tldr -a '(__tealdeer_entries)'
