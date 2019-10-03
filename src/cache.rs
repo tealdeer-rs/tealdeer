@@ -3,9 +3,6 @@ use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
 
-#[cfg(unix)]
-use std::os::unix::fs::MetadataExt;
-
 use reqwest::{Client, Proxy};
 use flate2::read::GzDecoder;
 use log::debug;
