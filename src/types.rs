@@ -40,23 +40,23 @@ pub enum LineType {
 impl<'a> From<&'a str> for LineType {
     /// Convert a string slice to a LineType. Newlines and trailing whitespace are trimmed.
     fn from(line: &'a str) -> Self {
-        let trimmed: &str = line.trim_right();
+        let trimmed: &str = line.trim_end();
         let mut chars = trimmed.chars();
         match chars.next() {
             None => LineType::Empty,
             Some('#') => LineType::Title(
                 trimmed
-                    .trim_left_matches(|chr: char| chr == '#' || chr.is_whitespace())
+                    .trim_start_matches(|chr: char| chr == '#' || chr.is_whitespace())
                     .into(),
             ),
             Some('>') => LineType::Description(
                 trimmed
-                    .trim_left_matches(|chr: char| chr == '>' || chr.is_whitespace())
+                    .trim_start_matches(|chr: char| chr == '>' || chr.is_whitespace())
                     .into(),
             ),
             Some(' ') => LineType::ExampleCode(
                 trimmed
-                    .trim_left_matches(|chr: char| chr.is_whitespace())
+                    .trim_start_matches(|chr: char| chr.is_whitespace())
                     .into(),
             ),
             _ => LineType::ExampleText(trimmed.into()),
@@ -74,17 +74,17 @@ impl LineType {
             None => LineType::Empty,
             Some('#') => LineType::Title(
                 trimmed
-                    .trim_left_matches(|chr: char| chr == '#' || chr.is_whitespace())
+                    .trim_start_matches(|chr: char| chr == '#' || chr.is_whitespace())
                     .into(),
             ),
             Some('>') => LineType::Description(
                 trimmed
-                    .trim_left_matches(|chr: char| chr == '>' || chr.is_whitespace())
+                    .trim_start_matches(|chr: char| chr == '>' || chr.is_whitespace())
                     .into(),
             ),
             Some('-') => LineType::ExampleText(
                 trimmed
-                    .trim_left_matches(|chr: char| chr == '-' || chr.is_whitespace())
+                    .trim_start_matches(|chr: char| chr == '-' || chr.is_whitespace())
                     .into(),
             ),
             Some('`') if chars.last() == Some('`') => LineType::ExampleCode(

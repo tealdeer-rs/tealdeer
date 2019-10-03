@@ -63,7 +63,7 @@ where
                     }
                     self.first_line = false;
                     self.format = TldrFormat::V2;
-                    return Some(LineType::Title(self.current_line.trim_right().to_string()));
+                    return Some(LineType::Title(self.current_line.trim_end().to_string()));
                 }
 
                 if self.first_line {
