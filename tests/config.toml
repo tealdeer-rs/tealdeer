@@ -18,3 +18,4 @@ bold = false
 
 [display]
 use_pager = false
+compact = false
