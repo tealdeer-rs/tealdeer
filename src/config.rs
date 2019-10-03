@@ -111,6 +111,8 @@ struct RawStyleConfig {
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawDisplayConfig {
     #[serde(default)]
+    pub compact: bool,
+    #[serde(default)]
     pub use_pager: bool,
 }
 
@@ -149,6 +151,7 @@ pub struct StyleConfig {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct DisplayConfig {
+    pub compact: bool,
     pub use_pager: bool,
 }
 
@@ -169,6 +172,7 @@ impl From<RawConfig> for Config {
                 example_variable: raw_config.style.example_variable.into(),
             },
             display: DisplayConfig {
+                compact: raw_config.display.compact,
                 use_pager: raw_config.display.use_pager,
             },
         }
