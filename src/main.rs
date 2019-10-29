@@ -234,7 +234,7 @@ fn main() {
         process::exit(0);
     }
 
-	// Determine the usage of styles
+    // Determine the usage of styles
     #[cfg(target_os = "windows")]
     let enable_styles = ansi_term::enable_ansi_support().is_ok();
     #[cfg(not(target_os = "windows"))]
@@ -314,7 +314,7 @@ fn main() {
                 process::exit(1);
             }
             Err(_) => {
-                eprintln!("Unkown error");
+                eprintln!("Unknown error");
                 process::exit(1);
             }
         }
