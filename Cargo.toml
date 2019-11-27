@@ -15,13 +15,12 @@ name = "tldr"
 path = "src/main.rs"
 
 [dependencies]
-ansi_term = "0.11.0"
+ansi_term = "0.12.0"
 app_dirs = "1.2.1"
-docopt = "<1.1"
-env_logger = { version = "0.6", optional = true }
-flate2 = "1.0"
+docopt = "1"
+env_logger = { version = "0.7", optional = true }
+flate2 = "1"
 log = "0.4"
-miniz_oxide_c_api = "<=0.2.2"  # Dependency of flate2, used to keep compatibility with Rust 1.32
 pager = "0.15"
 reqwest = "0.9.5"
 serde = "1.0.21"

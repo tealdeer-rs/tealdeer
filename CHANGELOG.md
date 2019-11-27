@@ -12,6 +12,11 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### Unreleased
+
+- [changed] Update dependencies (?)
+- [changed] Require at least Rust 1.36 to build (previous: 1.32)
+
 ### [v1.2.0][v1.2.0] (2019-08-10)
 
 - [added] Add Windows support ([#77][i77])
