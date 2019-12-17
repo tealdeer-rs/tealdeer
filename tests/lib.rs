@@ -193,6 +193,26 @@ fn test_show_config_path() {
         )));
 }
 
+#[test]
+fn test_markdown_rendering() {
+    let testenv = TestEnv::new();
+
+    testenv
+        .command()
+        .args(&["--update"])
+        .assert()
+        .success()
+        .stdout(contains("Successfully updated cache."));
+
+    let expected = include_str!("tar-markdown.expected");
+    testenv
+        .command()
+        .args(&["-m", "tar"])
+        .assert()
+        .success()
+        .stdout(similar(expected));
+}
+
 fn _test_correct_rendering(input_file: &str, filename: &str) {
     let testenv = TestEnv::new();
 
@@ -202,9 +222,7 @@ fn _test_correct_rendering(input_file: &str, filename: &str) {
     let mut file = File::create(&file_path).unwrap();
     file.write_all(input_file.as_bytes()).unwrap();
 
-    // Load expected output
     let expected = include_str!("inkscape-default.expected");
-
     testenv
         .command()
         .args(&["-f", &file_path.to_str().unwrap()])
