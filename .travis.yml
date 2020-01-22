@@ -1,7 +1,0 @@
-language: rust
-os: osx
-rust:
-  - 1.36.0
-  - stable
-cache: cargo
-script: cargo test

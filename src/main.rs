@@ -26,6 +26,7 @@ use std::time::Duration;
 use ansi_term::Color;
 use app_dirs::AppInfo;
 use docopt::Docopt;
+#[cfg(not(target_os = "windows"))]
 use pager::Pager;
 use serde_derive::Deserialize;
 
@@ -85,8 +86,9 @@ To render a local file (for testing):
     $ tldr --render /path/to/file.md
 ";
 const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
-const PAGER_COMMAND: &str = "less -R";
 const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
+#[cfg(not(target_os = "windows"))]
+const PAGER_COMMAND: &str = "less -R";
 
 #[derive(Debug, Deserialize)]
 struct Args {
@@ -139,6 +141,7 @@ fn print_page(path: &Path, enable_markdown: bool, enable_styles: bool) -> Result
 }
 
 /// Set up display pager
+#[cfg(not(target_os = "windows"))]
 fn configure_pager(args: &Args, enable_styles: bool) {
     // Flags have precedence
     if args.flag_pager {
@@ -162,6 +165,11 @@ fn configure_pager(args: &Args, enable_styles: bool) {
     if config.display.use_pager {
         Pager::with_default_pager(PAGER_COMMAND).setup();
     }
+}
+
+#[cfg(target_os = "windows")]
+fn configure_pager(_args: &Args, _enable_styles: bool) {
+    eprintln!("Warning: -p / --pager flag not available on Windows!");
 }
 
 /// Check the cache for freshness
