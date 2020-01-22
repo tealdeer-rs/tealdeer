@@ -71,6 +71,7 @@ These are the clients I tried but failed to compile or run:
         -u --update          Update the local cache
         -c --clear-cache     Clear the local cache
         -p --pager           Use a pager to page output
+        -m --markdown        Display the raw markdown instead of rendering it
         -q --quiet           Suppress informational messages
         --config-path        Show config file path
         --seed-config        Create a basic config
