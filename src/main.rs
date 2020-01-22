@@ -18,6 +18,7 @@ extern crate env_logger;
 
 use std::fs::File;
 use std::io::BufReader;
+use std::io::BufRead;
 use std::path::{Path, PathBuf};
 use std::process;
 use std::time::Duration;
@@ -64,6 +65,7 @@ Options:
     -u --update         Update the local cache
     -c --clear-cache    Clear the local cache
     -p --pager          Use a pager to page output
+    -m --markdown       Display the raw markdown instead of rendering it
     -q --quiet          Suppress informational messages
     --config-path       Show config file path
     --seed-config       Create a basic config
@@ -100,10 +102,11 @@ struct Args {
     flag_quiet: bool,
     flag_config_path: bool,
     flag_seed_config: bool,
+    flag_markdown: bool,
 }
 
 /// Print page by path
-fn print_page(path: &Path, enable_styles: bool) -> Result<(), String> {
+fn print_page(path: &Path, enable_markdown: bool, enable_styles: bool) -> Result<(), String> {
     // Open file
     let file = File::open(path).map_err(|msg| format!("Could not open file: {}", msg))?;
     let reader = BufReader::new(file);
@@ -121,9 +124,16 @@ fn print_page(path: &Path, enable_styles: bool) -> Result<(), String> {
         }
     };
 
-    // Create tokenizer and print output
-    let mut tokenizer = Tokenizer::new(reader);
-    print_lines(&mut tokenizer, &config);
+    if enable_markdown {
+        // Print the raw markdown of the file.
+        for line in reader.lines() {
+            println!("{}", line.unwrap());
+        }
+    } else {
+        // Create tokenizer and print output
+        let mut tokenizer = Tokenizer::new(reader);
+        print_lines(&mut tokenizer, &config);
+    };
 
     Ok(())
 }
@@ -324,7 +334,7 @@ fn main() {
     // Render local file and exit
     if let Some(ref file) = args.flag_render {
         let path = PathBuf::from(file);
-        if let Err(msg) = print_page(&path, enable_styles) {
+        if let Err(msg) = print_page(&path, args.flag_markdown, enable_styles) {
             eprintln!("{}", msg);
             process::exit(1);
         } else {
@@ -360,7 +370,7 @@ fn main() {
 
         // Search for command in cache
         if let Some(path) = cache.find_page(&command) {
-            if let Err(msg) = print_page(&path, enable_styles) {
+            if let Err(msg) = print_page(&path, args.flag_markdown, enable_styles) {
                 eprintln!("{}", msg);
                 process::exit(1);
             } else {

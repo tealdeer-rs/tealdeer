@@ -8,7 +8,7 @@ _tealdeer() {
     local I="-h --help -v --version"
     integer ret=1
     local -a args
-    
+
     args+=(
         "($I -l --list)"{-l,--list}"[List all commands in the cache]"
 	"($I -f --render)"{-f,--render}"[Render a specific markdown file]:file:_files"
@@ -21,6 +21,7 @@ _tealdeer() {
 	"($I -u --update)"{-u,--update}"[Update the local cache]"
 	"($I -c --clear-cache)"{-c,--clear-cache}"[Clear the local cache]"
 	"($I -p --pager)"{-p,--pager}"[Use a pager to page output]"
+	"($I -m --markdown)"{-m,--markdown}"[Display the raw markdown instead of rendering it]"
 	"($I -q --quiet)"{-q,--quiet}"[Suppress informational messages]"
 	"($I)--config-path[Show config file path]"
 	"($I)--seed-config[Create a basic config]"
@@ -29,7 +30,7 @@ _tealdeer() {
     	'*:file:_files'
 	'1: :_applications'
     )
-    
+
     _arguments $args[@] && ret=0
     return ret
 }
