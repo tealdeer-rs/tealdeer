@@ -111,8 +111,9 @@ Build and install the tool via cargo...
 
 tealdeer has been added to a few package managers:
 
-- Arch Linux AUR: [`tealdeer`](https://aur.archlinux.org/packages/tealdeer/)
-  or [`tealdeer-git`](https://aur.archlinux.org/packages/tealdeer-git/)
+- Arch Linux AUR: [`tealdeer`](https://aur.archlinux.org/packages/tealdeer/),
+  [`tealdeer-bin`](https://aur.archlinux.org/packages/tealdeer-bin/) or
+  [`tealdeer-git`](https://aur.archlinux.org/packages/tealdeer-git/)
 - macOS Homebrew: [`tealdeer`](https://formulae.brew.sh/formula/tealdeer)
 - Nix: [`tealdeer`](https://nixos.org/nixos/packages.html#tealdeer)
 - Void Linux XBPS: [`tealdeer`](https://github.com/void-linux/void-packages/tree/master/srcpkgs/tealdeer)
