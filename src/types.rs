@@ -18,11 +18,11 @@ pub enum OsType {
 impl fmt::Display for OsType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            OsType::Linux => write!(f, "Linux"),
-            OsType::OsX => write!(f, "macOS / BSD"),
-            OsType::SunOs => write!(f, "SunOS"),
-            OsType::Windows => write!(f, "Windows"),
-            OsType::Other => write!(f, "Unknown OS"),
+            Self::Linux => write!(f, "Linux"),
+            Self::OsX => write!(f, "macOS / BSD"),
+            Self::SunOs => write!(f, "SunOS"),
+            Self::Windows => write!(f, "Windows"),
+            Self::Other => write!(f, "Unknown OS"),
         }
     }
 }
@@ -38,28 +38,28 @@ pub enum LineType {
 }
 
 impl<'a> From<&'a str> for LineType {
-    /// Convert a string slice to a LineType. Newlines and trailing whitespace are trimmed.
+    /// Convert a string slice to a `LineType`. Newlines and trailing whitespace are trimmed.
     fn from(line: &'a str) -> Self {
         let trimmed: &str = line.trim_end();
         let mut chars = trimmed.chars();
         match chars.next() {
-            None => LineType::Empty,
-            Some('#') => LineType::Title(
+            None => Self::Empty,
+            Some('#') => Self::Title(
                 trimmed
                     .trim_start_matches(|chr: char| chr == '#' || chr.is_whitespace())
                     .into(),
             ),
-            Some('>') => LineType::Description(
+            Some('>') => Self::Description(
                 trimmed
                     .trim_start_matches(|chr: char| chr == '>' || chr.is_whitespace())
                     .into(),
             ),
-            Some(' ') => LineType::ExampleCode(
+            Some(' ') => Self::ExampleCode(
                 trimmed
-                    .trim_start_matches(|chr: char| chr.is_whitespace())
+                    .trim_start_matches(char::is_whitespace)
                     .into(),
             ),
-            _ => LineType::ExampleText(trimmed.into()),
+            _ => Self::ExampleText(trimmed.into()),
         }
     }
 }
@@ -71,28 +71,28 @@ impl LineType {
         let trimmed = line.trim();
         let mut chars = trimmed.chars();
         match chars.next() {
-            None => LineType::Empty,
-            Some('#') => LineType::Title(
+            None => Self::Empty,
+            Some('#') => Self::Title(
                 trimmed
                     .trim_start_matches(|chr: char| chr == '#' || chr.is_whitespace())
                     .into(),
             ),
-            Some('>') => LineType::Description(
+            Some('>') => Self::Description(
                 trimmed
                     .trim_start_matches(|chr: char| chr == '>' || chr.is_whitespace())
                     .into(),
             ),
-            Some('-') => LineType::ExampleText(
+            Some('-') => Self::ExampleText(
                 trimmed
                     .trim_start_matches(|chr: char| chr == '-' || chr.is_whitespace())
                     .into(),
             ),
-            Some('`') if chars.last() == Some('`') => LineType::ExampleCode(
+            Some('`') if chars.last() == Some('`') => Self::ExampleCode(
                 trimmed
                     .trim_matches(|chr: char| chr == '`' || chr.is_whitespace())
                     .into(),
             ),
-            _ => LineType::Other(trimmed.into()),
+            _ => Self::Other(trimmed.into()),
         }
     }
 }

@@ -11,7 +11,7 @@
 #![deny(clippy::all)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::similar_names)]
-#![allow(clippy::stutter)]
+#![allow(clippy::module_name_repetitions)]
 
 #[cfg(feature = "logging")]
 extern crate env_logger;
@@ -173,9 +173,9 @@ fn configure_pager(_args: &Args, _enable_styles: bool) {
 }
 
 /// Check the cache for freshness
-fn check_cache(args: &Args, cache: &Cache) {
+fn check_cache(args: &Args) {
     if !args.flag_update {
-        match cache.last_update() {
+        match Cache::last_update() {
             Some(ago) if ago > MAX_CACHE_AGE => {
                 if args.flag_quiet {
                     return;
@@ -196,6 +196,74 @@ fn check_cache(args: &Args, cache: &Cache) {
             _ => {}
         }
     };
+}
+
+/// Clear the cache
+fn clear_cache(quietly: bool) {
+    Cache::clear().unwrap_or_else(|e| {
+        match e {
+            CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
+                eprintln!("Could not delete cache: {}", msg)
+            }
+        };
+        process::exit(1);
+    });
+    if !quietly {
+        println!("Successfully deleted cache.");
+    }
+}
+
+/// Update the cache
+fn update_cache(cache: &Cache, quietly: bool) {
+    cache.update().unwrap_or_else(|e| {
+        match e {
+            CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
+                eprintln!("Could not update cache: {}", msg)
+            }
+        };
+        process::exit(1);
+    });
+    if !quietly {
+        println!("Successfully updated cache.");
+    }
+}
+
+/// Show the config path
+fn show_config_path() {
+    match get_config_path() {
+        Ok(config_file_path) => {
+            println!("Config path is: {}", config_file_path.to_str().unwrap());
+        }
+        Err(ConfigError(msg)) => {
+            eprintln!("Could not look up config_path: {}", msg);
+            process::exit(1);
+        }
+        Err(_) => {
+            eprintln!("Unknown error");
+            process::exit(1);
+        }
+    }
+}
+
+/// Create seed config file and exit
+fn create_config_and_exit() {
+    match make_default_config() {
+        Ok(config_file_path) => {
+            println!(
+                "Successfully created seed config file here: {}",
+                config_file_path.to_str().unwrap()
+            );
+            process::exit(0);
+        }
+        Err(ConfigError(msg)) => {
+            eprintln!("Could not create seed config: {}", msg);
+            process::exit(1);
+        }
+        Err(_) => {
+            eprintln!("Unknown error");
+            process::exit(1);
+        }
+    }
 }
 
 #[cfg(feature = "logging")]
@@ -272,72 +340,23 @@ fn main() {
 
     // Clear cache, pass through
     if args.flag_clear_cache {
-        cache.clear().unwrap_or_else(|e| {
-            match e {
-                CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
-                    eprintln!("Could not delete cache: {}", msg)
-                }
-            };
-            process::exit(1);
-        });
-        if !args.flag_quiet {
-            println!("Successfully deleted cache.");
-        }
+        clear_cache(args.flag_quiet);
     }
 
     // Update cache, pass through
     if args.flag_update {
-        cache.update().unwrap_or_else(|e| {
-            match e {
-                CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
-                    eprintln!("Could not update cache: {}", msg)
-                }
-            };
-            process::exit(1);
-        });
-        if !args.flag_quiet {
-            println!("Successfully updated cache.");
-        }
+        update_cache(&cache, args.flag_quiet);
     }
 
     // Show config file and path, pass through
     if args.flag_config_path {
-        match get_config_path() {
-            Ok(config_file_path) => {
-                println!("Config path is: {}", config_file_path.to_str().unwrap());
-            }
-            Err(ConfigError(msg)) => {
-                eprintln!("Could not look up config_path: {}", msg);
-                process::exit(1);
-            }
-            Err(_) => {
-                eprintln!("Unknown error");
-                process::exit(1);
-            }
-        }
+        show_config_path();
     }
 
     // Create a basic config and exit
     if args.flag_seed_config {
-        match make_default_config() {
-            Ok(config_file_path) => {
-                println!(
-                    "Successfully created seed config file here: {}",
-                    config_file_path.to_str().unwrap()
-                );
-                process::exit(0);
-            }
-            Err(ConfigError(msg)) => {
-                eprintln!("Could not create seed config: {}", msg);
-                process::exit(1);
-            }
-            Err(_) => {
-                eprintln!("Unknown error");
-                process::exit(1);
-            }
-        }
+        create_config_and_exit();
     }
-
 
     // Render local file and exit
     if let Some(ref file) = args.flag_render {
@@ -353,7 +372,7 @@ fn main() {
     // List cached commands and exit
     if args.flag_list {
         // Check cache for freshness
-        check_cache(&args, &cache);
+        check_cache(&args);
 
         // Get list of pages
         let pages = cache.list_pages().unwrap_or_else(|e| {
@@ -374,7 +393,7 @@ fn main() {
     if let Some(ref command) = args.arg_command {
         let command = command.join("-");
         // Check cache for freshness
-        check_cache(&args, &cache);
+        check_cache(&args);
 
         // Search for command in cache
         if let Some(path) = cache.find_page(&command) {

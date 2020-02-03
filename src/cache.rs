@@ -2,6 +2,7 @@ use std::env;
 use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
+use std::ffi::OsStr;
 
 use reqwest::{Client, Proxy};
 use flate2::read::GzDecoder;
@@ -32,7 +33,7 @@ impl Cache {
     }
 
     /// Return the path to the cache directory.
-    fn get_cache_dir(&self) -> Result<PathBuf, TealdeerError> {
+    fn get_cache_dir() -> Result<PathBuf, TealdeerError> {
         // Allow overriding the cache directory by setting the
         // $TEALDEER_CACHE_DIR env variable.
         if let Ok(value) = env::var("TEALDEER_CACHE_DIR") {
@@ -78,7 +79,7 @@ impl Cache {
     }
 
     /// Decompress and open the archive
-    fn decompress<R: Read>(&self, reader: R) -> Archive<GzDecoder<R>> {
+    fn decompress<R: Read>(reader: R) -> Archive<GzDecoder<R>> {
         Archive::new(GzDecoder::new(reader))
     }
 
@@ -88,10 +89,10 @@ impl Cache {
         let bytes: Vec<u8> = self.download()?;
 
         // Decompress the response body into an `Archive`
-        let mut archive = self.decompress(&bytes[..]);
+        let mut archive = Self::decompress(&bytes[..]);
 
         // Determine paths
-        let cache_dir = self.get_cache_dir()?;
+        let cache_dir = Self::get_cache_dir()?;
 
         // Make sure that cache directory exists
         debug!("Ensure cache directory {:?} exists", &cache_dir);
@@ -104,7 +105,7 @@ impl Cache {
         // But renaming a directory doesn't work across filesystems and Rust
         // does not yet offer a recursive directory copying function. So for
         // now, we'll use this approach.
-        self.clear()?;
+        Self::clear()?;
 
         // Extract archive
         archive
@@ -115,8 +116,8 @@ impl Cache {
     }
 
     /// Return the duration since the cache directory was last modified.
-    pub fn last_update(&self) -> Option<Duration> {
-        if let Ok(cache_dir) = self.get_cache_dir() {
+    pub fn last_update() -> Option<Duration> {
+        if let Ok(cache_dir) = Self::get_cache_dir() {
             if let Ok(metadata) = fs::metadata(cache_dir.join("tldr-master")) {
                 if let Ok(mtime) = metadata.modified() {
                     let now = SystemTime::now();
@@ -145,7 +146,7 @@ impl Cache {
         let page_filename = format!("{}.md", name);
 
         // Get platform dir
-        let platforms_dir = match self.get_cache_dir() {
+        let platforms_dir = match Self::get_cache_dir() {
             Ok(cache_dir) => cache_dir.join("tldr-master").join("pages"),
             _ => return None,
         };
@@ -176,7 +177,7 @@ impl Cache {
     /// Return the available pages.
     pub fn list_pages(&self) -> Result<Vec<String>, TealdeerError> {
         // Determine platforms directory and platform
-        let cache_dir = self.get_cache_dir()?;
+        let cache_dir = Self::get_cache_dir()?;
         let platforms_dir = cache_dir.join("tldr-master").join("pages");
         let platform_dir = self.get_platform_dir();
 
@@ -206,10 +207,10 @@ impl Cache {
             .min_depth(1) // Skip root directory
             .into_iter()
             .filter_entry(|e| should_walk(e)) // Filter out pages for other architectures
-            .filter_map(|e| e.ok()) // Convert results to options, filter out errors
+            .filter_map(Result::ok) // Convert results to options, filter out errors
             .filter_map(|e| {
                 let path = e.path();
-                let extension = &path.extension().and_then(|s| s.to_str()).unwrap_or("");
+                let extension = &path.extension().and_then(OsStr::to_str).unwrap_or("");
                 if e.file_type().is_file() && extension == &"md" {
                     path.file_stem()
                         .and_then(|stem| stem.to_str().map(|s| s.into()))
@@ -224,8 +225,8 @@ impl Cache {
     }
 
     /// Delete the cache directory.
-    pub fn clear(&self) -> Result<(), TealdeerError> {
-        let path = self.get_cache_dir()?;
+    pub fn clear() -> Result<(), TealdeerError> {
+        let path = Self::get_cache_dir()?;
         if path.exists() && path.is_dir() {
             fs::remove_dir_all(&path).map_err(|_| CacheError(format!(
                 "Could not remove cache directory ({}).",
