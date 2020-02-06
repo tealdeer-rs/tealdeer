@@ -38,7 +38,7 @@ pub enum LineType {
 }
 
 impl<'a> From<&'a str> for LineType {
-    /// Convert a string slice to a LineType. Newlines and trailing whitespace are trimmed.
+    /// Convert a string slice to a `LineType`. Newlines and trailing whitespace are trimmed.
     fn from(line: &'a str) -> Self {
         let trimmed: &str = line.trim_end();
         let mut chars = trimmed.chars();
@@ -56,7 +56,7 @@ impl<'a> From<&'a str> for LineType {
             ),
             Some(' ') => LineType::ExampleCode(
                 trimmed
-                    .trim_start_matches(|chr: char| chr.is_whitespace())
+                    .trim_start_matches(char::is_whitespace)
                     .into(),
             ),
             _ => LineType::ExampleText(trimmed.into()),
