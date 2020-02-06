@@ -37,14 +37,14 @@ pub enum RawColor {
 impl From<RawColor> for Color {
     fn from(raw_color: RawColor) -> Self {
         match raw_color {
-            RawColor::Black => Self::Black,
-            RawColor::Red => Self::Red,
-            RawColor::Green => Self::Green,
-            RawColor::Yellow => Self::Yellow,
-            RawColor::Blue => Self::Blue,
-            RawColor::Purple => Self::Purple,
-            RawColor::Cyan => Self::Cyan,
-            RawColor::White => Self::White,
+            RawColor::Black => Color::Black,
+            RawColor::Red => Color::Red,
+            RawColor::Green => Color::Green,
+            RawColor::Yellow => Color::Yellow,
+            RawColor::Blue => Color::Blue,
+            RawColor::Purple => Color::Purple,
+            RawColor::Cyan => Color::Cyan,
+            RawColor::White => Color::White,
         }
     }
 }

@@ -11,16 +11,16 @@ pub enum TealdeerError {
 
 impl From<ReqwestError> for TealdeerError {
     fn from(err: ReqwestError) -> Self {
-        Self::UpdateError(format!("HTTP error: {}", err.to_string()))
+        TealdeerError::UpdateError(format!("HTTP error: {}", err.to_string()))
     }
 }
 
 impl fmt::Display for TealdeerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::CacheError(e) => write!(f, "CacheError: {}", e),
-            Self::ConfigError(e) => write!(f, "ConfigError: {}", e),
-            Self::UpdateError(e) => write!(f, "UpdateError: {}", e),
+            TealdeerError::CacheError(e) => write!(f, "CacheError: {}", e),
+            TealdeerError::ConfigError(e) => write!(f, "ConfigError: {}", e),
+            TealdeerError::UpdateError(e) => write!(f, "UpdateError: {}", e),
         }
     }
 }
