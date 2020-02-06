@@ -35,7 +35,6 @@ pub enum RawColor {
 }
 
 impl From<RawColor> for Color {
-    #[must_use]
     fn from(raw_color: RawColor) -> Self {
         match raw_color {
             RawColor::Black => Self::Black,
@@ -72,7 +71,6 @@ impl Default for RawStyle {
 } // impl RawStyle
 
 impl From<RawStyle> for Style {
-    #[must_use]
     fn from(raw_style: RawStyle) -> Self {
         let mut style = Self::default();
 
