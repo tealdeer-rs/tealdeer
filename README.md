@@ -120,7 +120,7 @@ tealdeer has been added to a few package managers:
 
 ### From Source (any platform)
 
-tealdeer requires at least Rust 1.36.
+tealdeer requires at least Rust 1.39.
 
 Debug build with logging enabled:
 
@@ -211,6 +211,7 @@ Set this to enforce more compact output, where empty lines are stripped out
 - *Fish*: copy `fish_tealdeer` to `~/.config/fish/completions/tldr.fish`
 - *Zsh*: copy `zsh_tealdeer` to `/usr/share/zsh/site-functions/_tldr`
 
+
 ## Development
 
 To run tests:
@@ -221,6 +222,16 @@ To run lints:
 
     $ rustup component add clippy
     $ cargo clean && cargo clippy
+
+
+## MSRV (Minimally Supported Rust Version)
+
+Tealdeer will not bump the MSRV requirement in patch versions, but it may
+increase it in minor versions. The reason is that many important libraries
+(e.g. the Tokio ecosystem, which is a dependency of reqwest, which is used for
+downloading the cache) do not follow a static MSRV, but instead follow a
+"stable + last n releases" approach. Trying to guarantee the same MSRV across
+all minor releases would be a futile attempt.
 
 
 ## License
