@@ -4,7 +4,7 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::ffi::OsStr;
 
-use reqwest::{Client, Proxy};
+use reqwest::{blocking::Client, Proxy};
 use flate2::read::GzDecoder;
 use log::debug;
 use app_dirs::{get_app_root, AppDataType};
