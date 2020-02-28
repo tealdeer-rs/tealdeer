@@ -49,19 +49,19 @@ mkdir "dist-$VERSION"
 
 for i in ${!targets[@]}; do
     echo "==> Copying ${targets[$i]}"
-    cp "target/${rusttargets[$i]}/release/tldr" "dist-$VERSION/tldr-${targets[$i]}"
+    cp "target/${rusttargets[$i]}/release/tldr" "dist-$VERSION/tldr-linux-${targets[$i]}"
 done
 echo ""
 
 for target in ${targets[@]}; do
     echo "==> Stripping $target"
-    docker run --rm -it -v "$(pwd)":/home/rust/src messense/rust-musl-cross:$target musl-strip -s /home/rust/src/dist-$VERSION/tldr-$target
+    docker run --rm -it -v "$(pwd)":/home/rust/src messense/rust-musl-cross:$target musl-strip -s /home/rust/src/dist-$VERSION/tldr-linux-$target
 done
 echo ""
 
 for target in ${targets[@]}; do
     echo "==> Signing $target"
-    gpg -a --output "dist-$VERSION/tldr-$target.sig" --detach-sig "dist-$VERSION/tldr-$target"
+    gpg -a --output "dist-$VERSION/tldr-linux-$target.sig" --detach-sig "dist-$VERSION/tldr-linux-$target"
 done
 echo ""
 
