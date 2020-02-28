@@ -21,6 +21,12 @@ declare -a rusttargets=(
     "arm-unknown-linux-musleabihf"
 )
 
+declare -a completions=(
+    "bash"
+    "fish"
+    "zsh"
+)
+
 function docker-download {
     echo "==> Downloading Docker image: messense/rust-musl-cross:$1"
     docker pull messense/rust-musl-cross:$1
@@ -58,5 +64,14 @@ for target in ${targets[@]}; do
     gpg -a --output "dist-$VERSION/tldr-$target.sig" --detach-sig "dist-$VERSION/tldr-$target"
 done
 echo ""
+
+for completion in ${completions[@]}; do
+    echo "==> Copying ${completion} completion"
+    cp "${completion}_tealdeer" "dist-$VERSION/completions_${completion}"
+done
+echo ""
+
+echo "==> Copying licenses"
+cp LICENSE-* "dist-$VERSION/"
 
 echo "Done."
