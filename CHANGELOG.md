@@ -12,10 +12,30 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
-### Unreleased
+### [v1.3.0][v1.3.0] (2020-02-28)
 
-- [changed] Update dependencies (?)
+- [added] New config option for compact output mode ([#89][i89])
+- [added] New -m/--markdown parameter for raw rendering ([#95][i95])
+- [added] Provide zsh autocompletion ([#86][i86])
 - [changed] Require at least Rust 1.39 to build (previous: 1.32)
+- [changed] Switch to GitHub actions, CI testing now covers Windows as well ([#99][i99])
+- [changed] Tweak the "outdated cache" warning message ([#97][i97])
+- [changed] General maintenance: Upgrade dependencies, fix linter warnings
+- [fixed] Fix Fish autocompletion on macOS ([#87][i87])
+- [fixed] Fix compilation on Windows by disabling pager ([#99][i99])
+
+Contributors to this version:
+
+- [@Calinou][@Calinou]
+- [@Delapouite][@Delapouite]
+- [@james2doyle][@james2doyle]
+- [@jesdazrez][@jesdazrez]
+- [@korrat][@korrat]
+- [@ma-renaud][@ma-renaud]
+- [@Plommonsorbet][@Plommonsorbet]
+
+Thanks!
+
 
 ### [v1.2.0][v1.2.0] (2019-08-10)
 
@@ -84,20 +104,28 @@ Thanks!
 - First crates.io release
 
 
-[@Bassets]: https://github.com/Bassets
-[@Voultapher]: https://github.com/Voultapher
 [@aldanor]: https://github.com/aldanor
+[@Bassets]: https://github.com/Bassets
+[@Calinou]: https://github.com/Calinou
 [@das-g]: https://github.com/das-g
+[@Delapouite]: https://github.com/Delapouite
 [@equal-l2]: https://github.com/equal-l2
+[@james2doyle]: https://github.com/james2doyle
 [@jcgruenhage]: https://github.com/jcgruenhage
 [@jdvr]: https://github.com/jdvr
 [@jedahan]: https://github.com/jedahan
+[@jesdazrez]: https://github.com/jesdazrez
+[@korrat]: https://github.com/korrat
+[@ma-renaud]: https://github.com/ma-renaud
 [@mystal]: https://github.com/mystal
 [@natpen]: https://github.com/natpen
+[@Plommonsorbet]: https://github.com/Plommonsorbet
+[@Voultapher]: https://github.com/Voultapher
 
 [v1.0.0]: https://github.com/dbrgn/tealdeer/compare/v0.4.0...v1.0.0
 [v1.1.0]: https://github.com/dbrgn/tealdeer/compare/v1.0.0...v1.1.0
 [v1.2.0]: https://github.com/dbrgn/tealdeer/compare/v1.1.0...v1.2.0
+[v1.3.0]: https://github.com/dbrgn/tealdeer/compare/v1.2.0...v1.3.0
 
 [i34]: https://github.com/dbrgn/tealdeer/issues/34
 [i43]: https://github.com/dbrgn/tealdeer/issues/43
@@ -113,3 +141,9 @@ Thanks!
 [i75]: https://github.com/dbrgn/tealdeer/issues/75
 [i77]: https://github.com/dbrgn/tealdeer/issues/77
 [i84]: https://github.com/dbrgn/tealdeer/issues/84
+[i86]: https://github.com/dbrgn/tealdeer/issues/86
+[i87]: https://github.com/dbrgn/tealdeer/issues/87
+[i89]: https://github.com/dbrgn/tealdeer/issues/89
+[i95]: https://github.com/dbrgn/tealdeer/issues/95
+[i97]: https://github.com/dbrgn/tealdeer/issues/97
+[i99]: https://github.com/dbrgn/tealdeer/issues/99
