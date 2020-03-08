@@ -168,8 +168,10 @@ fn configure_pager(args: &Args, enable_styles: bool) {
 }
 
 #[cfg(target_os = "windows")]
-fn configure_pager(_args: &Args, _enable_styles: bool) {
-    eprintln!("Warning: -p / --pager flag not available on Windows!");
+fn configure_pager(args: &Args, _enable_styles: bool) {
+    if args.flag_pager {
+        eprintln!("Warning: -p / --pager flag not available on Windows!");
+    }
 }
 
 /// Check the cache for freshness
