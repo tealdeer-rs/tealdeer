@@ -27,6 +27,14 @@ impl fmt::Display for OsType {
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Copy, Clone, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ColorOptions {
+    Always,
+    Auto,
+    Never,
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum LineType {
     Empty,

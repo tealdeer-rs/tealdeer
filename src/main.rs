@@ -41,7 +41,7 @@ use crate::config::{get_config_path, make_default_config, Config, MAX_CACHE_AGE}
 use crate::error::TealdeerError::{CacheError, ConfigError, UpdateError};
 use crate::formatter::print_lines;
 use crate::tokenizer::Tokenizer;
-use crate::types::OsType;
+use crate::types::{ColorOptions, OsType};
 
 const NAME: &str = "tealdeer";
 const APP_INFO: AppInfo = AppInfo {
@@ -69,6 +69,7 @@ Options:
     -q --quiet          Suppress informational messages
     --config-path       Show config file path
     --seed-config       Create a basic config
+    --color <when>      Control when to use color [always, auto, never] [default: auto]
 
 Examples:
 
@@ -104,6 +105,7 @@ struct Args {
     flag_config_path: bool,
     flag_seed_config: bool,
     flag_markdown: bool,
+    flag_color: ColorOptions,
 }
 
 /// Print page by path
@@ -294,6 +296,8 @@ fn main() {
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
 
+    println!("{:?}", args);
+
     // Show version and exit
     if args.flag_version {
         let os = get_os();
@@ -313,9 +317,15 @@ fn main() {
 
     // Determine the usage of styles
     #[cfg(target_os = "windows")]
-    let enable_styles = ansi_term::enable_ansi_support().is_ok();
+    let ansi_support = ansi_term::enable_ansi_support().is_ok();
     #[cfg(not(target_os = "windows"))]
-    let enable_styles = true;
+    let ansi_support = true;
+
+    let enable_styles = match args.flag_color {
+        ColorOptions::Always => ansi_support,
+        ColorOptions::Auto => ansi_support,
+        ColorOptions::Never => false,
+    };
 
     // Look up config file, if none is found fall back to default config.
     let config = match Config::load(enable_styles) {

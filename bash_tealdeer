@@ -17,6 +17,10 @@ _tealdeer()
 			COMPREPLY=( $(compgen -W 'linux osx sunos windows' -- "${cur}") )
 			return
 			;;
+		--color)
+			COMPREPLY=( $(compgen -W 'always auto never' -- "${cur}") )
+			return
+			;;
 	esac
 
 	if [[ $cur == -* ]]; then
