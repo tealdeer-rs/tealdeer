@@ -16,6 +16,7 @@
 #[cfg(feature = "logging")]
 extern crate env_logger;
 
+use std::env;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
@@ -296,8 +297,6 @@ fn main() {
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
 
-    println!("{:?}", args);
-
     // Show version and exit
     if args.flag_version {
         let os = get_os();
@@ -322,8 +321,12 @@ fn main() {
     let ansi_support = true;
 
     let enable_styles = match args.flag_color {
+        // Always use styling as long as there is `ansi_support`
         ColorOptions::Always => ansi_support,
-        ColorOptions::Auto => ansi_support,
+        // Disable if:
+        // * NO_COLOR env var is set to anything: https://no-color.org/
+        ColorOptions::Auto => ansi_support && env::var_os("NO_COLOR").is_none(),
+        // Disable styling
         ColorOptions::Never => false,
     };
 
