@@ -25,6 +25,7 @@ use std::process;
 
 use ansi_term::{Color, Style};
 use app_dirs::AppInfo;
+use atty::Stream;
 use docopt::Docopt;
 #[cfg(not(target_os = "windows"))]
 use pager::Pager;
@@ -323,9 +324,13 @@ fn main() {
     let enable_styles = match args.flag_color {
         // Always use styling as long as there is `ansi_support`
         ColorOptions::Always => ansi_support,
-        // Disable if:
-        // * NO_COLOR env var is set to anything: https://no-color.org/
-        ColorOptions::Auto => ansi_support && env::var_os("NO_COLOR").is_none(),
+        // Enable styling if:
+        // * There is `ansi_support`
+        // * NO_COLOR env var isn't set: https://no-color.org/
+        // * The output stream is stdout (not being piped)
+        ColorOptions::Auto => {
+            ansi_support && env::var_os("NO_COLOR").is_none() && atty::is(Stream::Stdout)
+        }
         // Disable styling
         ColorOptions::Never => false,
     };

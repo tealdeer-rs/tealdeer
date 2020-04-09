@@ -253,7 +253,7 @@ fn _test_correct_rendering(input_file: &str, filename: &str) {
     let expected = include_str!("inkscape-default.expected");
     testenv
         .command()
-        .args(&["-f", &file_path.to_str().unwrap()])
+        .args(&["--color", "always", "-f", &file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(similar(expected));
@@ -299,7 +299,7 @@ fn test_correct_rendering_with_config() {
 
     testenv
         .command()
-        .args(&["-f", &file_path.to_str().unwrap()])
+        .args(&["--color", "always", "-f", &file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(similar(expected));
