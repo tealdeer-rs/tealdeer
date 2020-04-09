@@ -22,7 +22,7 @@ use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::process;
 
-use ansi_term::Color;
+use ansi_term::{Color, Style};
 use app_dirs::AppInfo;
 use docopt::Docopt;
 #[cfg(not(target_os = "windows"))]
@@ -144,15 +144,23 @@ fn should_update_cache(args: &Args, config: &Config) -> bool {
 }
 
 /// Check the cache for freshness
-fn check_cache(args: &Args) {
+fn check_cache(args: &Args, enable_styles: bool) {
     match Cache::last_update() {
         Some(ago) if ago > MAX_CACHE_AGE => {
             if args.flag_quiet {
                 return;
             }
+
+            // Only use color if enabled
+            let warning_style = if enable_styles {
+                Style::new().fg(Color::Yellow)
+            } else {
+                Style::default()
+            };
+
             eprintln!(
                 "{}",
-                Color::Yellow.paint(format!(
+                warning_style.paint(format!(
                     "The cache hasn't been updated for more than {} days.\n\
                          You should probably run `tldr --update` soon.",
                     MAX_CACHE_AGE.as_secs() / 24 / 3600
@@ -363,7 +371,7 @@ fn main() {
     if args.flag_list {
         if !cache_updated {
             // Check cache for freshness
-            check_cache(&args);
+            check_cache(&args, enable_styles);
         }
 
         // Get list of pages
@@ -387,7 +395,7 @@ fn main() {
 
         if !cache_updated {
             // Check cache for freshness
-            check_cache(&args);
+            check_cache(&args, enable_styles);
         }
 
         // Search for command in cache
