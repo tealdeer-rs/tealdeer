@@ -322,8 +322,8 @@ fn main() {
     let ansi_support = true;
 
     let enable_styles = match args.flag_color {
-        // Always use styling as long as there is `ansi_support`
-        ColorOptions::Always => ansi_support,
+        // Attempt to use styling if instructed
+        ColorOptions::Always => true,
         // Enable styling if:
         // * There is `ansi_support`
         // * NO_COLOR env var isn't set: https://no-color.org/
