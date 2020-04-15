@@ -6,7 +6,7 @@ extern crate predicates;
 extern crate tempdir;
 extern crate utime;
 
-use std::fs::File;
+use std::fs::{create_dir_all, File};
 use std::io::Write;
 use std::process::Command;
 
@@ -32,6 +32,15 @@ impl TestEnv {
             default_features: true,
             features: vec![],
         }
+    }
+
+    /// Add entry for that environment.
+    fn add_entry(&self, name: &str, contents: &str) {
+        let dir = self.cache_dir.path().join("tldr-master").join("pages").join("common");
+        create_dir_all(&dir).unwrap();
+
+        let mut file = File::create(&dir.join(format!("{}.md", name))).unwrap();
+        file.write_all(&contents.as_bytes()).unwrap();
     }
 
     /// Disable default features.
@@ -310,4 +319,36 @@ fn test_pager_flag_enable() {
         .args(&["--pager", "tar"])
         .assert()
         .success();
+}
+
+#[test]
+fn test_list_flag_rendering() {
+    let testenv = TestEnv::new();
+
+    testenv
+        .command()
+        .args(&["--list"])
+        .assert()
+        .failure()
+        .stderr(contains("Cache not found. Please run `tldr --update`."));
+
+    testenv.add_entry("foo", "");
+
+    testenv
+        .command()
+        .args(&["--list"])
+        .assert()
+        .success()
+        .stdout("foo\n");
+
+    testenv.add_entry("bar", "");
+    testenv.add_entry("baz", "");
+    testenv.add_entry("qux", "");
+
+    testenv
+        .command()
+        .args(&["--list"])
+        .assert()
+        .success()
+        .stdout("bar\nbaz\nfoo\nqux\n");
 }
