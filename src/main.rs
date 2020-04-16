@@ -385,7 +385,7 @@ fn main() {
         });
 
         // Print pages
-        println!("{}", pages.join(", "));
+        println!("{}", pages.join("\n"));
         process::exit(0);
     }
 
