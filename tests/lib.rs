@@ -165,14 +165,14 @@ fn test_quiet_old_cache() {
         .args(&["tldr"])
         .assert()
         .success()
-        .stdout(contains("The cache hasn't been updated for more than "));
+        .stderr(contains("The cache hasn't been updated for more than "));
 
     testenv
         .command()
         .args(&["tldr", "--quiet"])
         .assert()
         .success()
-        .stdout(contains("The cache hasn't been updated for more than ").not());
+        .stderr(contains("The cache hasn't been updated for more than ").not());
 }
 
 #[test]

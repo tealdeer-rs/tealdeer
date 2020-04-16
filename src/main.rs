@@ -180,7 +180,7 @@ fn check_cache(args: &Args) {
                 if args.flag_quiet {
                     return;
                 }
-                println!(
+                eprintln!(
                     "{}",
                     Color::Yellow.paint(format!(
                         "The cache hasn't been updated for more than {} days.\n\
