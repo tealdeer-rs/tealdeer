@@ -1,5 +1,5 @@
-use std::fmt;
 use reqwest::Error as ReqwestError;
+use std::fmt;
 
 #[derive(Debug)]
 #[allow(clippy::pub_enum_variant_names)]

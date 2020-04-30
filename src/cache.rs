@@ -1,13 +1,13 @@
 use std::env;
+use std::ffi::OsStr;
 use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
-use std::ffi::OsStr;
 
-use reqwest::{blocking::Client, Proxy};
+use app_dirs::{get_app_root, AppDataType};
 use flate2::read::GzDecoder;
 use log::debug;
-use app_dirs::{get_app_root, AppDataType};
+use reqwest::{blocking::Client, Proxy};
 use std::time::{Duration, SystemTime};
 use tar::Archive;
 use walkdir::{DirEntry, WalkDir};
@@ -53,7 +53,9 @@ impl Cache {
         // Otherwise, fall back to user cache directory.
         match get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
             Ok(dirs) => Ok(dirs),
-            Err(_) => Err(CacheError("Could not determine user cache directory.".into())),
+            Err(_) => Err(CacheError(
+                "Could not determine user cache directory.".into(),
+            )),
         }
     }
 
@@ -228,10 +230,12 @@ impl Cache {
     pub fn clear() -> Result<(), TealdeerError> {
         let path = Self::get_cache_dir()?;
         if path.exists() && path.is_dir() {
-            fs::remove_dir_all(&path).map_err(|_| CacheError(format!(
-                "Could not remove cache directory ({}).",
-                path.display()
-            )))?;
+            fs::remove_dir_all(&path).map_err(|_| {
+                CacheError(format!(
+                    "Could not remove cache directory ({}).",
+                    path.display()
+                ))
+            })?;
         } else if path.exists() {
             return Err(CacheError(format!(
                 "Cache path ({}) is not a directory.",

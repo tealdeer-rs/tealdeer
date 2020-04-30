@@ -17,8 +17,8 @@
 extern crate env_logger;
 
 use std::fs::File;
-use std::io::BufReader;
 use std::io::BufRead;
+use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::process;
 use std::time::Duration;
@@ -279,11 +279,13 @@ fn get_os() -> OsType {
     OsType::Linux
 }
 
-#[cfg(any(target_os = "macos",
-          target_os = "freebsd",
-          target_os = "netbsd",
-          target_os = "openbsd",
-          target_os = "dragonfly"))]
+#[cfg(any(
+    target_os = "macos",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd",
+    target_os = "dragonfly"
+))]
 fn get_os() -> OsType {
     OsType::OsX
 }
@@ -293,13 +295,15 @@ fn get_os() -> OsType {
     OsType::Windows
 }
 
-#[cfg(not(any(target_os = "linux",
-              target_os = "macos",
-              target_os = "freebsd",
-              target_os = "netbsd",
-              target_os = "openbsd",
-              target_os = "dragonfly",
-              target_os = "windows")))]
+#[cfg(not(any(
+    target_os = "linux",
+    target_os = "macos",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd",
+    target_os = "dragonfly",
+    target_os = "windows"
+)))]
 fn get_os() -> OsType {
     OsType::Other
 }
@@ -422,8 +426,8 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use docopt::{Docopt, Error};
     use crate::{Args, OsType, USAGE};
+    use docopt::{Docopt, Error};
 
     fn test_helper(argv: &[&str]) -> Result<Args, Error> {
         Docopt::new(USAGE).and_then(|d| d.argv(argv.iter()).deserialize())
