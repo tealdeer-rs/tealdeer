@@ -19,3 +19,7 @@ bold = false
 [display]
 use_pager = false
 compact = false
+
+[updates]
+auto_update = false
+auto_update_interval_hours = 720
