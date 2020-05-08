@@ -37,7 +37,7 @@ assert_cmd = "0.10"
 escargot = "0.3"
 predicates = "1.0"
 tempdir = "^0.3"
-utime = "0.2.0"
+filetime = "0.2.10"
 
 [features]
 logging = ["env_logger"]

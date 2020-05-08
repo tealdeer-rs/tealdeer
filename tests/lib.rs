@@ -2,13 +2,14 @@
 
 extern crate assert_cmd;
 extern crate escargot;
+extern crate filetime;
 extern crate predicates;
 extern crate tempdir;
-extern crate utime;
 
 use std::fs::{create_dir_all, File};
 use std::io::Write;
 use std::process::Command;
+use std::time::{Duration, SystemTime};
 
 use assert_cmd::prelude::*;
 use tempdir::TempDir;
@@ -160,7 +161,11 @@ fn test_quiet_old_cache() {
         .success()
         .stdout(is_empty());
 
-    let _ = utime::set_file_times(testenv.cache_dir.path().join("tldr-master"), 1, 1).unwrap();
+    filetime::set_file_mtime(
+        testenv.cache_dir.path().join("tldr-master"),
+        filetime::FileTime::from_unix_time(1, 0),
+    )
+    .unwrap();
 
     testenv
         .command()
@@ -395,18 +400,16 @@ fn test_autoupdate_cache() {
     // The cache is not updated with a subsequent call
     check_cache_updated(false);
 
-    let (_, orig_mtime) = utime::get_file_times(&cache_file_path).unwrap();
-
     // We update the modification and access times such that they are about 23 hours from now.
     // auto-update interval is 24 hours, the cache should not be updated
-    let new_mtime = orig_mtime - 82_800;
-    utime::set_file_times(&cache_file_path, new_mtime, new_mtime).unwrap();
+    let new_mtime = SystemTime::now() - Duration::from_secs(82_800);
+    filetime::set_file_mtime(&cache_file_path, new_mtime.into()).unwrap();
     check_cache_updated(false);
 
     // We update the modification and access times such that they are about 25 hours from now.
     // auto-update interval is 24 hours, the cache should be updated
-    let new_mtime = orig_mtime - 90_000;
-    utime::set_file_times(&cache_file_path, new_mtime, new_mtime).unwrap();
+    let new_mtime = SystemTime::now() - Duration::from_secs(90_000);
+    filetime::set_file_mtime(&cache_file_path, new_mtime.into()).unwrap();
     check_cache_updated(true);
 
     // The cache is not updated with a subsequent call
