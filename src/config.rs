@@ -14,6 +14,7 @@ use crate::error::TealdeerError::{self, ConfigError};
 
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
+const DEFAULT_UPDATE_INTERVAL_HOURS: u64 = MAX_CACHE_AGE.as_secs() / 3600; // 30 days
 
 fn default_underline() -> bool {
     false
@@ -118,12 +119,28 @@ struct RawDisplayConfig {
     pub use_pager: bool,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+/// Serde doesn't support default values yet (tracking issue:
+/// https://github.com/serde-rs/serde/issues/368), so we need to wrap DEFAULT_UPDATE_INTERVAL_HOURS
+/// in a function to be able to use #[serde(default = ...)]
+const fn default_auto_update_interval_hours() -> u64 {
+    DEFAULT_UPDATE_INTERVAL_HOURS
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 struct RawUpdatesConfig {
     #[serde(default)]
     pub auto_update: bool,
-    #[serde(default)]
+    #[serde(default = "default_auto_update_interval_hours")]
     pub auto_update_interval_hours: u64,
+}
+
+impl Default for RawUpdatesConfig {
+    fn default() -> Self {
+        Self {
+            auto_update: false,
+            auto_update_interval_hours: DEFAULT_UPDATE_INTERVAL_HOURS,
+        }
+    }
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -146,8 +163,6 @@ impl RawConfig {
         raw_config.style.example_code.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.underline = true;
-        raw_config.display.use_pager = false;
-        raw_config.updates.auto_update_interval_hours = MAX_CACHE_AGE.as_secs() / 3600;
 
         raw_config
     }
