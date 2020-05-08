@@ -44,12 +44,14 @@ impl TestEnv {
     }
 
     /// Disable default features.
+    #[allow(dead_code)] // Might be useful in the future
     fn no_default_features(mut self) -> Self {
         self.default_features = false;
         self
     }
 
     /// Add the specified feature.
+    #[allow(dead_code)] // Might be useful in the future
     fn with_feature<S: Into<String>>(mut self, feature: S) -> Self {
         self.features.push(feature.into());
         self
