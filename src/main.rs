@@ -21,7 +21,6 @@ use std::io::BufReader;
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
 use std::process;
-use std::time::Duration;
 
 use ansi_term::Color;
 use app_dirs::AppInfo;
@@ -38,7 +37,7 @@ mod tokenizer;
 mod types;
 
 use crate::cache::Cache;
-use crate::config::{get_config_path, make_default_config, Config};
+use crate::config::{get_config_path, make_default_config, Config, MAX_CACHE_AGE};
 use crate::error::TealdeerError::{CacheError, ConfigError, UpdateError};
 use crate::formatter::print_lines;
 use crate::tokenizer::Tokenizer;
@@ -86,7 +85,6 @@ To render a local file (for testing):
     $ tldr --render /path/to/file.md
 ";
 const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
-const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
 #[cfg(not(target_os = "windows"))]
 const PAGER_COMMAND: &str = "less -R";
 
@@ -108,23 +106,10 @@ struct Args {
 }
 
 /// Print page by path
-fn print_page(path: &Path, enable_markdown: bool, enable_styles: bool) -> Result<(), String> {
+fn print_page(path: &Path, enable_markdown: bool, config: &Config) -> Result<(), String> {
     // Open file
     let file = File::open(path).map_err(|msg| format!("Could not open file: {}", msg))?;
     let reader = BufReader::new(file);
-
-    // Look up config file, if none is found fall back to default config.
-    let config = match Config::load(enable_styles) {
-        Ok(config) => config,
-        Err(ConfigError(msg)) => {
-            eprintln!("Could not load config: {}", msg);
-            process::exit(1);
-        }
-        Err(e) => {
-            eprintln!("Could not load config: {}", e);
-            process::exit(1);
-        }
-    };
 
     if enable_markdown {
         // Print the raw markdown of the file.
@@ -142,59 +127,42 @@ fn print_page(path: &Path, enable_markdown: bool, enable_styles: bool) -> Result
 
 /// Set up display pager
 #[cfg(not(target_os = "windows"))]
-fn configure_pager(args: &Args, enable_styles: bool) {
-    // Flags have precedence
-    if args.flag_pager {
-        Pager::with_default_pager(PAGER_COMMAND).setup();
-        return;
-    }
-
-    // Then check config
-    let config = match Config::load(enable_styles) {
-        Ok(config) => config,
-        Err(ConfigError(msg)) => {
-            eprintln!("Could not load config: {}", msg);
-            process::exit(1);
-        }
-        Err(e) => {
-            eprintln!("Could not load config: {}", e);
-            process::exit(1);
-        }
-    };
-
-    if config.display.use_pager {
-        Pager::with_default_pager(PAGER_COMMAND).setup();
-    }
+fn configure_pager() {
+    Pager::with_default_pager(PAGER_COMMAND).setup();
 }
 
 #[cfg(target_os = "windows")]
-fn configure_pager(_args: &Args, _enable_styles: bool) {
+fn configure_pager() {
     eprintln!("Warning: -p / --pager flag not available on Windows!");
+}
+
+fn should_update_cache(args: &Args, config: &Config) -> bool {
+    args.flag_update
+        || (config.updates.auto_update
+            && Cache::last_update().map_or(true, |ago| ago >= config.updates.auto_update_interval))
 }
 
 /// Check the cache for freshness
 fn check_cache(args: &Args) {
-    if !args.flag_update {
-        match Cache::last_update() {
-            Some(ago) if ago > MAX_CACHE_AGE => {
-                if args.flag_quiet {
-                    return;
-                }
-                eprintln!(
-                    "{}",
-                    Color::Yellow.paint(format!(
-                        "The cache hasn't been updated for more than {} days.\n\
+    match Cache::last_update() {
+        Some(ago) if ago > MAX_CACHE_AGE => {
+            if args.flag_quiet {
+                return;
+            }
+            eprintln!(
+                "{}",
+                Color::Yellow.paint(format!(
+                    "The cache hasn't been updated for more than {} days.\n\
                          You should probably run `tldr --update` soon.",
-                        MAX_CACHE_AGE.as_secs() / 24 / 3600
-                    ))
-                );
-            }
-            None => {
-                eprintln!("Cache not found. Please run `tldr --update`.");
-                process::exit(1);
-            }
-            _ => {}
+                    MAX_CACHE_AGE.as_secs() / 24 / 3600
+                ))
+            );
         }
+        None => {
+            eprintln!("Cache not found. Please run `tldr --update`.");
+            process::exit(1);
+        }
+        _ => {}
     };
 }
 
@@ -320,14 +288,38 @@ fn main() {
         process::exit(0);
     }
 
+    // Show config file and path, pass through
+    if args.flag_config_path {
+        show_config_path();
+    }
+
+    // Create a basic config and exit
+    if args.flag_seed_config {
+        create_config_and_exit();
+    }
+
     // Determine the usage of styles
     #[cfg(target_os = "windows")]
     let enable_styles = ansi_term::enable_ansi_support().is_ok();
     #[cfg(not(target_os = "windows"))]
     let enable_styles = true;
 
-    // Configure pager
-    configure_pager(&args, enable_styles);
+    // Look up config file, if none is found fall back to default config.
+    let config = match Config::load(enable_styles) {
+        Ok(config) => config,
+        Err(ConfigError(msg)) => {
+            eprintln!("Could not load config: {}", msg);
+            process::exit(1);
+        }
+        Err(e) => {
+            eprintln!("Could not load config: {}", e);
+            process::exit(1);
+        }
+    };
+
+    if args.flag_pager || config.display.use_pager {
+        configure_pager();
+    }
 
     // Specify target OS
     let os: OsType = match args.flag_os {
@@ -344,24 +336,17 @@ fn main() {
     }
 
     // Update cache, pass through
-    if args.flag_update {
+    let cache_updated = if should_update_cache(&args, &config) {
         update_cache(&cache, args.flag_quiet);
-    }
-
-    // Show config file and path, pass through
-    if args.flag_config_path {
-        show_config_path();
-    }
-
-    // Create a basic config and exit
-    if args.flag_seed_config {
-        create_config_and_exit();
-    }
+        true
+    } else {
+        false
+    };
 
     // Render local file and exit
     if let Some(ref file) = args.flag_render {
         let path = PathBuf::from(file);
-        if let Err(msg) = print_page(&path, args.flag_markdown, enable_styles) {
+        if let Err(msg) = print_page(&path, args.flag_markdown, &config) {
             eprintln!("{}", msg);
             process::exit(1);
         } else {
@@ -371,8 +356,10 @@ fn main() {
 
     // List cached commands and exit
     if args.flag_list {
-        // Check cache for freshness
-        check_cache(&args);
+        if !cache_updated {
+            // Check cache for freshness
+            check_cache(&args);
+        }
 
         // Get list of pages
         let pages = cache.list_pages().unwrap_or_else(|e| {
@@ -392,12 +379,15 @@ fn main() {
     // Show command from cache
     if let Some(ref command) = args.arg_command {
         let command = command.join("-");
-        // Check cache for freshness
-        check_cache(&args);
+
+        if !cache_updated {
+            // Check cache for freshness
+            check_cache(&args);
+        }
 
         // Search for command in cache
         if let Some(path) = cache.find_page(&command) {
-            if let Err(msg) = print_page(&path, args.flag_markdown, enable_styles) {
+            if let Err(msg) = print_page(&path, args.flag_markdown, &config) {
                 eprintln!("{}", msg);
                 process::exit(1);
             } else {

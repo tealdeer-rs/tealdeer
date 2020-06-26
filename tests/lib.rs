@@ -2,13 +2,14 @@
 
 extern crate assert_cmd;
 extern crate escargot;
+extern crate filetime;
 extern crate predicates;
 extern crate tempdir;
-extern crate utime;
 
 use std::fs::{create_dir_all, File};
 use std::io::Write;
 use std::process::Command;
+use std::time::{Duration, SystemTime};
 
 use assert_cmd::prelude::*;
 use tempdir::TempDir;
@@ -160,7 +161,11 @@ fn test_quiet_old_cache() {
         .success()
         .stdout(is_empty());
 
-    let _ = utime::set_file_times(testenv.cache_dir.path().join("tldr-master"), 1, 1).unwrap();
+    filetime::set_file_mtime(
+        testenv.cache_dir.path().join("tldr-master"),
+        filetime::FileTime::from_unix_time(1, 0),
+    )
+    .unwrap();
 
     testenv
         .command()
@@ -353,4 +358,60 @@ fn test_list_flag_rendering() {
         .assert()
         .success()
         .stdout("bar\nbaz\nfoo\nqux\n");
+}
+
+#[test]
+fn test_autoupdate_cache() {
+    let testenv = TestEnv::new();
+
+    // The first time, if automatic updates are disabled, the cache should not be found
+    testenv
+        .command()
+        .args(&["--list"])
+        .assert()
+        .failure()
+        .stderr(contains("Cache not found. Please run `tldr --update`."));
+
+    let config_file_path = testenv.config_dir.path().join("config.toml");
+    let cache_file_path = testenv.cache_dir.path().join("tldr-master");
+
+    // Activate automatic updates, set the auto-update interval to 24 hours
+    let mut config_file = File::create(&config_file_path).unwrap();
+    config_file
+        .write("[updates]\nauto_update = true\nauto_update_interval_hours = 24".as_bytes())
+        .unwrap();
+    config_file.flush().unwrap();
+
+    // Helper function that runs `tldr --list` and asserts that the cache is automatically updated
+    // or not, depending on the value of `expected`.
+    let check_cache_updated = |expected| {
+        let assert = testenv.command().args(&["--list"]).assert().success();
+        let pred = contains("Successfully updated cache");
+        if expected {
+            assert.stdout(pred)
+        } else {
+            assert.stdout(pred.not())
+        };
+    };
+
+    // The cache is updated the first time we run `tldr --list`
+    check_cache_updated(true);
+
+    // The cache is not updated with a subsequent call
+    check_cache_updated(false);
+
+    // We update the modification and access times such that they are about 23 hours from now.
+    // auto-update interval is 24 hours, the cache should not be updated
+    let new_mtime = SystemTime::now() - Duration::from_secs(82_800);
+    filetime::set_file_mtime(&cache_file_path, new_mtime.into()).unwrap();
+    check_cache_updated(false);
+
+    // We update the modification and access times such that they are about 25 hours from now.
+    // auto-update interval is 24 hours, the cache should be updated
+    let new_mtime = SystemTime::now() - Duration::from_secs(90_000);
+    filetime::set_file_mtime(&cache_file_path, new_mtime.into()).unwrap();
+    check_cache_updated(true);
+
+    // The cache is not updated with a subsequent call
+    check_cache_updated(false);
 }

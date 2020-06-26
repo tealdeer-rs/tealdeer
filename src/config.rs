@@ -2,6 +2,7 @@ use std::env;
 use std::fs;
 use std::io::{Error as IoError, Read, Write};
 use std::path::PathBuf;
+use std::time::Duration;
 
 use ansi_term::{Color, Style};
 use app_dirs::{get_app_root, AppDataType};
@@ -12,6 +13,8 @@ use toml;
 use crate::error::TealdeerError::{self, ConfigError};
 
 pub const CONFIG_FILE_NAME: &str = "config.toml";
+pub const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
+const DEFAULT_UPDATE_INTERVAL_HOURS: u64 = MAX_CACHE_AGE.as_secs() / 3600; // 30 days
 
 fn default_underline() -> bool {
     false
@@ -116,12 +119,38 @@ struct RawDisplayConfig {
     pub use_pager: bool,
 }
 
+/// Serde doesn't support default values yet (tracking issue:
+/// https://github.com/serde-rs/serde/issues/368), so we need to wrap DEFAULT_UPDATE_INTERVAL_HOURS
+/// in a function to be able to use #[serde(default = ...)]
+const fn default_auto_update_interval_hours() -> u64 {
+    DEFAULT_UPDATE_INTERVAL_HOURS
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+struct RawUpdatesConfig {
+    #[serde(default)]
+    pub auto_update: bool,
+    #[serde(default = "default_auto_update_interval_hours")]
+    pub auto_update_interval_hours: u64,
+}
+
+impl Default for RawUpdatesConfig {
+    fn default() -> Self {
+        Self {
+            auto_update: false,
+            auto_update_interval_hours: DEFAULT_UPDATE_INTERVAL_HOURS,
+        }
+    }
+}
+
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawConfig {
     #[serde(default)]
     style: RawStyleConfig,
     #[serde(default)]
     display: RawDisplayConfig,
+    #[serde(default)]
+    updates: RawUpdatesConfig,
 }
 
 impl RawConfig {
@@ -134,7 +163,6 @@ impl RawConfig {
         raw_config.style.example_code.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.underline = true;
-        raw_config.display.use_pager = false;
 
         raw_config
     }
@@ -156,9 +184,16 @@ pub struct DisplayConfig {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+pub struct UpdatesConfig {
+    pub auto_update: bool,
+    pub auto_update_interval: Duration,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Config {
     pub style: StyleConfig,
     pub display: DisplayConfig,
+    pub updates: UpdatesConfig,
 }
 
 impl From<RawConfig> for Config {
@@ -174,6 +209,12 @@ impl From<RawConfig> for Config {
             display: DisplayConfig {
                 compact: raw_config.display.compact,
                 use_pager: raw_config.display.use_pager,
+            },
+            updates: UpdatesConfig {
+                auto_update: raw_config.updates.auto_update,
+                auto_update_interval: Duration::from_secs(
+                    raw_config.updates.auto_update_interval_hours * 3600,
+                ),
             },
         }
     }
