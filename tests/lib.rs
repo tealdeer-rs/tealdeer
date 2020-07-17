@@ -415,3 +415,31 @@ fn test_autoupdate_cache() {
     // The cache is not updated with a subsequent call
     check_cache_updated(false);
 }
+
+#[test]
+#[cfg(target_os = "windows")]
+fn test_pager_warning() {
+    let testenv = TestEnv::new();
+    testenv
+        .command()
+        .args(&["--update"])
+        .assert()
+        .success()
+        .stdout(contains("Successfully updated cache."));
+
+    // Regular call should not show a "pager flag not available on windows" warning
+    testenv
+        .command()
+        .args(&["tar"])
+        .assert()
+        .success()
+        .stderr(contains("pager flag not available on Windows").not());
+
+    // But it should be shown if the pager flag is true
+    testenv
+        .command()
+        .args(&["tar", "-p"])
+        .assert()
+        .success()
+        .stderr(contains("pager flag not available on Windows"));
+}
