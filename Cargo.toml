@@ -33,8 +33,8 @@ xdg = "2.1.0"
 pager = "0.15"
 
 [dev-dependencies]
-assert_cmd = "0.10"
-escargot = "0.3"
+assert_cmd = "1.0.1"
+escargot = "0.5"
 predicates = "1.0"
 tempdir = "^0.3"
 filetime = "0.2.10"
