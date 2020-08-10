@@ -2,7 +2,7 @@ use std::env;
 use std::ffi::OsStr;
 use std::fs;
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use app_dirs::{get_app_root, AppDataType};
 use flate2::read::GzDecoder;
@@ -142,41 +142,53 @@ impl Cache {
         }
     }
 
+    /// Check for pages for a given platform in one of the given languages.
+    fn find_page_for_platform(
+        name: &str,
+        cache_dir: &Path,
+        platform: &str,
+        language_dirs: &[String],
+    ) -> Option<PathBuf> {
+        language_dirs
+            .iter()
+            .map(|lang_dir| cache_dir.join(lang_dir).join(platform).join(name))
+            .find(|path| path.exists() && path.is_file())
+    }
+
     /// Search for a page and return the path to it.
-    pub fn find_page(&self, name: &str) -> Option<PathBuf> {
-        // Build page file name
+    pub fn find_page(&self, name: &str, languages: &[String]) -> Option<PathBuf> {
         let page_filename = format!("{}.md", name);
 
         // Get platform dir
-        let platforms_dir = match Self::get_cache_dir() {
-            Ok(cache_dir) => cache_dir.join("tldr-master").join("pages"),
+        let cache_dir = match Self::get_cache_dir() {
+            Ok(cache_dir) => cache_dir.join("tldr-master"),
             Err(e) => {
                 log::error!("Could not get cache directory: {}", e);
                 return None;
             }
         };
 
-        // Determine platform
-        let platform = self.get_platform_dir();
+        let lang_dirs: Vec<String> = languages
+            .iter()
+            .map(|lang| {
+                if lang == "en" {
+                    String::from("pages")
+                } else {
+                    format!("pages.{}", lang)
+                }
+            })
+            .collect();
 
-        // Search for the page in the platform specific directory
-        if let Some(pf) = platform {
-            let path = platforms_dir.join(&pf).join(&page_filename);
-            if path.exists() && path.is_file() {
-                return Some(path);
+        // Try to find a platform specific path first.
+        if let Some(pf) = self.get_platform_dir() {
+            let pf_path = Self::find_page_for_platform(&page_filename, &cache_dir, pf, &lang_dirs);
+            if pf_path.is_some() {
+                return pf_path;
             }
         }
 
-        // If platform is not supported or if platform specific page does not exist,
-        // look up the page in the "common" directory.
-        let path = platforms_dir.join("common").join(&page_filename);
-
-        // Return it if it exists, otherwise give up and return `None`
-        if path.exists() && path.is_file() {
-            Some(path)
-        } else {
-            None
-        }
+        // Did not find platform specific results, fall back to "common"
+        Self::find_page_for_platform(&page_filename, &cache_dir, "common", &lang_dirs)
     }
 
     /// Return the available pages.

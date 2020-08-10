@@ -17,6 +17,7 @@
 #[cfg(feature = "logging")]
 extern crate env_logger;
 
+use std::collections::HashSet;
 use std::env;
 use std::fs::File;
 use std::io::BufRead;
@@ -60,19 +61,20 @@ Usage:
 
 Options:
 
-    -h --help           Show this screen
-    -v --version        Show version information
-    -l --list           List all commands in the cache
-    -f --render <file>  Render a specific markdown file
-    -o --os <type>      Override the operating system [linux, osx, sunos, windows]
-    -u --update         Update the local cache
-    -c --clear-cache    Clear the local cache
-    -p --pager          Use a pager to page output
-    -m --markdown       Display the raw markdown instead of rendering it
-    -q --quiet          Suppress informational messages
-    --config-path       Show config file path
-    --seed-config       Create a basic config
-    --color <when>      Control when to use color [always, auto, never] [default: auto]
+    -h --help             Show this screen
+    -v --version          Show version information
+    -l --list             List all commands in the cache
+    -f --render <file>    Render a specific markdown file
+    -o --os <type>        Override the operating system [linux, osx, sunos, windows]
+    -L --language <lang>  Override the language settings
+    -u --update           Update the local cache
+    -c --clear-cache      Clear the local cache
+    -p --pager            Use a pager to page output
+    -m --markdown         Display the raw markdown instead of rendering it
+    -q --quiet            Suppress informational messages
+    --config-path         Show config file path
+    --seed-config         Create a basic config
+    --color <when>        Control when to use color [always, auto, never] [default: auto]
 
 Examples:
 
@@ -109,6 +111,7 @@ struct Args {
     flag_seed_config: bool,
     flag_markdown: bool,
     flag_color: ColorOptions,
+    flag_language: Option<String>,
 }
 
 /// Print page by path
@@ -290,6 +293,46 @@ fn get_os() -> OsType {
     OsType::Other
 }
 
+fn get_languages(
+    env_lang: Result<String, std::env::VarError>,
+    env_language: Result<String, std::env::VarError>,
+) -> Vec<String> {
+    // Language list according to
+    // https://github.com/tldr-pages/tldr/blob/master/CLIENT-SPECIFICATION.md#language
+
+    if let Ok(lang) = env_lang {
+        let language = env_language.unwrap_or_default();
+        let mut locales: Vec<&str> = language.split(':').collect();
+        locales.push(&lang);
+        locales.push("en");
+
+        let mut lang_list = Vec::new();
+        let mut found_languages = HashSet::new();
+
+        for locale in &locales {
+            if locale.len() >= 5 && locale.chars().nth(2) == Some('_') {
+                // Language with country code
+                let lang = &locale[..5];
+                if found_languages.insert(lang) {
+                    lang_list.push(lang);
+                }
+            }
+            if locale.len() >= 2 && *locale != "POSIX" {
+                // Language code
+                let lang = &locale[..2];
+                if found_languages.insert(lang) {
+                    lang_list.push(lang);
+                }
+            }
+        }
+
+        return lang_list.iter().map(|&s| String::from(s)).collect();
+    }
+
+    // Without the LANG environment variable, only English pages should be looked up.
+    vec!["en".into()]
+}
+
 fn main() {
     // Initialize logger
     init_log();
@@ -417,8 +460,15 @@ fn main() {
             check_cache(&args, enable_styles);
         }
 
+        let languages = if let Some(ref lang) = args.flag_language {
+            // Language overwritten by console argument
+            vec![lang.clone()]
+        } else {
+            get_languages(std::env::var("LANG"), std::env::var("LANGUAGE"))
+        };
+
         // Search for command in cache
-        if let Some(path) = cache.find_page(&command) {
+        if let Some(path) = cache.find_page(&command, &languages) {
             if let Err(msg) = print_page(&path, args.flag_markdown, &config) {
                 eprintln!("{}", msg);
                 process::exit(1);
