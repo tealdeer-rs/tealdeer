@@ -107,6 +107,10 @@ Build and install the tool via cargo...
 
     $ cargo install tealdeer
 
+*(Note: You might need to install OpenSSL development headers, otherwise you get
+a "failed to run custom build command for openssl-sys" error message. The
+package is called `libssl-dev` on Ubuntu.)*
+
 ### From Package Manager
 
 tealdeer has been added to a few package managers:
