@@ -15,6 +15,7 @@ complete -c tldr -s m -l markdown    -d 'Display the raw markdown instead of ren
 complete -c tldr -s q -l quiet       -d 'Suppress informational messages.' -f
 complete -c tldr      -l config-path -d 'Show config file path.' -f
 complete -c tldr      -l seed-config -d 'Create a basic config.' -f
+complete -c tldr      -l color       -d 'Controls when to use color.' -xa 'always auto never'
 
 function __tealdeer_entries
     tldr --list | string replace -a -i -r "\,\s" "\n"

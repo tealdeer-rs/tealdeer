@@ -241,7 +241,12 @@ fn test_markdown_rendering() {
         .stdout(similar(expected));
 }
 
-fn _test_correct_rendering(input_file: &str, filename: &str) {
+fn _test_correct_rendering(
+    input_file: &str,
+    filename: &str,
+    expected: &'static str,
+    color_option: &str,
+) {
     let testenv = TestEnv::new();
 
     // Create input file
@@ -250,10 +255,9 @@ fn _test_correct_rendering(input_file: &str, filename: &str) {
     let mut file = File::create(&file_path).unwrap();
     file.write_all(input_file.as_bytes()).unwrap();
 
-    let expected = include_str!("inkscape-default.expected");
     testenv
         .command()
-        .args(&["-f", &file_path.to_str().unwrap()])
+        .args(&["--color", color_option, "-f", &file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(similar(expected));
@@ -262,13 +266,46 @@ fn _test_correct_rendering(input_file: &str, filename: &str) {
 /// An end-to-end integration test for direct file rendering (v1 syntax).
 #[test]
 fn test_correct_rendering_v1() {
-    _test_correct_rendering(include_str!("inkscape-v1.md"), "inkscape-v1.md");
+    _test_correct_rendering(
+        include_str!("inkscape-v1.md"),
+        "inkscape-v1.md",
+        include_str!("inkscape-default.expected"),
+        "always",
+    );
 }
 
 /// An end-to-end integration test for direct file rendering (v2 syntax).
 #[test]
 fn test_correct_rendering_v2() {
-    _test_correct_rendering(include_str!("inkscape-v2.md"), "inkscape-v2.md");
+    _test_correct_rendering(
+        include_str!("inkscape-v2.md"),
+        "inkscape-v2.md",
+        include_str!("inkscape-default.expected"),
+        "always",
+    );
+}
+
+#[test]
+/// An end-to-end integration test for direct file rendering with the `--color auto` option. This
+/// will not use styling since output is not stdout.
+fn test_rendering_color_auto() {
+    _test_correct_rendering(
+        include_str!("inkscape-v2.md"),
+        "inkscape-v2.md",
+        include_str!("inkscape-default-no-color.expected"),
+        "auto",
+    );
+}
+
+#[test]
+/// An end-to-end integration test for direct file rendering with the `--color never` option.
+fn test_rendering_color_never() {
+    _test_correct_rendering(
+        include_str!("inkscape-v2.md"),
+        "inkscape-v2.md",
+        include_str!("inkscape-default-no-color.expected"),
+        "never",
+    );
 }
 
 /// An end-to-end integration test for rendering with constom syntax config.
@@ -299,7 +336,7 @@ fn test_correct_rendering_with_config() {
 
     testenv
         .command()
-        .args(&["-f", &file_path.to_str().unwrap()])
+        .args(&["--color", "always", "-f", &file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(similar(expected));

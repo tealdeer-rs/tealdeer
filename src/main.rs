@@ -16,14 +16,16 @@
 #[cfg(feature = "logging")]
 extern crate env_logger;
 
+use std::env;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::process;
 
-use ansi_term::Color;
+use ansi_term::{Color, Style};
 use app_dirs::AppInfo;
+use atty::Stream;
 use docopt::Docopt;
 #[cfg(not(target_os = "windows"))]
 use pager::Pager;
@@ -41,7 +43,7 @@ use crate::config::{get_config_path, make_default_config, Config, MAX_CACHE_AGE}
 use crate::error::TealdeerError::{CacheError, ConfigError, UpdateError};
 use crate::formatter::print_lines;
 use crate::tokenizer::Tokenizer;
-use crate::types::OsType;
+use crate::types::{ColorOptions, OsType};
 
 const NAME: &str = "tealdeer";
 const APP_INFO: AppInfo = AppInfo {
@@ -69,6 +71,7 @@ Options:
     -q --quiet          Suppress informational messages
     --config-path       Show config file path
     --seed-config       Create a basic config
+    --color <when>      Control when to use color [always, auto, never] [default: auto]
 
 Examples:
 
@@ -104,6 +107,7 @@ struct Args {
     flag_config_path: bool,
     flag_seed_config: bool,
     flag_markdown: bool,
+    flag_color: ColorOptions,
 }
 
 /// Print page by path
@@ -144,15 +148,23 @@ fn should_update_cache(args: &Args, config: &Config) -> bool {
 }
 
 /// Check the cache for freshness
-fn check_cache(args: &Args) {
+fn check_cache(args: &Args, enable_styles: bool) {
     match Cache::last_update() {
         Some(ago) if ago > MAX_CACHE_AGE => {
             if args.flag_quiet {
                 return;
             }
+
+            // Only use color if enabled
+            let warning_style = if enable_styles {
+                Style::new().fg(Color::Yellow)
+            } else {
+                Style::default()
+            };
+
             eprintln!(
                 "{}",
-                Color::Yellow.paint(format!(
+                warning_style.paint(format!(
                     "The cache hasn't been updated for more than {} days.\n\
                          You should probably run `tldr --update` soon.",
                     MAX_CACHE_AGE.as_secs() / 24 / 3600
@@ -305,9 +317,23 @@ fn main() {
 
     // Determine the usage of styles
     #[cfg(target_os = "windows")]
-    let enable_styles = ansi_term::enable_ansi_support().is_ok();
+    let ansi_support = ansi_term::enable_ansi_support().is_ok();
     #[cfg(not(target_os = "windows"))]
-    let enable_styles = true;
+    let ansi_support = true;
+
+    let enable_styles = match args.flag_color {
+        // Attempt to use styling if instructed
+        ColorOptions::Always => true,
+        // Enable styling if:
+        // * There is `ansi_support`
+        // * NO_COLOR env var isn't set: https://no-color.org/
+        // * The output stream is stdout (not being piped)
+        ColorOptions::Auto => {
+            ansi_support && env::var_os("NO_COLOR").is_none() && atty::is(Stream::Stdout)
+        }
+        // Disable styling
+        ColorOptions::Never => false,
+    };
 
     // Look up config file, if none is found fall back to default config.
     let config = match Config::load(enable_styles) {
@@ -363,7 +389,7 @@ fn main() {
     if args.flag_list {
         if !cache_updated {
             // Check cache for freshness
-            check_cache(&args);
+            check_cache(&args, enable_styles);
         }
 
         // Get list of pages
@@ -387,7 +413,7 @@ fn main() {
 
         if !cache_updated {
             // Check cache for freshness
-            check_cache(&args);
+            check_cache(&args, enable_styles);
         }
 
         // Search for command in cache
