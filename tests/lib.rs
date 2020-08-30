@@ -12,9 +12,9 @@ use std::process::Command;
 use std::time::{Duration, SystemTime};
 
 use assert_cmd::prelude::*;
-use tempdir::TempDir;
 use predicates::boolean::PredicateBooleanExt;
 use predicates::prelude::predicate::str::{contains, is_empty, similar};
+use tempdir::TempDir;
 
 struct TestEnv {
     pub cache_dir: TempDir,
@@ -37,7 +37,12 @@ impl TestEnv {
 
     /// Add entry for that environment.
     fn add_entry(&self, name: &str, contents: &str) {
-        let dir = self.cache_dir.path().join("tldr-master").join("pages").join("common");
+        let dir = self
+            .cache_dir
+            .path()
+            .join("tldr-master")
+            .join("pages")
+            .join("common");
         create_dir_all(&dir).unwrap();
 
         let mut file = File::create(&dir.join(format!("{}.md", name))).unwrap();
@@ -72,8 +77,14 @@ impl TestEnv {
         }
         let run = build.run().unwrap();
         let mut cmd = run.command();
-        cmd.env("TEALDEER_CACHE_DIR", self.cache_dir.path().to_str().unwrap());
-        cmd.env("TEALDEER_CONFIG_DIR", self.config_dir.path().to_str().unwrap());
+        cmd.env(
+            "TEALDEER_CACHE_DIR",
+            self.cache_dir.path().to_str().unwrap(),
+        );
+        cmd.env(
+            "TEALDEER_CONFIG_DIR",
+            self.config_dir.path().to_str().unwrap(),
+        );
         cmd
     }
 }
@@ -106,11 +117,7 @@ fn test_update_cache() {
         .success()
         .stdout(contains("Successfully updated cache."));
 
-    testenv
-        .command()
-        .args(&["sl"])
-        .assert()
-        .success();
+    testenv.command().args(&["sl"]).assert().success();
 }
 
 #[test]
@@ -205,7 +212,12 @@ fn test_show_config_path() {
         .success()
         .stdout(contains(format!(
             "Config path is: {}",
-            testenv.config_dir.path().join("config.toml").to_str().unwrap(),
+            testenv
+                .config_dir
+                .path()
+                .join("config.toml")
+                .to_str()
+                .unwrap(),
         )));
 }
 
@@ -279,7 +291,8 @@ fn test_correct_rendering_with_config() {
     println!("Testfile path: {:?}", &file_path);
 
     let mut file = File::create(&file_path).unwrap();
-    file.write_all(include_str!("inkscape-v2.md").as_bytes()).unwrap();
+    file.write_all(include_str!("inkscape-v2.md").as_bytes())
+        .unwrap();
 
     // Load expected output
     let expected = include_str!("inkscape-with-config.expected");

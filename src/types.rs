@@ -54,11 +54,7 @@ impl<'a> From<&'a str> for LineType {
                     .trim_start_matches(|chr: char| chr == '>' || chr.is_whitespace())
                     .into(),
             ),
-            Some(' ') => Self::ExampleCode(
-                trimmed
-                    .trim_start_matches(char::is_whitespace)
-                    .into(),
-            ),
+            Some(' ') => Self::ExampleCode(trimmed.trim_start_matches(char::is_whitespace).into()),
             _ => Self::ExampleText(trimmed.into()),
         }
     }
