@@ -150,7 +150,10 @@ impl Cache {
         // Get platform dir
         let platforms_dir = match Self::get_cache_dir() {
             Ok(cache_dir) => cache_dir.join("tldr-master").join("pages"),
-            _ => return None,
+            Err(e) => {
+                log::error!("Could not get cache directory: {}", e);
+                return None;
+            }
         };
 
         // Determine platform

@@ -89,6 +89,7 @@ const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar
 const PAGER_COMMAND: &str = "less -R";
 
 #[derive(Debug, Deserialize)]
+#[allow(clippy::struct_excessive_bools)]
 struct Args {
     arg_command: Option<Vec<String>>,
     flag_help: bool,
@@ -158,11 +159,11 @@ fn check_cache(args: &Args) {
                 ))
             );
         }
+        Some(_) => {}
         None => {
             eprintln!("Cache not found. Please run `tldr --update`.");
             process::exit(1);
         }
-        _ => {}
     };
 }
 
