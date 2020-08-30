@@ -8,7 +8,6 @@ use ansi_term::{Color, Style};
 use app_dirs::{get_app_root, AppDataType};
 use log::debug;
 use serde_derive::{Deserialize, Serialize};
-use toml;
 
 use crate::error::TealdeerError::{self, ConfigError};
 
@@ -120,8 +119,9 @@ struct RawDisplayConfig {
 }
 
 /// Serde doesn't support default values yet (tracking issue:
-/// https://github.com/serde-rs/serde/issues/368), so we need to wrap DEFAULT_UPDATE_INTERVAL_HOURS
-/// in a function to be able to use #[serde(default = ...)]
+/// <https://github.com/serde-rs/serde/issues/368>), so we need to wrap
+/// `DEFAULT_UPDATE_INTERVAL_HOURS` in a function to be able to use
+/// `#[serde(default = ...)]`
 const fn default_auto_update_interval_hours() -> u64 {
     DEFAULT_UPDATE_INTERVAL_HOURS
 }

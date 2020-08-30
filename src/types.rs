@@ -55,7 +55,7 @@ impl<'a> From<&'a str> for LineType {
                     .into(),
             ),
             Some(' ') => Self::ExampleCode(trimmed.trim_start_matches(char::is_whitespace).into()),
-            _ => Self::ExampleText(trimmed.into()),
+            Some(_) => Self::ExampleText(trimmed.into()),
         }
     }
 }
@@ -88,7 +88,7 @@ impl LineType {
                     .trim_matches(|chr: char| chr == '`' || chr.is_whitespace())
                     .into(),
             ),
-            _ => Self::Other(trimmed.into()),
+            Some(_) => Self::Other(trimmed.into()),
         }
     }
 }
