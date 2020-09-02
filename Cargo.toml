@@ -39,6 +39,7 @@ escargot = "0.5"
 predicates = "1.0"
 tempdir = "^0.3"
 filetime = "0.2.10"
+remove_dir_all = "=0.5.2"  # Only used to ensure compatibility with 1.39 (#133)
 
 [features]
 logging = ["env_logger"]
