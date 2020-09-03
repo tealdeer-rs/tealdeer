@@ -12,6 +12,27 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### [v1.4.0][v1.4.0] (2020-09-03)
+
+- [added] Configurable automatic cache updates ([#115][i115])
+- [added] Improved color detection and support for `--color` argument and
+  `NO_COLOR` env variable ([#111][i111])
+- [changed] Make `--list` option comply with official spec ([#112][i112])
+- [changed] Move cache age warning to stderr ([#113][i113])
+
+Contributors to this version:
+
+- [Atul Bhosale][@Atul9]
+- [Danny Mösch][@SimplyDanny]
+- [Ilaï Deutel][@ilai-deutel]
+- [Kornel][@kornelski]
+- [@LovecraftianHorror][@LovecraftianHorror]
+- [@michaeldel][@michaeldel]
+- [Niklas Mohrin][@niklasmohrin]
+
+Thanks!
+
+
 ### [v1.3.0][v1.3.0] (2020-02-28)
 
 - [added] New config option for compact output mode ([#89][i89])
@@ -105,27 +126,35 @@ Thanks!
 
 
 [@aldanor]: https://github.com/aldanor
+[@Atul9]: https://github.com/Atul9
 [@Bassets]: https://github.com/Bassets
 [@Calinou]: https://github.com/Calinou
 [@das-g]: https://github.com/das-g
 [@Delapouite]: https://github.com/Delapouite
 [@equal-l2]: https://github.com/equal-l2
+[@ilai-deutel]: https://github.com/ilai-deutel
 [@james2doyle]: https://github.com/james2doyle
 [@jcgruenhage]: https://github.com/jcgruenhage
 [@jdvr]: https://github.com/jdvr
 [@jedahan]: https://github.com/jedahan
 [@jesdazrez]: https://github.com/jesdazrez
+[@kornelski]: https://github.com/kornelski
 [@korrat]: https://github.com/korrat
+[@LovecraftianHorror]: https://github.com/LovecraftianHorror
 [@ma-renaud]: https://github.com/ma-renaud
+[@michaeldel]: https://github.com/michaeldel
 [@mystal]: https://github.com/mystal
 [@natpen]: https://github.com/natpen
+[@niklasmohrin]: https://github.com/niklasmohrin
 [@Plommonsorbet]: https://github.com/Plommonsorbet
+[@SimplyDanny]: https://github.com/SimplyDanny
 [@Voultapher]: https://github.com/Voultapher
 
 [v1.0.0]: https://github.com/dbrgn/tealdeer/compare/v0.4.0...v1.0.0
 [v1.1.0]: https://github.com/dbrgn/tealdeer/compare/v1.0.0...v1.1.0
 [v1.2.0]: https://github.com/dbrgn/tealdeer/compare/v1.1.0...v1.2.0
 [v1.3.0]: https://github.com/dbrgn/tealdeer/compare/v1.2.0...v1.3.0
+[v1.4.0]: https://github.com/dbrgn/tealdeer/compare/v1.3.0...v1.4.0
 
 [i34]: https://github.com/dbrgn/tealdeer/issues/34
 [i43]: https://github.com/dbrgn/tealdeer/issues/43
@@ -147,3 +176,7 @@ Thanks!
 [i95]: https://github.com/dbrgn/tealdeer/issues/95
 [i97]: https://github.com/dbrgn/tealdeer/issues/97
 [i99]: https://github.com/dbrgn/tealdeer/issues/99
+[i111]: https://github.com/dbrgn/tealdeer/issues/111
+[i112]: https://github.com/dbrgn/tealdeer/issues/112
+[i113]: https://github.com/dbrgn/tealdeer/issues/113
+[i115]: https://github.com/dbrgn/tealdeer/issues/115
