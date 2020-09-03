@@ -12,6 +12,7 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::similar_names)]
 #![allow(clippy::module_name_repetitions)]
+#![allow(clippy::too_many_lines)]
 
 #[cfg(feature = "logging")]
 extern crate env_logger;
