@@ -1156,7 +1156,7 @@ dependencies = [
 
 [[package]]
 name = "tealdeer"
-version = "1.3.0"
+version = "1.4.0"
 dependencies = [
  "ansi_term 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "app_dirs2 2.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
