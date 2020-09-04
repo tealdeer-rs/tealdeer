@@ -12,6 +12,18 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### [v1.4.1][v1.4.1] (2020-09-04)
+
+- [fixed] Syntax error in zsh completion file ([#138][i138])
+
+Contributors to this version:
+
+- [Francesco][@BachoSeven]
+- [Bruno A. Muciño][@mucinoab]
+
+Thanks!
+
+
 ### [v1.4.0][v1.4.0] (2020-09-03)
 
 - [added] Configurable automatic cache updates ([#115][i115])
@@ -127,6 +139,7 @@ Thanks!
 
 [@aldanor]: https://github.com/aldanor
 [@Atul9]: https://github.com/Atul9
+[@BachoSeven]: https://github.com/BachoSeven
 [@Bassets]: https://github.com/Bassets
 [@Calinou]: https://github.com/Calinou
 [@das-g]: https://github.com/das-g
@@ -143,6 +156,7 @@ Thanks!
 [@LovecraftianHorror]: https://github.com/LovecraftianHorror
 [@ma-renaud]: https://github.com/ma-renaud
 [@michaeldel]: https://github.com/michaeldel
+[@mucinoab]: https://github.com/mucinoab
 [@mystal]: https://github.com/mystal
 [@natpen]: https://github.com/natpen
 [@niklasmohrin]: https://github.com/niklasmohrin
@@ -155,6 +169,7 @@ Thanks!
 [v1.2.0]: https://github.com/dbrgn/tealdeer/compare/v1.1.0...v1.2.0
 [v1.3.0]: https://github.com/dbrgn/tealdeer/compare/v1.2.0...v1.3.0
 [v1.4.0]: https://github.com/dbrgn/tealdeer/compare/v1.3.0...v1.4.0
+[v1.4.1]: https://github.com/dbrgn/tealdeer/compare/v1.4.0...v1.4.1
 
 [i34]: https://github.com/dbrgn/tealdeer/issues/34
 [i43]: https://github.com/dbrgn/tealdeer/issues/43
@@ -180,3 +195,4 @@ Thanks!
 [i112]: https://github.com/dbrgn/tealdeer/issues/112
 [i113]: https://github.com/dbrgn/tealdeer/issues/113
 [i115]: https://github.com/dbrgn/tealdeer/issues/115
+[i138]: https://github.com/dbrgn/tealdeer/issues/138
