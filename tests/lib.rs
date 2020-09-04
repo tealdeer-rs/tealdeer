@@ -4,7 +4,7 @@ extern crate assert_cmd;
 extern crate escargot;
 extern crate filetime;
 extern crate predicates;
-extern crate tempdir;
+extern crate tempfile;
 
 use std::fs::{create_dir_all, File};
 use std::io::Write;
@@ -14,7 +14,7 @@ use std::time::{Duration, SystemTime};
 use assert_cmd::prelude::*;
 use predicates::boolean::PredicateBooleanExt;
 use predicates::prelude::predicate::str::{contains, is_empty, similar};
-use tempdir::TempDir;
+use tempfile::{Builder, TempDir};
 
 struct TestEnv {
     pub cache_dir: TempDir,
@@ -27,9 +27,9 @@ struct TestEnv {
 impl TestEnv {
     fn new() -> Self {
         TestEnv {
-            cache_dir: TempDir::new(".tldr.test.cache").unwrap(),
-            config_dir: TempDir::new(".tldr.test.config").unwrap(),
-            input_dir: TempDir::new(".tldr.test.input").unwrap(),
+            cache_dir: Builder::new().prefix(".tldr.test.cache").tempdir().unwrap(),
+            config_dir: Builder::new().prefix(".tldr.test.conf").tempdir().unwrap(),
+            input_dir: Builder::new().prefix(".tldr.test.input").tempdir().unwrap(),
             default_features: true,
             features: vec![],
         }
