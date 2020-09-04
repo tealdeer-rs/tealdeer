@@ -25,11 +25,11 @@ _tealdeer() {
 	"($I -q --quiet)"{-q,--quiet}"[Suppress informational messages]"
 	"($I)--config-path[Show config file path]"
 	"($I)--seed-config[Create a basic config]"
-	"($I --color)"{--color}'[Controls when to use color]:when:((
+	"($I)--color[Controls when to use color]:when:((
 	    always
 	    auto
 	    never
-        ))'
+        ))"
 	'(- *)'{-h,--help}'[Display help]'
     	'(- *)'{-v,--version}'[Show version information]'
     	'*:file:_files'
