@@ -37,7 +37,7 @@ pager = "0.15"
 assert_cmd = "1.0.1"
 escargot = "0.5"
 predicates = "1.0"
-tempdir = "^0.3"
+tempfile = "3.1.0"
 filetime = "0.2.10"
 remove_dir_all = "=0.5.2"  # Only used to ensure compatibility with 1.39 (#133)
 
