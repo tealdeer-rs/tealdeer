@@ -11,29 +11,29 @@ _tealdeer() {
 
     args+=(
         "($I -l --list)"{-l,--list}"[List all commands in the cache]"
-	"($I -f --render)"{-f,--render}"[Render a specific markdown file]:file:_files"
-	"($I -o --os)"{-o,--os}'[Override the operating system]:os:((
-             linux
-             osx
-       	     sunos
-	     windows
+        "($I -f --render)"{-f,--render}"[Render a specific markdown file]:file:_files"
+        "($I -o --os)"{-o,--os}'[Override the operating system]:os:((
+            linux
+            osx
+            sunos
+            windows
         ))'
-	"($I -u --update)"{-u,--update}"[Update the local cache]"
-	"($I -c --clear-cache)"{-c,--clear-cache}"[Clear the local cache]"
-	"($I -p --pager)"{-p,--pager}"[Use a pager to page output]"
-	"($I -m --markdown)"{-m,--markdown}"[Display the raw markdown instead of rendering it]"
-	"($I -q --quiet)"{-q,--quiet}"[Suppress informational messages]"
-	"($I)--config-path[Show config file path]"
-	"($I)--seed-config[Create a basic config]"
-	"($I)--color[Controls when to use color]:when:((
-	    always
-	    auto
-	    never
+        "($I -u --update)"{-u,--update}"[Update the local cache]"
+        "($I -c --clear-cache)"{-c,--clear-cache}"[Clear the local cache]"
+        "($I -p --pager)"{-p,--pager}"[Use a pager to page output]"
+        "($I -m --markdown)"{-m,--markdown}"[Display the raw markdown instead of rendering it]"
+        "($I -q --quiet)"{-q,--quiet}"[Suppress informational messages]"
+        "($I)--config-path[Show config file path]"
+        "($I)--seed-config[Create a basic config]"
+        "($I)--color[Controls when to use color]:when:((
+            always
+            auto
+            never
         ))"
-	'(- *)'{-h,--help}'[Display help]'
-    	'(- *)'{-v,--version}'[Show version information]'
-    	'*:file:_files'
-	'1: :_applications'
+        '(- *)'{-h,--help}'[Display help]'
+            '(- *)'{-v,--version}'[Show version information]'
+            '*:file:_files'
+        '1: :_applications'
     )
 
     _arguments $args[@] && ret=0
