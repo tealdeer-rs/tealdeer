@@ -494,7 +494,7 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use crate::{Args, OsType, USAGE};
+    use crate::{get_languages, Args, OsType, USAGE};
     use docopt::{Docopt, Error};
 
     fn test_helper(argv: &[&str]) -> Result<Args, Error> {
@@ -512,5 +512,48 @@ mod test {
     fn test_docopt_expect_error() {
         let argv = vec!["cp", "--os", "lindows"];
         assert!(!test_helper(&argv).is_ok());
+    }
+
+    #[test]
+    fn test_language_missing_lang_env() {
+        let lang_list = get_languages(Err(std::env::VarError::NotPresent), Ok("de:fr".into()));
+        assert_eq!(lang_list, vec!["en"]);
+        let lang_list = get_languages(
+            Err(std::env::VarError::NotPresent),
+            Err(std::env::VarError::NotPresent),
+        );
+        assert_eq!(lang_list, vec!["en"]);
+    }
+
+    #[test]
+    fn test_language_missing_language_env() {
+        let lang_list = get_languages(Ok("de".into()), Err(std::env::VarError::NotPresent));
+        assert_eq!(lang_list, vec!["de", "en"]);
+    }
+
+    #[test]
+    fn test_language_preference_order() {
+        let lang_list = get_languages(Ok("de".into()), Ok("fr:cn".into()));
+        assert_eq!(lang_list, vec!["fr", "cn", "de", "en"]);
+    }
+
+    #[test]
+    fn test_language_country_code_expansion() {
+        let lang_list = get_languages(Ok("pt_BR".into()), Err(std::env::VarError::NotPresent));
+        assert_eq!(lang_list, vec!["pt_BR", "pt", "en"]);
+    }
+
+    #[test]
+    fn test_language_ignore_posix_and_c() {
+        let lang_list = get_languages(Ok("POSIX".into()), Err(std::env::VarError::NotPresent));
+        assert_eq!(lang_list, vec!["en"]);
+        let lang_list = get_languages(Ok("C".into()), Err(std::env::VarError::NotPresent));
+        assert_eq!(lang_list, vec!["en"]);
+    }
+
+    #[test]
+    fn test_language_no_duplicates() {
+        let lang_list = get_languages(Ok("de".into()), Ok("fr:de:cn:de".into()));
+        assert_eq!(lang_list, vec!["fr", "de", "cn", "en"]);
     }
 }
