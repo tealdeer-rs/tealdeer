@@ -143,7 +143,7 @@ impl Cache {
     }
 
     /// Search for a page and return the path to it.
-    pub fn find_page(&self, name: &str) -> Option<PathBuf> {
+    pub fn find_pages(&self, name: &str) -> Option<Vec<PathBuf>> {
         // Build page file name
         let page_filename = format!("{}.md", name);
 
@@ -160,22 +160,50 @@ impl Cache {
         let platform = self.get_platform_dir();
 
         // Search for the page in the platform specific directory
-        if let Some(pf) = platform {
-            let path = platforms_dir.join(&pf).join(&page_filename);
-            if path.exists() && path.is_file() {
-                return Some(path);
+        let path = if let Some(pf) = platform {
+            let p = platforms_dir.join(&pf).join(&page_filename);
+            if p.exists() && p.is_file() {
+                Some(p)
+            } else {
+                None
             }
-        }
+        } else {
+            None
+        };
 
         // If platform is not supported or if platform specific page does not exist,
         // look up the page in the "common" directory.
-        let path = platforms_dir.join("common").join(&page_filename);
-
-        // Return it if it exists, otherwise give up and return `None`
-        if path.exists() && path.is_file() {
-            Some(path)
+        let path = if path.is_none() {
+            let p = platforms_dir.join("common").join(&page_filename);
+            if p.exists() && p.is_file() {
+                Some(p)
+            } else {
+                None
+            }
         } else {
             None
+        };
+
+        // Search the custom directory for matching files
+        let custom_env = if let Ok(value) = env::var("TEALDEER_CUSTOM_PAGES_DIR") {
+            value
+        } else {
+            String::from("../pages.custom")
+        };
+
+        let custom_path = platforms_dir.join(custom_env).join(&page_filename);
+        let custom_path = if custom_path.exists() && custom_path.is_file() {
+            Some(custom_path)
+        } else {
+            None
+        };
+
+        // Return it if it exists, otherwise give up and return `None`
+        match (path, custom_path) {
+            (Some(p), Some(cp)) => Some(vec![p, cp]),
+            (Some(p), None) => Some(vec![p]),
+            (None, Some(cp)) => Some(vec![cp]),
+            (None, None) => None,
         }
     }
 

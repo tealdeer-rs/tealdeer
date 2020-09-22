@@ -418,13 +418,14 @@ fn main() {
         }
 
         // Search for command in cache
-        if let Some(path) = cache.find_page(&command) {
-            if let Err(msg) = print_page(&path, args.flag_markdown, &config) {
-                eprintln!("{}", msg);
-                process::exit(1);
-            } else {
-                process::exit(0);
+        if let Some(paths) = cache.find_pages(&command) {
+            for path in paths {
+                if let Err(msg) = print_page(&path, args.flag_markdown, &config) {
+                    eprintln!("{}", msg);
+                    process::exit(1);
+                }
             }
+            process::exit(0);
         } else {
             if !args.flag_quiet {
                 println!("Page {} not found in cache", &command);
