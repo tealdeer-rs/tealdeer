@@ -160,7 +160,7 @@ impl Cache {
         let platform = self.get_platform_dir();
 
         // Search for the page in the platform specific directory
-        let path = if let Some(pf) = platform {
+        let pf_path = if let Some(pf) = platform {
             let p = platforms_dir.join(&pf).join(&page_filename);
             if p.exists() && p.is_file() {
                 Some(p)
@@ -173,24 +173,21 @@ impl Cache {
 
         // If platform is not supported or if platform specific page does not exist,
         // look up the page in the "common" directory.
-        let path = if path.is_none() {
-            let p = platforms_dir.join("common").join(&page_filename);
-            if p.exists() && p.is_file() {
-                Some(p)
-            } else {
-                None
-            }
+        let common_path = platforms_dir.join("common").join(&page_filename);
+        let common_path = if common_path.exists() && common_path.is_file() {
+            Some(common_path)
         } else {
             None
         };
 
-        // Search the custom directory for matching files
+        // Get custom pages directory
         let custom_env = if let Ok(value) = env::var("TEALDEER_CUSTOM_PAGES_DIR") {
             value
         } else {
             String::from("../pages.custom")
         };
 
+        // Search the custom directory for matching files
         let custom_path = platforms_dir.join(custom_env).join(&page_filename);
         let custom_path = if custom_path.exists() && custom_path.is_file() {
             Some(custom_path)
@@ -198,12 +195,14 @@ impl Cache {
             None
         };
 
-        // Return it if it exists, otherwise give up and return `None`
-        match (path, custom_path) {
-            (Some(p), Some(cp)) => Some(vec![p, cp]),
-            (Some(p), None) => Some(vec![p]),
-            (None, Some(cp)) => Some(vec![cp]),
-            (None, None) => None,
+        // Return pages if they exists, otherwise give up and return `None`
+        match (pf_path, common_path, custom_path) {
+            (Some(pfp), _, Some(cup)) => Some(vec![pfp, cup]),
+            (Some(pfp), _, None) => Some(vec![pfp]),
+            (None, Some(cop), Some(cup)) => Some(vec![cop, cup]),
+            (None, Some(cop), None) => Some(vec![cop]),
+            (None, None, Some(cup)) => Some(vec![cup]),
+            (None, None, None) => None,
         }
     }
 
