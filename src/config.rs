@@ -49,7 +49,7 @@ impl From<RawColor> for Color {
             RawColor::Purple => Self::Purple,
             RawColor::Cyan => Self::Cyan,
             RawColor::White => Self::White,
-            RawColor::ANSI(num) => Self::Fixed(num),
+            RawColor::Ansi(num) => Self::Fixed(num),
             RawColor::RGB { r, g, b } => Self::RGB(r, g, b),
         }
     }
