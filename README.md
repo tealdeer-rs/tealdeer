@@ -174,12 +174,12 @@ Possible styles:
 
 Currently supported attributes:
 
-- `foreground` (color string, see below)
-- `background` (color string, see below)
+- `foreground` (color string, ANSI code, or RGB, see below)
+- `background` (color string, ANSI code, or RGB, see below)
 - `underline` (`true` or `false`)
 - `bold` (`true` or `false`)
 
-The currently supported colors are:
+The currently supported color strings are:
 
 - `black`
 - `red`
@@ -189,6 +189,16 @@ The currently supported colors are:
 - `purple`
 - `cyan`
 - `white`
+
+ANSI color codes are also supported:
+```
+foreground = { ansi = 4 }
+```
+
+Finally, colors can also be configured by their RGB representation:
+```
+background = { rgb = { r = 255, g = 255, b = 255 } }
+```
 
 Example customization:
 
