@@ -34,7 +34,7 @@ pub enum RawColor {
     Purple,
     Cyan,
     White,
-    ANSI(u8),
+    Ansi(u8),
     RGB { r: u8, g: u8, b: u8 },
 }
 
