@@ -191,14 +191,12 @@ The currently supported color strings are:
 - `white`
 
 ANSI color codes are also supported:
-```
-foreground = { ansi = 4 }
-```
+
+    foreground = { ansi = 4 }
 
 Finally, colors can also be configured by their RGB representation:
-```
-background = { rgb = { r = 255, g = 255, b = 255 } }
-```
+
+    background = { rgb = { r = 255, g = 255, b = 255 } }
 
 Example customization:
 
