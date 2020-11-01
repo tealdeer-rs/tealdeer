@@ -1,0 +1,6 @@
+[book]
+authors = ["Danilo Bargen"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Tealdeer User Manual"
