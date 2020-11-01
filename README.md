@@ -9,7 +9,7 @@
 A very fast implementation of [tldr](https://github.com/tldr-pages/tldr) in
 Rust: Simplified, example based and community-driven man pages.
 
-<img src="screenshot-default.png" alt="Screenshot of tldr command" width="600">
+<img src="docs/src/screenshot-default.png" alt="Screenshot of tldr command" width="600">
 
 If you pronounce "tldr" in English, it sounds somewhat like "tealdeer". Hence the project name :)
 
