@@ -1,6 +1,6 @@
 # tealdeer
 
-![teal deer](deer.png)
+![teal deer](docs/src/deer.png)
 
 |Crate|CI (Linux/macOS/Windows)|
 |:---:|:---:|
@@ -56,83 +56,17 @@ These are the clients I tried but failed to compile or run:
 [PHP client](https://github.com/BrainMaestro/tldr-php).
 
 
-## Usage
+## Docs (Installing, Usage, Configuration)
 
-    tldr [options] <command>
-    tldr [options]
+User documentation is available at <https://dbrgn.github.io/tealdeer/>!
 
-    Options:
-
-        -h --help            Show this screen
-        -v --version         Show version information
-        -l --list            List all commands in the cache
-        -f --render <file>   Render a specific markdown file
-        -o --os <type>       Override the operating system [linux, osx, sunos, windows]
-        -u --update          Update the local cache
-        -c --clear-cache     Clear the local cache
-        -p --pager           Use a pager to page output
-        -m --markdown        Display the raw markdown instead of rendering it
-        -q --quiet           Suppress informational messages
-        --config-path        Show config file path
-        --seed-config        Create a basic config
-        --color <when>       Control when to use color [always, auto, never] [default: auto]
-
-    Examples:
-
-        $ tldr tar
-        $ tldr --list
-
-    To control the cache:
-
-        $ tldr --update
-        $ tldr --clear-cache
-
-    To render a local file (for testing):
-
-        $ tldr --render /path/to/file.md
+The docs are generated using [mdbook](https://rust-lang.github.io/mdBook/index.html).
+They can be edited through the markdown files in the `docs/src/` directory.
 
 
-## Installing
+## Development
 
-### Static Binaries (Linux)
-
-Static binary builds (currently for Linux only) are available on the
-[GitHub releases page](https://github.com/dbrgn/tealdeer/releases).
-Simply download the binary for your platform and run it!
-
-Builds for other platforms are planned.
-
-### Cargo Install (any platform)
-
-Build and install the tool via cargo...
-
-    $ cargo install tealdeer
-
-*(Note: You might need to install OpenSSL development headers, otherwise you get
-a "failed to run custom build command for openssl-sys" error message. The
-package is called `libssl-dev` on Ubuntu.)*
-
-### From Package Manager
-
-tealdeer has been added to a few package managers:
-
-- Arch Linux AUR: [`tealdeer`](https://aur.archlinux.org/packages/tealdeer/),
-  [`tealdeer-bin`](https://aur.archlinux.org/packages/tealdeer-bin/) or
-  [`tealdeer-git`](https://aur.archlinux.org/packages/tealdeer-git/)
-- Fedora: [`tealdeer`](https://src.fedoraproject.org/rpms/rust-tealdeer)
-- FreeBSD: [`sysutils/tealdeer`](https://www.freshports.org/sysutils/tealdeer/)
-- macOS Homebrew: [`tealdeer`](https://formulae.brew.sh/formula/tealdeer)
-- NetBSD: [`sysutils/tealdeer`](https://pkgsrc.se/sysutils/tealdeer)
-- Nix: [`tealdeer`](https://nixos.org/nixos/packages.html#tealdeer)
-- openSUSE: [`tealdeer`](https://software.opensuse.org/package/tealdeer?search_term=tealdeer)
-- Solus: [`tealdeer`](https://packages.getsol.us/shannon/t/tealdeer/)
-- Void Linux: [`tealdeer`](https://github.com/void-linux/void-packages/tree/master/srcpkgs/tealdeer)
-
-### From Source (any platform)
-
-tealdeer requires at least Rust 1.39.
-
-Debug build with logging enabled:
+Creating a debug build with logging enabled:
 
     $ cargo build --features logging
 
@@ -143,110 +77,6 @@ Release build without logging:
 To enable the log output, set the `RUST_LOG` env variable:
 
     $ export RUST_LOG=tldr=debug
-
-
-## Configuration
-
-The tldr command can be customized with a config file called `config.toml`.
-Creating the config file can be done manually or with the help of tldr:
-
-    $ tldr --seed-config
-
-The configuration file path follows OS conventions. It can be queried with the following command:
-
-    $ tldr --config-path
-
-The directory where the configuration file resides may be overwritten by the
-environment variable `TEALDEER_CONFIG_DIR`. Remember to use an absolute path.
-Variable expansion will not be performed on the path.
-
-### Style
-
-Using the config file, the style (e.g. colors or underlines) can be customized.
-
-Possible styles:
-
-- `description`: The initial description text
-- `command_name`: The command name as part of the example code
-- `example_text`: The text that describes an example
-- `example_code`: The example itself, except the `command_name` and `example_variable`
-- `example_variable`: The variables in the example
-
-Currently supported attributes:
-
-- `foreground` (color string, ANSI code, or RGB, see below)
-- `background` (color string, ANSI code, or RGB, see below)
-- `underline` (`true` or `false`)
-- `bold` (`true` or `false`)
-
-Colors can be specified in one of three ways:
-
-- Color string (`black`, `red`, `green`, `yellow`, `blue`, `purple`, `cyan`, `white`)
-- 256 color ANSI code (e.g. `foreground = { ansi = 4 }`)
-- 24-bit RGB color (e.g. `background = { rgb = { r = 255, g = 255, b = 255 } }`)
-
-Example customization:
-
-<img src="screenshot-custom.png" alt="Screenshot of customized version" width="600">
-
-### Display
-
-In the `display` section you can configure the output format.
-
-#### `use_pager`
-
-Specifies whether the pager should be used by default or not (default `false`).
-
-    [display]
-    use_pager = true
-
-When enabled, `less -R` is used as pager. To override the pager command used,
-set the `PAGER` environment variable.
-
-NOTE: This feature is not available on Windows.
-
-#### `compact`
-
-Set this to enforce more compact output, where empty lines are stripped out
-(default `false`).
-
-    [display]
-    compact = true
-
-
-### Automatic updates
-
-tealdeer can refresh the cache automatically when it is outdated. This
-behavior can be configured in the `updates` section and is disabled by
-default.
-
-#### `auto_update`
-
-Specifies whether the auto-update feature should be enabled (defaults to
-`false`).
-
-    [updates]
-    auto_update = true
-
-#### `auto_update_interval_hours`
-
-Duration, since the last cache update, after which the cache will be
-refreshed (defaults to 720 hours). This parameter is ignored if `auto_update`
-is set to `false`.
-
-    [updates]
-    auto_update = true
-    auto_update_interval_hours = 24
-
-
-## Autocompletion
-
-- *Bash*: copy `bash_tealdeer` to `/usr/share/bash-completion/completions/tldr`
-- *Fish*: copy `fish_tealdeer` to `~/.config/fish/completions/tldr.fish`
-- *Zsh*: copy `zsh_tealdeer` to `/usr/share/zsh/site-functions/_tldr`
-
-
-## Development
 
 To run tests:
 
