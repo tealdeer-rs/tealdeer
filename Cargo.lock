@@ -1274,7 +1274,6 @@ dependencies = [
  "tempfile",
  "toml",
  "walkdir",
- "xdg",
 ]
 
 [[package]]
