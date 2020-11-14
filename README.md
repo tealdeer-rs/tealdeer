@@ -17,6 +17,14 @@ In case you're in a hurry and just want to quickly try tealdeer, you can find st
 binaries on the [GitHub releases page](https://github.com/dbrgn/tealdeer/releases/)!
 
 
+## Docs (Installing, Usage, Configuration)
+
+User documentation is available at <https://dbrgn.github.io/tealdeer/>!
+
+The docs are generated using [mdbook](https://rust-lang.github.io/mdBook/index.html).
+They can be edited through the markdown files in the `docs/src/` directory.
+
+
 ## Goals
 
 High level project goals:
@@ -54,14 +62,6 @@ These are the clients I tried but failed to compile or run:
 [Perl client](https://github.com/skaji/perl-tldr),
 [Go client by anoopengineer](https://github.com/anoopengineer/tldr/),
 [PHP client](https://github.com/BrainMaestro/tldr-php).
-
-
-## Docs (Installing, Usage, Configuration)
-
-User documentation is available at <https://dbrgn.github.io/tealdeer/>!
-
-The docs are generated using [mdbook](https://rust-lang.github.io/mdBook/index.html).
-They can be edited through the markdown files in the `docs/src/` directory.
 
 
 ## Development
