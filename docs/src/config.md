@@ -18,7 +18,15 @@ The directory where the configuration file resides may be overwritten by the
 environment variable `TEALDEER_CONFIG_DIR`. Remember to use an absolute path.
 Variable expansion will not be performed on the path.
 
-## Example
+## Override Cache Directory
+
+Similarly, the cache directory where the pages are downloaded to, also follows
+OS conventions. On Linux, it will usually be at `~/.cache/tealdeer/`. The path
+can be overwritten using the environment variable `TEALDEER_CACHE_DIR`.
+Remember to use an absolute path. Variable expansion will not be performed on
+the path.
+
+## Config Example
 
 ```toml
 [display]
