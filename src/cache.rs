@@ -12,6 +12,7 @@ use std::time::{Duration, SystemTime};
 use tar::Archive;
 use walkdir::{DirEntry, WalkDir};
 
+use crate::config::Config;
 use crate::error::TealdeerError::{self, CacheError, UpdateError};
 use crate::types::OsType;
 
@@ -143,7 +144,7 @@ impl Cache {
     }
 
     /// Search for a page and return the path to it.
-    pub fn find_pages(&self, name: &str) -> Vec<PathBuf> {
+    pub fn find_pages(&self, name: &str, config: &Config) -> Vec<PathBuf> {
         // Get platform dir
         let platforms_dir = match Self::get_cache_dir() {
             Ok(cache_dir) => cache_dir.join("tldr-master").join("pages"),
@@ -154,11 +155,7 @@ impl Cache {
         };
 
         // Get custom pages directory
-        let custom_pages_directory = if let Ok(value) = env::var("TEALDEER_CUSTOM_PAGES_DIR") {
-            value
-        } else {
-            String::from("../pages.custom")
-        };
+        let custom_pages_directory = &config.directories.custom_pages_dir;
 
         // Look up custom page (<name>.page). If it exists, return it directly,
         let custom_page = format!("{}.page", name);
@@ -179,6 +176,8 @@ impl Cache {
         } else {
             None
         };
+        dbg!(&custom_pages_directory);
+        dbg!(&custom_patch);
 
         let page_filename = format!("{}.md", name);
 
@@ -201,6 +200,8 @@ impl Cache {
                 None => return vec![page],
             }
         }
+
+        // None of the above were resolved, return an empty vec.
         Vec::new()
     }
 

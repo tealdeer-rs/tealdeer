@@ -418,7 +418,7 @@ fn main() {
         }
 
         // Search for command in cache
-        let paths = cache.find_pages(&command);
+        let paths = cache.find_pages(&command, &config);
         if !paths.is_empty() {
             for path in paths {
                 if let Err(msg) = print_page(&path, args.flag_markdown, &config) {
