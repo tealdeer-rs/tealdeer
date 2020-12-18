@@ -143,67 +143,65 @@ impl Cache {
     }
 
     /// Search for a page and return the path to it.
-    pub fn find_pages(&self, name: &str) -> Option<Vec<PathBuf>> {
-        // Build page file name
-        let page_filename = format!("{}.md", name);
-
+    pub fn find_pages(&self, name: &str) -> Vec<PathBuf> {
         // Get platform dir
         let platforms_dir = match Self::get_cache_dir() {
             Ok(cache_dir) => cache_dir.join("tldr-master").join("pages"),
             Err(e) => {
                 log::error!("Could not get cache directory: {}", e);
-                return None;
+                return Vec::new();
             }
-        };
-
-        // Determine platform
-        let platform = self.get_platform_dir();
-
-        // Search for the page in the platform specific directory
-        let pf_path = if let Some(pf) = platform {
-            let p = platforms_dir.join(&pf).join(&page_filename);
-            if p.exists() && p.is_file() {
-                Some(p)
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-
-        // If platform is not supported or if platform specific page does not exist,
-        // look up the page in the "common" directory.
-        let common_path = platforms_dir.join("common").join(&page_filename);
-        let common_path = if common_path.exists() && common_path.is_file() {
-            Some(common_path)
-        } else {
-            None
         };
 
         // Get custom pages directory
-        let custom_env = if let Ok(value) = env::var("TEALDEER_CUSTOM_PAGES_DIR") {
+        let custom_pages_directory = if let Ok(value) = env::var("TEALDEER_CUSTOM_PAGES_DIR") {
             value
         } else {
             String::from("../pages.custom")
         };
 
-        // Search the custom directory for matching files
-        let custom_path = platforms_dir.join(custom_env).join(&page_filename);
-        let custom_path = if custom_path.exists() && custom_path.is_file() {
-            Some(custom_path)
+        // Look up custom page (<name>.page). If it exists, return it directly,
+        let custom_page = format!("{}.page", name);
+        let custom_page = platforms_dir
+            .join(&custom_pages_directory)
+            .join(&custom_page);
+        if custom_page.exists() && custom_page.is_file() {
+            return vec![custom_page];
+        }
+
+        // Look up custom patch (<name>.patch). If it exists, store it in a variable.
+        let custom_patch = format!("{}.patch", name);
+        let custom_patch = platforms_dir
+            .join(&custom_pages_directory)
+            .join(&custom_patch);
+        let custom_patch = if custom_patch.exists() && custom_patch.is_file() {
+            Some(custom_patch)
         } else {
             None
         };
 
-        // Return pages if they exists, otherwise give up and return `None`
-        match (pf_path, common_path, custom_path) {
-            (Some(pfp), _, Some(cup)) => Some(vec![pfp, cup]),
-            (Some(pfp), _, None) => Some(vec![pfp]),
-            (None, Some(cop), Some(cup)) => Some(vec![cop, cup]),
-            (None, Some(cop), None) => Some(vec![cop]),
-            (None, None, Some(cup)) => Some(vec![cup]),
-            (None, None, None) => None,
+        let page_filename = format!("{}.md", name);
+
+        // Look up platform-specific page. If it exists, return page plus the patch above (if set).
+        if let Some(platform_directory) = self.get_platform_dir() {
+            let page = platforms_dir.join(&platform_directory).join(&page_filename);
+            if page.exists() && page.is_file() {
+                match custom_patch {
+                    Some(patch) => return vec![page, patch],
+                    None => return vec![page],
+                }
+            }
         }
+
+        // Look up page from the "common" directory. If it exists, return page plus the patch above (if set).
+        let page = platforms_dir.join("common").join(&page_filename);
+        if page.exists() && page.is_file() {
+            match custom_patch {
+                Some(patch) => return vec![page, patch],
+                None => return vec![page],
+            }
+        }
+        Vec::new()
     }
 
     /// Return the available pages.
