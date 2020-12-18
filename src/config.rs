@@ -146,15 +146,23 @@ impl Default for RawUpdatesConfig {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 struct RawDirectoriesConfig {
     #[serde(default)]
-    pub custom_pages_dir: String,
+    pub custom_pages_dir: PathBuf,
 }
 
 impl Default for RawDirectoriesConfig {
     fn default() -> Self {
+        let home_or_root = match env::var("HOME") {
+            Ok(home) => home,
+            Err(_) => String::from("/"),
+        };
+
         Self {
-            custom_pages_dir: match env::var("HOME") {
-                Ok(h) => h + "/.local/share/tealdeer_custom_pages/",
-                Err(_) => String::new(),
+            // default to `CONFIGDIR/pages`
+            // OR `~/.local/share/tealdeer_custom_pages`
+            // OR `/.local/share/tealdeer_custom_pages`
+            custom_pages_dir: match get_config_dir() {
+                Ok(config_dir) => config_dir.join("pages"),
+                Err(_) => PathBuf::from(&home_or_root).join(".local/share/tealdeer_custom_pages"),
             },
         }
     }
@@ -210,7 +218,7 @@ pub struct UpdatesConfig {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DirectoriesConfig {
-    pub custom_pages_dir: String,
+    pub custom_pages_dir: PathBuf,
 }
 
 #[derive(Clone, Debug, PartialEq)]
