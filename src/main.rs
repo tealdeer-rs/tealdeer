@@ -60,19 +60,21 @@ Usage:
 
 Options:
 
-    -h --help           Show this screen
-    -v --version        Show version information
-    -l --list           List all commands in the cache
-    -f --render <file>  Render a specific markdown file
-    -o --os <type>      Override the operating system [linux, osx, sunos, windows]
-    -u --update         Update the local cache
-    -c --clear-cache    Clear the local cache
-    -p --pager          Use a pager to page output
-    -m --markdown       Display the raw markdown instead of rendering it
-    -q --quiet          Suppress informational messages
-    --config-path       Show config file path
-    --seed-config       Create a basic config
-    --color <when>      Control when to use color [always, auto, never] [default: auto]
+    -h --help               Show this screen
+    -v --version            Show version information
+    -l --list               List all commands in the cache
+    -f --render <file>      Render a specific markdown file
+    -o --os <type>          Override the operating system [linux, osx, sunos, windows]
+    -u --update             Update the local cache
+    -c --clear-cache        Clear the local cache
+    -p --pager              Use a pager to page output
+    -m --markdown           Display the raw markdown instead of rendering it
+    -q --quiet              Suppress informational messages
+    --config-path           Show config file path
+    --seed-config           Create a basic config
+    --color <when>          Control when to use color [always, auto, never] [default: auto]
+    --patch                 Create a .patch file that appends to a certain page.
+    --overwrite             Create a .page file that overwrites a certain page. Can be used to create new pages. 
 
 Examples:
 
@@ -102,6 +104,8 @@ struct Args {
     flag_render: Option<String>,
     flag_os: Option<OsType>,
     flag_update: bool,
+    flag_patch: bool,
+    flag_overwrite: bool,
     flag_clear_cache: bool,
     flag_pager: bool,
     flag_quiet: bool,
@@ -109,6 +113,59 @@ struct Args {
     flag_seed_config: bool,
     flag_markdown: bool,
     flag_color: ColorOptions,
+}
+
+fn patch_page(command: &str, overwrite: bool, config: &Config) -> Result<(), String> {
+    let cpd = &config.directories.custom_pages_dir;
+    let editor = env::var("EDITOR").unwrap();
+
+    if !cpd.is_dir() {
+        let status_code = std::process::Command::new("mkdir")
+            .arg("-p")
+            .arg(cpd)
+            .status();
+        match status_code {
+            Ok(status) => {
+                if !status.success() {
+                    return Err(format!("{} exited with non 0 status code", editor));
+                }
+            }
+            Err(msg) => {
+                return Err(format!(
+                    "Failed executing command to create directory: {}",
+                    msg
+                ))
+            }
+        }
+    }
+
+    if overwrite {
+        let c = std::process::Command::new(editor)
+            .arg(cpd.join(&command).with_extension("page"))
+            .status();
+        match c {
+            Ok(c) => {
+                if !c.success() {
+                    return Err("Failed to create a new page".to_string());
+                }
+            }
+            Err(msg) => return Err(format!("Failed exectuing editor: {}", msg)),
+        }
+    } else {
+        let c = std::process::Command::new(editor)
+            .arg(cpd.join(&command).with_extension("patch"))
+            .status();
+        match c {
+            Ok(c) => {
+                if !c.success() {
+                    return Err("Failed to create a new patch".to_string());
+                }
+            }
+            Err(msg) => return Err(format!("Failed exectuing editor: {}", msg)),
+        }
+    }
+
+    Ok(())
 }
 
 /// Print page by path
@@ -417,6 +474,24 @@ fn main() {
             check_cache(&args, enable_styles);
         }
 
+        if args.flag_patch {
+            if let Err(msg) = patch_page(&command, false, &config) {
+                eprintln!("{}", msg);
+                process::exit(1);
+            } else {
+                process::exit(0);
+            }
+        }
+
+        if args.flag_overwrite {
+            if let Err(msg) = patch_page(&command, true, &config) {
+                eprintln!("{}", msg);
+                process::exit(1);
+            } else {
+                process::exit(0);
+            }
+        }
+
         // Search for command in cache
         let paths = cache.find_pages(&command, &config);
         if !paths.is_empty() {
@@ -438,7 +513,12 @@ fn main() {
     }
 
     // Some flags can be run without a command.
-    if !(args.flag_update || args.flag_clear_cache || args.flag_config_path) {
+    if !(args.flag_update
+        || args.flag_clear_cache
+        || args.flag_config_path
+        || args.flag_patch
+        || args.flag_overwrite)
+    {
         eprintln!("{}", USAGE);
         process::exit(1);
     }
