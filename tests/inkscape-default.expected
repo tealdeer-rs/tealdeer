@@ -26,3 +26,7 @@
 
       [36minkscape [4mfilename.svg[0m[36m --select=path123 --verb=EditDuplicate --verb=ObjectRotate90 --verb=FileSave --verb=FileQuit[0m
 
+  [32mSome invalid command just to test the correct highlighting of the command name:[0m
+
+      [36minkscape --use-inkscape=v3.0 file[0m
+
