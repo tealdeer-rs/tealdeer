@@ -52,44 +52,7 @@ const APP_INFO: AppInfo = AppInfo {
     author: NAME,
 };
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const USAGE: &str = "
-Usage:
-
-    tldr [options] <command>...
-    tldr [options]
-
-Options:
-
-    -h --help               Show this screen
-    -v --version            Show version information
-    -l --list               List all commands in the cache
-    -f --render <file>      Render a specific markdown file
-    -o --os <type>          Override the operating system [linux, osx, sunos, windows]
-    -u --update             Update the local cache
-    -c --clear-cache        Clear the local cache
-    -p --pager              Use a pager to page output
-    -m --markdown           Display the raw markdown instead of rendering it
-    -q --quiet              Suppress informational messages
-    --config-path           Show config file path
-    --seed-config           Create a basic config
-    --color <when>          Control when to use color [always, auto, never] [default: auto]
-    --patch                 Create a .patch file that appends to a certain page.
-    --overwrite             Create a .page file that overwrites a certain page. Can be used to create new pages. 
-
-Examples:
-
-    $ tldr tar
-    $ tldr --list
-
-To control the cache:
-
-    $ tldr --update
-    $ tldr --clear-cache
-
-To render a local file (for testing):
-
-    $ tldr --render /path/to/file.md
-";
+const USAGE: &str = include_str!("usage.docopt");
 const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
 #[cfg(not(target_os = "windows"))]
 const PAGER_COMMAND: &str = "less -R";
