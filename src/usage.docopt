@@ -18,6 +18,8 @@ Options:
     --config-path       Show config file path
     --seed-config       Create a basic config
     --color <when>      Control when to use color [always, auto, never] [default: auto]
+    --patch             Create a .patch file that appends to a certain page.
+    --overwrite         Create a .page file that overwrites a certain page. Can be used to create new pages. 
 
 Examples:
 
