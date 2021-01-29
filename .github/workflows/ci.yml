@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [1.39.0, stable]
+        rust: [1.40.0, stable]
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v2
