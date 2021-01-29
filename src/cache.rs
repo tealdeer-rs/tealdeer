@@ -159,7 +159,7 @@ impl Cache {
     pub fn find_page(&self, name: &str, languages: &[String]) -> Option<PathBuf> {
         let page_filename = format!("{}.md", name);
 
-        // Get platform dir
+        // Get cache dir
         let cache_dir = match Self::get_cache_dir() {
             Ok(cache_dir) => cache_dir.join("tldr-master"),
             Err(e) => {
