@@ -17,11 +17,11 @@
 #[cfg(feature = "logging")]
 extern crate env_logger;
 
-use std::collections::HashSet;
 use std::env;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
+use std::iter;
 use std::path::{Path, PathBuf};
 use std::process;
 
@@ -35,6 +35,7 @@ use serde_derive::Deserialize;
 
 mod cache;
 mod config;
+mod dedup;
 mod error;
 mod formatter;
 mod tokenizer;
@@ -42,6 +43,7 @@ mod types;
 
 use crate::cache::Cache;
 use crate::config::{get_config_path, make_default_config, Config, MAX_CACHE_AGE};
+use crate::dedup::Dedup;
 use crate::error::TealdeerError::{CacheError, ConfigError, UpdateError};
 use crate::formatter::print_lines;
 use crate::tokenizer::Tokenizer;
@@ -257,44 +259,42 @@ fn get_os() -> OsType {
     OsType::Other
 }
 
-fn get_languages(
-    env_lang: Result<String, std::env::VarError>,
-    env_language: Result<String, std::env::VarError>,
-) -> Vec<String> {
+fn get_languages(env_lang: Option<String>, env_language: Option<String>) -> Vec<String> {
     // Language list according to
     // https://github.com/tldr-pages/tldr/blob/master/CLIENT-SPECIFICATION.md#language
 
-    if let Ok(lang) = env_lang {
-        let language = env_language.unwrap_or_default();
-        let mut locales: Vec<&str> = language.split(':').collect();
-        locales.push(&lang);
-        locales.push("en");
+    if let Some(lang) = env_lang {
+        // Create an iterator that contains $LANGUAGES, split by `:`, then followed by $LANG.
+        let locales = env_language
+            .as_deref()
+            .unwrap_or("")
+            .split(':')
+            .chain(iter::once(&*lang));
 
         let mut lang_list = Vec::new();
-        let mut found_languages = HashSet::new();
-
-        for locale in &locales {
+        for locale in locales {
+            // Language plus country code (e.g. `en_US`)
             if locale.len() >= 5 && locale.chars().nth(2) == Some('_') {
-                // Language with country code
-                let lang = &locale[..5];
-                if found_languages.insert(lang) {
-                    lang_list.push(lang);
-                }
+                lang_list.push(&locale[..5]);
             }
-            if locale.len() >= 2 && *locale != "POSIX" {
-                // Language code
-                let lang = &locale[..2];
-                if found_languages.insert(lang) {
-                    lang_list.push(lang);
-                }
+            // Language code only (e.g. `en`)
+            if locale.len() >= 2 && locale != "POSIX" {
+                lang_list.push(&locale[..2]);
             }
         }
 
+        // Fallback language
+        lang_list.push("en");
+
+        // Deduplicate entries
+        lang_list.clear_duplicates();
+
+        // Convert Vec<&str> into Vec<String>
         return lang_list.iter().map(|&s| String::from(s)).collect();
     }
 
     // Without the LANG environment variable, only English pages should be looked up.
-    vec!["en".into()]
+    vec!["en".to_string()]
 }
 
 fn main() {
@@ -428,7 +428,7 @@ fn main() {
             // Language overwritten by console argument
             vec![lang.clone()]
         } else {
-            get_languages(std::env::var("LANG"), std::env::var("LANGUAGE"))
+            get_languages(std::env::var("LANG").ok(), std::env::var("LANGUAGE").ok())
         };
 
         // Search for command in cache
@@ -483,44 +483,41 @@ mod test {
 
         #[test]
         fn missing_lang_env() {
-            let lang_list = get_languages(Err(std::env::VarError::NotPresent), Ok("de:fr".into()));
+            let lang_list = get_languages(None, Some("de:fr".into()));
             assert_eq!(lang_list, vec!["en"]);
-            let lang_list = get_languages(
-                Err(std::env::VarError::NotPresent),
-                Err(std::env::VarError::NotPresent),
-            );
+            let lang_list = get_languages(None, None);
             assert_eq!(lang_list, vec!["en"]);
         }
 
         #[test]
         fn missing_language_env() {
-            let lang_list = get_languages(Ok("de".into()), Err(std::env::VarError::NotPresent));
+            let lang_list = get_languages(Some("de".into()), None);
             assert_eq!(lang_list, vec!["de", "en"]);
         }
 
         #[test]
         fn preference_order() {
-            let lang_list = get_languages(Ok("de".into()), Ok("fr:cn".into()));
+            let lang_list = get_languages(Some("de".into()), Some("fr:cn".into()));
             assert_eq!(lang_list, vec!["fr", "cn", "de", "en"]);
         }
 
         #[test]
         fn country_code_expansion() {
-            let lang_list = get_languages(Ok("pt_BR".into()), Err(std::env::VarError::NotPresent));
+            let lang_list = get_languages(Some("pt_BR".into()), None);
             assert_eq!(lang_list, vec!["pt_BR", "pt", "en"]);
         }
 
         #[test]
         fn ignore_posix_and_c() {
-            let lang_list = get_languages(Ok("POSIX".into()), Err(std::env::VarError::NotPresent));
+            let lang_list = get_languages(Some("POSIX".into()), None);
             assert_eq!(lang_list, vec!["en"]);
-            let lang_list = get_languages(Ok("C".into()), Err(std::env::VarError::NotPresent));
+            let lang_list = get_languages(Some("C".into()), None);
             assert_eq!(lang_list, vec!["en"]);
         }
 
         #[test]
         fn no_duplicates() {
-            let lang_list = get_languages(Ok("de".into()), Ok("fr:de:cn:de".into()));
+            let lang_list = get_languages(Some("de".into()), Some("fr:de:cn:de".into()));
             assert_eq!(lang_list, vec!["fr", "de", "cn", "en"]);
         }
     }
