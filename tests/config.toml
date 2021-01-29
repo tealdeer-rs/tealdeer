@@ -3,6 +3,9 @@ foreground = "green"
 underline = false
 bold = false
 
+[style.command_name]
+bold = true
+
 [style.description]
 underline = false
 bold = false
