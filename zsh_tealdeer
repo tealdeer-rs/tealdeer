@@ -23,7 +23,7 @@ _tealdeer() {
         "($I -p --pager)"{-p,--pager}"[Use a pager to page output]"
         "($I -m --markdown)"{-m,--markdown}"[Display the raw markdown instead of rendering it]"
         "($I -q --quiet)"{-q,--quiet}"[Suppress informational messages]"
-        "($I)--config-path[Show config file path]"
+        "($I)--show-paths[Show file and directory paths used by tealdeer]"
         "($I)--seed-config[Create a basic config]"
         "($I)--color[Controls when to use color]:when:((
             always

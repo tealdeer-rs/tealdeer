@@ -16,7 +16,8 @@ Options:
     -p --pager            Use a pager to page output
     -m --markdown         Display the raw markdown instead of rendering it
     -q --quiet            Suppress informational messages
-    --config-path         Show config file path
+    --show-paths          Show file and directory paths used by tealdeer
+    --config-path         Show config file path (deprecated)
     --seed-config         Create a basic config
     --color <when>        Control when to use color [always, auto, never] [default: auto]
 

@@ -33,7 +33,7 @@ impl Cache {
     }
 
     /// Return the path to the cache directory.
-    fn get_cache_dir() -> Result<PathBuf, TealdeerError> {
+    pub fn get_cache_dir() -> Result<PathBuf, TealdeerError> {
         // Allow overriding the cache directory by setting the
         // $TEALDEER_CACHE_DIR env variable.
         if let Ok(value) = env::var("TEALDEER_CACHE_DIR") {
