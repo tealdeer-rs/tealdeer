@@ -229,7 +229,12 @@ fn test_show_paths() {
         )))
         .stdout(contains(format!(
             "Pages dir:   {}",
-            testenv.cache_dir.path().join("tldr-master").to_str().unwrap(),
+            testenv
+                .cache_dir
+                .path()
+                .join("tldr-master")
+                .to_str()
+                .unwrap(),
         )));
 }
 

@@ -1,4 +1,4 @@
-//! Types used in the client.
+//! Shared types used in tealdeer.
 
 use std::fmt;
 
@@ -98,6 +98,31 @@ impl LineType {
             ),
             Some(_) => Self::Other(trimmed.into()),
         }
+    }
+}
+
+/// The reason why a certain path (e.g. config path or cache dir) was chosen.
+#[derive(Debug, PartialEq)]
+pub enum PathSource {
+    /// OS convention (e.g. XDG on Linux)
+    OsConvention,
+    /// Env variable (TEALDEER_*)
+    EnvVar,
+    /// Config file variable
+    ConfigVar,
+}
+
+impl fmt::Display for PathSource {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::OsConvention => "OS convention",
+                Self::EnvVar => "env variable",
+                Self::ConfigVar => "config file variable",
+            }
+        )
     }
 }
 

@@ -183,7 +183,7 @@ fn update_cache(cache: &Cache, quietly: bool) {
 /// Show the config path (DEPRECATED)
 fn show_config_path() {
     match get_config_path() {
-        Ok(config_file_path) => {
+        Ok((config_file_path, _)) => {
             println!("Config path is: {}", config_file_path.to_str().unwrap());
         }
         Err(ConfigError(msg)) => {
@@ -199,23 +199,32 @@ fn show_config_path() {
 
 /// Show file paths
 fn show_paths() {
-    let config_dir = get_config_dir()
-        .map(|mut path| {
+    let config_dir = get_config_dir().map_or_else(
+        |e| format!("[Error: {}]", e),
+        |(mut path, source)| {
             path.push(""); // Trailing path separator
-            path.to_str().unwrap_or("[Invalid]").to_string()
-        })
-        .unwrap_or_else(|e| format!("[Error: {}]", e));
-    let config_path = get_config_path()
-        .map(|path| path.to_str().unwrap_or("[Invalid]").to_string())
-        .unwrap_or_else(|e| format!("[Error: {}]", e));
-    let cache_dir = Cache::get_cache_dir()
-        .map(|mut path| {
+            match path.to_str() {
+                Some(path) => format!("{} ({})", path, source),
+                None => "[Invalid]".to_string(),
+            }
+        },
+    );
+    let config_path = get_config_path().map_or_else(
+        |e| format!("[Error: {}]", e),
+        |(path, _)| path.to_str().unwrap_or("[Invalid]").to_string(),
+    );
+    let cache_dir = Cache::get_cache_dir().map_or_else(
+        |e| format!("[Error: {}]", e),
+        |(mut path, source)| {
             path.push(""); // Trailing path separator
-            path.to_str().unwrap_or("[Invalid]").to_string()
-        })
-        .unwrap_or_else(|e| format!("[Error: {}]", e));
+            match path.to_str() {
+                Some(path) => format!("{} ({})", path, source),
+                None => "[Invalid]".to_string(),
+            }
+        },
+    );
     let pages_dir = Cache::get_cache_dir()
-        .map(|path| path.join("tldr-master"))
+        .map(|(path, _)| path.join("tldr-master"))
         .map(|mut path| {
             path.push(""); // Trailing path separator
             path.to_str().unwrap_or("[Invalid]").to_string()
