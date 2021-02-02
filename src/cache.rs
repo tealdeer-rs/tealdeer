@@ -23,6 +23,7 @@ pub struct Cache {
     os: OsType,
 }
 
+#[derive(Debug)]
 pub struct PageLookupResult {
     page_path: PathBuf,
     patch_path: Option<PathBuf>,
@@ -169,7 +170,7 @@ impl Cache {
 
     fn find_custom_patch(name: &str, custom_dir: &Path) -> Option<PathBuf> {
         // Look up custom patch (<name>.patch). If it exists, store it in a variable.
-        let custom_patch_path = custom_dir.join(&format!("{}.patch", name));
+        let custom_patch_path = custom_dir.join(name);
         if custom_patch_path.exists() && custom_patch_path.is_file() {
             Some(custom_patch_path)
         } else {
@@ -179,7 +180,8 @@ impl Cache {
 
     /// Check for pages for a given platform in one of the given languages.
     fn find_page_for_platform(
-        name: &str,
+        page_name: &str,
+        patch_name: &str,
         cache_dir: &Path,
         custom_dir: &Path,
         platform: &str,
@@ -187,11 +189,11 @@ impl Cache {
     ) -> Option<PageLookupResult> {
         language_dirs
             .iter()
-            .map(|lang_dir| cache_dir.join(lang_dir).join(platform).join(name))
+            .map(|lang_dir| cache_dir.join(lang_dir).join(platform).join(page_name))
             .find(|path| path.exists() && path.is_file())
             .map(|file| {
                 PageLookupResult::with_page(file)
-                    .with_optional_patch(Self::find_custom_patch(name, custom_dir))
+                    .with_optional_patch(Self::find_custom_patch(patch_name, custom_dir))
             })
     }
 
@@ -203,6 +205,7 @@ impl Cache {
         config: &Config,
     ) -> Option<PageLookupResult> {
         let page_filename = format!("{}.md", name);
+        let patch_filename = format!("{}.patch", name);
         let custom_filename = format!("{}.page", name);
 
         // Get cache dir
@@ -238,6 +241,7 @@ impl Cache {
         if let Some(pf) = self.get_platform_dir() {
             let pf_path = Self::find_page_for_platform(
                 &page_filename,
+                &patch_filename,
                 &cache_dir,
                 custom_dir,
                 pf,
@@ -249,7 +253,14 @@ impl Cache {
         }
 
         // Did not find platform specific results, fall back to "common"
-        Self::find_page_for_platform(&page_filename, &cache_dir, custom_dir, "common", &lang_dirs)
+        Self::find_page_for_platform(
+            &page_filename,
+            &patch_filename,
+            &cache_dir,
+            custom_dir,
+            "common",
+            &lang_dirs,
+        )
     }
 
     /// Return the available pages.
