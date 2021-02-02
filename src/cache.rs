@@ -2,7 +2,8 @@ use std::env;
 use std::ffi::OsStr;
 use std::fs;
 use std::io::Read;
-use std::path::PathBuf;
+use std::iter;
+use std::path::{Path, PathBuf};
 
 use app_dirs::{get_app_root, AppDataType};
 use flate2::read::GzDecoder;
@@ -20,6 +21,29 @@ use crate::types::OsType;
 pub struct Cache {
     url: String,
     os: OsType,
+}
+
+pub struct PageLookupResult {
+    page_path: PathBuf,
+    patch_path: Option<PathBuf>,
+}
+
+impl PageLookupResult {
+    fn with_page(page_path: PathBuf) -> Self {
+        Self {
+            page_path,
+            patch_path: None,
+        }
+    }
+
+    fn with_patch(mut self, patch_path: PathBuf) -> Self {
+        self.patch_path = Some(patch_path);
+        self
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Path> {
+        iter::once(self.page_path.as_path()).chain(self.patch_path.as_deref().into_iter())
+    }
 }
 
 impl Cache {
@@ -144,13 +168,13 @@ impl Cache {
     }
 
     /// Search for a page and return the path to it.
-    pub fn find_pages(&self, name: &str, config: &Config) -> Vec<PathBuf> {
+    pub fn find_pages(&self, name: &str, config: &Config) -> Option<PageLookupResult> {
         // Get platform dir
         let platforms_dir = match Self::get_cache_dir() {
             Ok(cache_dir) => cache_dir.join("tldr-master").join("pages"),
             Err(e) => {
                 log::error!("Could not get cache directory: {}", e);
-                return Vec::new();
+                return None;
             }
         };
 
@@ -158,26 +182,22 @@ impl Cache {
         let custom_pages_directory = &config.directories.custom_pages_dir;
 
         // Look up custom page (<name>.page). If it exists, return it directly,
-        let custom_page = format!("{}.page", name);
         let custom_page = platforms_dir
             .join(&custom_pages_directory)
-            .join(&custom_page);
+            .join(&format!("{}.page", name));
         if custom_page.exists() && custom_page.is_file() {
-            return vec![custom_page];
+            return Some(PageLookupResult::with_page(custom_page));
         }
 
         // Look up custom patch (<name>.patch). If it exists, store it in a variable.
-        let custom_patch = format!("{}.patch", name);
         let custom_patch = platforms_dir
             .join(&custom_pages_directory)
-            .join(&custom_patch);
+            .join(&format!("{}.patch", name));
         let custom_patch = if custom_patch.exists() && custom_patch.is_file() {
             Some(custom_patch)
         } else {
             None
         };
-        dbg!(&custom_pages_directory);
-        dbg!(&custom_patch);
 
         let page_filename = format!("{}.md", name);
 
@@ -186,8 +206,10 @@ impl Cache {
             let page = platforms_dir.join(&platform_directory).join(&page_filename);
             if page.exists() && page.is_file() {
                 match custom_patch {
-                    Some(patch) => return vec![page, patch],
-                    None => return vec![page],
+                    Some(patch) => {
+                        return Some(PageLookupResult::with_page(page).with_patch(patch))
+                    }
+                    None => return Some(PageLookupResult::with_page(page)),
                 }
             }
         }
@@ -196,13 +218,13 @@ impl Cache {
         let page = platforms_dir.join("common").join(&page_filename);
         if page.exists() && page.is_file() {
             match custom_patch {
-                Some(patch) => return vec![page, patch],
-                None => return vec![page],
+                Some(patch) => return Some(PageLookupResult::with_page(page).with_patch(patch)),
+                None => return Some(PageLookupResult::with_page(page)),
             }
         }
 
         // None of the above were resolved, return an empty vec.
-        Vec::new()
+        None
     }
 
     /// Return the available pages.

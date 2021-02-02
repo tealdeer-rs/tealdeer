@@ -155,18 +155,10 @@ struct RawDirectoriesConfig {
 
 impl Default for RawDirectoriesConfig {
     fn default() -> Self {
-        let home_or_root = match env::var("HOME") {
-            Ok(home) => home,
-            Err(_) => String::from("/"),
-        };
-
         Self {
-            // default to `CONFIGDIR/pages`
-            // OR `~/.local/share/tealdeer_custom_pages`
-            // OR `/.local/share/tealdeer_custom_pages`
-            custom_pages_dir: match get_config_dir() {
-                Ok(config_dir) => config_dir.join("pages"),
-                Err(_) => PathBuf::from(&home_or_root).join(".local/share/tealdeer_custom_pages"),
+            custom_pages_dir: match get_app_root(AppDataType::UserData, &crate::APP_INFO) {
+                Ok(data_path) => data_path.join("pages"),
+                Err(err) => todo!("What to do on fail here?"),
             },
         }
     }
