@@ -432,7 +432,7 @@ fn main() {
         };
 
         // Search for command in cache
-        if let Some(paths) = cache.find_pages(&command, &languages) {
+        if let Some(paths) = cache.find_pages(&command, &languages, &config) {
             for path in paths.iter() {
                 if let Err(msg) = print_page(&path, args.flag_markdown, &config) {
                     eprintln!("{}", msg);
