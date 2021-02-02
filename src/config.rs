@@ -303,7 +303,7 @@ impl Config {
 /// variable. Otherwise, the user config directory is returned.
 ///
 /// Note that this function does not verify whether the directory at that
-/// loation exists, or is a directory.
+/// location exists, or is a directory.
 pub fn get_config_dir() -> Result<PathBuf, TealdeerError> {
     // Allow overriding the config directory by setting the
     // $TEALDEER_CONFIG_DIR env variable.

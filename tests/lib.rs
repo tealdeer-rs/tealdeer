@@ -308,7 +308,7 @@ fn test_rendering_color_never() {
     );
 }
 
-/// An end-to-end integration test for rendering with constom syntax config.
+/// An end-to-end integration test for rendering with custom syntax config.
 #[test]
 fn test_correct_rendering_with_config() {
     let testenv = TestEnv::new();

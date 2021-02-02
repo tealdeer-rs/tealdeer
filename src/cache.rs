@@ -167,64 +167,53 @@ impl Cache {
         }
     }
 
+    /// Check for pages for a given platform in one of the given languages.
+    fn find_page_for_platform(
+        name: &str,
+        cache_dir: &Path,
+        platform: &str,
+        language_dirs: &[String],
+    ) -> Option<PathBuf> {
+        language_dirs
+            .iter()
+            .map(|lang_dir| cache_dir.join(lang_dir).join(platform).join(name))
+            .find(|path| path.exists() && path.is_file())
+    }
+
     /// Search for a page and return the path to it.
-    pub fn find_pages(&self, name: &str, config: &Config) -> Option<PageLookupResult> {
-        // Get platform dir
-        let platforms_dir = match Self::get_cache_dir() {
-            Ok(cache_dir) => cache_dir.join("tldr-master").join("pages"),
+    pub fn find_page(&self, name: &str, languages: &[String]) -> Option<PathBuf> {
+        let page_filename = format!("{}.md", name);
+
+        // Get cache dir
+        let cache_dir = match Self::get_cache_dir() {
+            Ok(cache_dir) => cache_dir.join("tldr-master"),
             Err(e) => {
                 log::error!("Could not get cache directory: {}", e);
                 return None;
             }
         };
 
-        // Get custom pages directory
-        let custom_pages_directory = &config.directories.custom_pages_dir;
-
-        // Look up custom page (<name>.page). If it exists, return it directly,
-        let custom_page = platforms_dir
-            .join(&custom_pages_directory)
-            .join(&format!("{}.page", name));
-        if custom_page.exists() && custom_page.is_file() {
-            return Some(PageLookupResult::with_page(custom_page));
-        }
-
-        // Look up custom patch (<name>.patch). If it exists, store it in a variable.
-        let custom_patch = platforms_dir
-            .join(&custom_pages_directory)
-            .join(&format!("{}.patch", name));
-        let custom_patch = if custom_patch.exists() && custom_patch.is_file() {
-            Some(custom_patch)
-        } else {
-            None
-        };
-
-        let page_filename = format!("{}.md", name);
-
-        // Look up platform-specific page. If it exists, return page plus the patch above (if set).
-        if let Some(platform_directory) = self.get_platform_dir() {
-            let page = platforms_dir.join(&platform_directory).join(&page_filename);
-            if page.exists() && page.is_file() {
-                match custom_patch {
-                    Some(patch) => {
-                        return Some(PageLookupResult::with_page(page).with_patch(patch))
-                    }
-                    None => return Some(PageLookupResult::with_page(page)),
+        let lang_dirs: Vec<String> = languages
+            .iter()
+            .map(|lang| {
+                if lang == "en" {
+                    String::from("pages")
+                } else {
+                    format!("pages.{}", lang)
                 }
+            })
+            .collect();
+
+        // Try to find a platform specific path first.
+        if let Some(pf) = self.get_platform_dir() {
+            let pf_path = Self::find_page_for_platform(&page_filename, &cache_dir, pf, &lang_dirs);
+            if pf_path.is_some() {
+                return pf_path;
             }
         }
 
-        // Look up page from the "common" directory. If it exists, return page plus the patch above (if set).
-        let page = platforms_dir.join("common").join(&page_filename);
-        if page.exists() && page.is_file() {
-            match custom_patch {
-                Some(patch) => return Some(PageLookupResult::with_page(page).with_patch(patch)),
-                None => return Some(PageLookupResult::with_page(page)),
-            }
-        }
-
-        // None of the above were resolved, return an empty vec.
-        None
+        // Did not find platform specific results, fall back to "common"
+        Self::find_page_for_platform(&page_filename, &cache_dir, "common", &lang_dirs)
     }
 
     /// Return the available pages.
