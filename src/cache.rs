@@ -242,7 +242,6 @@ impl Cache {
     }
 
     /// Delete the cache directory.
-    #[allow(clippy::map_err_ignore)]
     pub fn clear() -> Result<(), TealdeerError> {
         let (path, _) = Self::get_cache_dir()?;
         if path.exists() && path.is_dir() {
