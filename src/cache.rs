@@ -13,7 +13,7 @@ use tar::Archive;
 use walkdir::{DirEntry, WalkDir};
 
 use crate::error::TealdeerError::{self, CacheError, UpdateError};
-use crate::types::OsType;
+use crate::types::{OsType, PathSource};
 
 #[derive(Debug)]
 pub struct Cache {
@@ -33,14 +33,14 @@ impl Cache {
     }
 
     /// Return the path to the cache directory.
-    fn get_cache_dir() -> Result<PathBuf, TealdeerError> {
+    pub fn get_cache_dir() -> Result<(PathBuf, PathSource), TealdeerError> {
         // Allow overriding the cache directory by setting the
         // $TEALDEER_CACHE_DIR env variable.
         if let Ok(value) = env::var("TEALDEER_CACHE_DIR") {
             let path = PathBuf::from(value);
 
             if path.exists() && path.is_dir() {
-                return Ok(path);
+                return Ok((path, PathSource::EnvVar));
             } else {
                 return Err(CacheError(
                     "Path specified by $TEALDEER_CACHE_DIR \
@@ -52,7 +52,7 @@ impl Cache {
 
         // Otherwise, fall back to user cache directory.
         match get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
-            Ok(dirs) => Ok(dirs),
+            Ok(dirs) => Ok((dirs, PathSource::OsConvention)),
             Err(_) => Err(CacheError(
                 "Could not determine user cache directory.".into(),
             )),
@@ -94,7 +94,7 @@ impl Cache {
         let mut archive = Self::decompress(&bytes[..]);
 
         // Determine paths
-        let cache_dir = Self::get_cache_dir()?;
+        let (cache_dir, _) = Self::get_cache_dir()?;
 
         // Make sure that cache directory exists
         debug!("Ensure cache directory {:?} exists", &cache_dir);
@@ -119,7 +119,7 @@ impl Cache {
 
     /// Return the duration since the cache directory was last modified.
     pub fn last_update() -> Option<Duration> {
-        if let Ok(cache_dir) = Self::get_cache_dir() {
+        if let Ok((cache_dir, _)) = Self::get_cache_dir() {
             if let Ok(metadata) = fs::metadata(cache_dir.join("tldr-master")) {
                 if let Ok(mtime) = metadata.modified() {
                     let now = SystemTime::now();
@@ -161,7 +161,7 @@ impl Cache {
 
         // Get cache dir
         let cache_dir = match Self::get_cache_dir() {
-            Ok(cache_dir) => cache_dir.join("tldr-master"),
+            Ok((cache_dir, _)) => cache_dir.join("tldr-master"),
             Err(e) => {
                 log::error!("Could not get cache directory: {}", e);
                 return None;
@@ -194,7 +194,7 @@ impl Cache {
     /// Return the available pages.
     pub fn list_pages(&self) -> Result<Vec<String>, TealdeerError> {
         // Determine platforms directory and platform
-        let cache_dir = Self::get_cache_dir()?;
+        let (cache_dir, _) = Self::get_cache_dir()?;
         let platforms_dir = cache_dir.join("tldr-master").join("pages");
         let platform_dir = self.get_platform_dir();
 
@@ -243,7 +243,7 @@ impl Cache {
 
     /// Delete the cache directory.
     pub fn clear() -> Result<(), TealdeerError> {
-        let path = Self::get_cache_dir()?;
+        let (path, _) = Self::get_cache_dir()?;
         if path.exists() && path.is_dir() {
             fs::remove_dir_all(&path).map_err(|_| {
                 CacheError(format!(

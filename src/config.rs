@@ -10,6 +10,7 @@ use log::debug;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::error::TealdeerError::{self, ConfigError};
+use crate::types::PathSource;
 
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
@@ -234,7 +235,7 @@ impl Config {
         debug!("Loading config");
 
         // Determine path
-        let config_file_path = get_config_path()
+        let (config_file_path, _) = get_config_path()
             .map_err(|e| ConfigError(format!("Could not determine config path: {}", e)))?;
 
         // Load raw config
@@ -276,16 +277,16 @@ impl Config {
 ///
 /// Note that this function does not verify whether the directory at that
 /// location exists, or is a directory.
-pub fn get_config_dir() -> Result<PathBuf, TealdeerError> {
+pub fn get_config_dir() -> Result<(PathBuf, PathSource), TealdeerError> {
     // Allow overriding the config directory by setting the
     // $TEALDEER_CONFIG_DIR env variable.
     if let Ok(value) = env::var("TEALDEER_CONFIG_DIR") {
-        return Ok(PathBuf::from(value));
+        return Ok((PathBuf::from(value), PathSource::EnvVar));
     };
 
     // Otherwise, fall back to the user config directory.
     match get_app_root(AppDataType::UserConfig, &crate::APP_INFO) {
-        Ok(dirs) => Ok(dirs),
+        Ok(dirs) => Ok((dirs, PathSource::OsConvention)),
         Err(_) => Err(ConfigError(
             "Could not determine the user config directory.".into(),
         )),
@@ -296,15 +297,15 @@ pub fn get_config_dir() -> Result<PathBuf, TealdeerError> {
 ///
 /// Note that this function does not verify whether the file at that location
 /// exists, or is a file.
-pub fn get_config_path() -> Result<PathBuf, TealdeerError> {
-    let config_dir = get_config_dir()?;
+pub fn get_config_path() -> Result<(PathBuf, PathSource), TealdeerError> {
+    let (config_dir, source) = get_config_dir()?;
     let config_file_path = config_dir.join(CONFIG_FILE_NAME);
-    Ok(config_file_path)
+    Ok((config_file_path, source))
 }
 
 /// Create default config file.
 pub fn make_default_config() -> Result<PathBuf, TealdeerError> {
-    let config_dir = get_config_dir()?;
+    let (config_dir, _) = get_config_dir()?;
 
     // Ensure that config directory exists
     if !config_dir.exists() {

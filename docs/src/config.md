@@ -8,7 +8,7 @@ the config file can be done manually or with the help of `tldr`:
 The configuration file path follows OS conventions. It can be queried with the
 following command:
 
-    $ tldr --config-path
+    $ tldr --show-paths
 
 On Linux, this will usually be `~/.config/tealdeer/config.toml`.
 
