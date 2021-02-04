@@ -248,7 +248,8 @@ Options:
     -p --pager            Use a pager to page output
     -m --markdown         Display the raw markdown instead of rendering it
     -q --quiet            Suppress informational messages
-    --config-path         Show config file path
+    --show-paths          Show file and directory paths used by tealdeer
+    --config-path         Show config file path (deprecated)
     --seed-config         Create a basic config
     --color &lt;when&gt;        Control when to use color [always, auto, never] [default: auto]
 
@@ -273,7 +274,7 @@ the config file can be done manually or with the help of <code>tldr</code>:</p>
 </code></pre>
 <p>The configuration file path follows OS conventions. It can be queried with the
 following command:</p>
-<pre><code>$ tldr --config-path
+<pre><code>$ tldr --show-paths
 </code></pre>
 <p>On Linux, this will usually be <code>~/.config/tealdeer/config.toml</code>.</p>
 <h2><a class="header" href="#override-config-directory" id="override-config-directory">Override Config Directory</a></h2>
