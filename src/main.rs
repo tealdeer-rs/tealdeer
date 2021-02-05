@@ -42,7 +42,7 @@ mod tokenizer;
 mod types;
 
 use crate::cache::{Cache, PageLookupResult};
-use crate::config::{get_config_path, make_default_config, Config, MAX_CACHE_AGE};
+use crate::config::{get_config_dir, get_config_path, make_default_config, Config, MAX_CACHE_AGE};
 use crate::dedup::Dedup;
 use crate::error::TealdeerError::{CacheError, ConfigError, UpdateError};
 use crate::formatter::print_lines;
@@ -61,7 +61,6 @@ const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar
 const PAGER_COMMAND: &str = "less -R";
 
 #[derive(Debug, Deserialize)]
-#[allow(clippy::struct_excessive_bools)]
 struct Args {
     arg_command: Option<Vec<String>>,
     flag_help: bool,
@@ -73,6 +72,7 @@ struct Args {
     flag_clear_cache: bool,
     flag_pager: bool,
     flag_quiet: bool,
+    flag_show_paths: bool,
     flag_config_path: bool,
     flag_seed_config: bool,
     flag_markdown: bool,
@@ -185,10 +185,10 @@ fn update_cache(cache: &Cache, quietly: bool) {
     }
 }
 
-/// Show the config path
+/// Show the config path (DEPRECATED)
 fn show_config_path() {
     match get_config_path() {
-        Ok(config_file_path) => {
+        Ok((config_file_path, _)) => {
             println!("Config path is: {}", config_file_path.to_str().unwrap());
         }
         Err(ConfigError(msg)) => {
@@ -200,6 +200,45 @@ fn show_config_path() {
             process::exit(1);
         }
     }
+}
+
+/// Show file paths
+fn show_paths() {
+    let config_dir = get_config_dir().map_or_else(
+        |e| format!("[Error: {}]", e),
+        |(mut path, source)| {
+            path.push(""); // Trailing path separator
+            match path.to_str() {
+                Some(path) => format!("{} ({})", path, source),
+                None => "[Invalid]".to_string(),
+            }
+        },
+    );
+    let config_path = get_config_path().map_or_else(
+        |e| format!("[Error: {}]", e),
+        |(path, _)| path.to_str().unwrap_or("[Invalid]").to_string(),
+    );
+    let cache_dir = Cache::get_cache_dir().map_or_else(
+        |e| format!("[Error: {}]", e),
+        |(mut path, source)| {
+            path.push(""); // Trailing path separator
+            match path.to_str() {
+                Some(path) => format!("{} ({})", path, source),
+                None => "[Invalid]".to_string(),
+            }
+        },
+    );
+    let pages_dir = Cache::get_cache_dir()
+        .map(|(path, _)| path.join("tldr-master"))
+        .map(|mut path| {
+            path.push(""); // Trailing path separator
+            path.to_str().unwrap_or("[Invalid]").to_string()
+        })
+        .unwrap_or_else(|e| format!("[Error: {}]", e));
+    println!("Config dir:  {}", config_dir);
+    println!("Config path: {}", config_path);
+    println!("Cache dir:   {}", cache_dir);
+    println!("Pages dir:   {}", pages_dir);
 }
 
 /// Create seed config file and exit
@@ -321,7 +360,11 @@ fn main() {
 
     // Show config file and path, pass through
     if args.flag_config_path {
+        eprintln!("Warning: The --config-path flag is deprecated, use --show-paths instead");
         show_config_path();
+    }
+    if args.flag_show_paths {
+        show_paths();
     }
 
     // Create a basic config and exit
@@ -455,7 +498,8 @@ fn main() {
     }
 
     // Some flags can be run without a command.
-    if !(args.flag_update || args.flag_clear_cache || args.flag_config_path) {
+    if !(args.flag_update || args.flag_clear_cache || args.flag_config_path || args.flag_show_paths)
+    {
         eprintln!("{}", USAGE);
         process::exit(1);
     }
