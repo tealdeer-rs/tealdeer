@@ -13,7 +13,6 @@ use std::time::{Duration, SystemTime};
 use tar::Archive;
 use walkdir::{DirEntry, WalkDir};
 
-use crate::config::Config;
 use crate::error::TealdeerError::{self, CacheError, UpdateError};
 use crate::types::{OsType, PathSource};
 
@@ -174,23 +173,18 @@ impl Cache {
         cache_dir: &Path,
         platform: &str,
         language_dirs: &[String],
-    ) -> Option<PageLookupResult> {
+    ) -> Option<PathBuf> {
         language_dirs
             .iter()
             .map(|lang_dir| cache_dir.join(lang_dir).join(platform).join(page_name))
             .find(|path| path.exists() && path.is_file())
-            .map(|file| PageLookupResult::with_page(file))
     }
 
     /// Look up custom patch (<name>.patch). If it exists, store it in a variable.
     fn find_patch(patch_name: &str, maybe_custom_dir: Option<&Path>) -> Option<PathBuf> {
-        if let Some(custom_dir) = maybe_custom_dir {
-            let patch_path = custom_dir.join(patch_name);
-            if patch_path.exists() && patch_path.is_file() {
-                return Some(patch_path);
-            }
-        }
-        None
+        maybe_custom_dir
+            .map(|custom_dir| custom_dir.join(patch_name))
+            .filter(|path| path.exists() && path.is_file())
     }
 
     /// Search for a page and return the path to it.
@@ -198,7 +192,7 @@ impl Cache {
         &self,
         name: &str,
         languages: &[String],
-        config: &Config,
+        maybe_config_dir: Option<&Path>,
     ) -> Option<PageLookupResult> {
         let page_filename = format!("{}.md", name);
         let patch_filename = format!("{}.patch", name);
@@ -224,29 +218,29 @@ impl Cache {
             })
             .collect();
 
-        // Get Custom Pages dir
-        let custom_dir = &config.directories.custom_pages_dir;
-
         // Look up custom page (<name>.page). If it exists, return it directly
-        if let Some(custom_page) = custom_dir.as_ref().map(|dir| dir.join(custom_filename)) {
+        //if let Some(custom_page) = maybe_config_dir.as_ref().map(|dir| dir.join(custom_filename)) {
+        if let Some(config_dir) = maybe_config_dir {
+            let custom_page = config_dir.join(custom_filename);
             if custom_page.exists() && custom_page.is_file() {
                 return Some(PageLookupResult::with_page(custom_page));
             }
         }
 
-        let maybe_patch = Self::find_patch(&patch_filename, custom_dir.as_deref());
+        let maybe_patch = Self::find_patch(&patch_filename, maybe_config_dir.as_deref());
 
         // Try to find a platform specific path next, append custom patch to it.
         if let Some(pf) = self.get_platform_dir() {
-            let page = Self::find_page_for_platform(&page_filename, &cache_dir, pf, &lang_dirs);
-            if page.is_some() {
-                return page.map(|lookup_result| lookup_result.with_optional_patch(maybe_patch));
+            if let Some(page) =
+                Self::find_page_for_platform(&page_filename, &cache_dir, pf, &lang_dirs)
+            {
+                return Some(PageLookupResult::with_page(page).with_optional_patch(maybe_patch));
             }
         }
 
         // Did not find platform specific results, fall back to "common"
         Self::find_page_for_platform(&page_filename, &cache_dir, "common", &lang_dirs)
-            .map(|lookup_result| lookup_result.with_optional_patch(maybe_patch))
+            .map(|page| PageLookupResult::with_page(page).with_optional_patch(maybe_patch))
     }
 
     /// Return the available pages.

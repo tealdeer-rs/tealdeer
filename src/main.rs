@@ -481,7 +481,11 @@ fn main() {
         };
 
         // Search for command in cache
-        if let Some(page) = cache.find_page(&command, &languages, &config) {
+        if let Some(page) = cache.find_page(
+            &command,
+            &languages,
+            config.directories.custom_pages_dir.as_deref(),
+        ) {
             if let Err(msg) = print_page(&page, args.flag_markdown, &config) {
                 eprintln!("{}", msg);
                 process::exit(1);
