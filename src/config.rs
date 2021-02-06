@@ -1,7 +1,8 @@
 use std::env;
 use std::fs;
+use std::io;
 use std::io::{Error as IoError, Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use ansi_term::{Color, Style};
@@ -10,7 +11,6 @@ use log::debug;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::error::TealdeerError::{self, ConfigError};
-use crate::types::PathSource;
 
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
@@ -35,8 +35,6 @@ pub enum RawColor {
     Purple,
     Cyan,
     White,
-    Ansi(u8),
-    RGB { r: u8, g: u8, b: u8 },
 }
 
 impl From<RawColor> for Color {
@@ -50,8 +48,6 @@ impl From<RawColor> for Color {
             RawColor::Purple => Self::Purple,
             RawColor::Cyan => Self::Cyan,
             RawColor::White => Self::White,
-            RawColor::Ansi(num) => Self::Fixed(num),
-            RawColor::RGB { r, g, b } => Self::RGB(r, g, b),
         }
     }
 }
@@ -230,26 +226,28 @@ fn map_io_err_to_config_err(e: IoError) -> TealdeerError {
     ConfigError(format!("Io Error: {}", e))
 }
 
+fn load_raw_config(path: &Path) -> Result<RawConfig, io::Error> {
+    let mut config_file = fs::File::open(path)?;
+    let mut contents = String::new();
+    let _ = config_file.read_to_string(&mut contents)?;
+    toml::from_str(&contents).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))
+}
+
 impl Config {
-    pub fn load(enable_styles: bool) -> Result<Self, TealdeerError> {
+    pub fn load(config_arg: &Option<String>, enable_styles: bool) -> Result<Self, TealdeerError> {
         debug!("Loading config");
-
-        // Determine path
-        let (config_file_path, _) = get_config_path()
+        let allow_not_found = config_arg.is_none();
+        let config_file_path = get_config_path(config_arg)
             .map_err(|e| ConfigError(format!("Could not determine config path: {}", e)))?;
-
-        // Load raw config
-        let raw_config: RawConfig = if config_file_path.exists() && config_file_path.is_file() {
-            let mut config_file =
-                fs::File::open(config_file_path).map_err(map_io_err_to_config_err)?;
-            let mut contents = String::new();
-            let _ = config_file
-                .read_to_string(&mut contents)
-                .map_err(map_io_err_to_config_err)?;
-            toml::from_str(&contents)
-                .map_err(|err| ConfigError(format!("Failed to parse config file: {}", err)))?
-        } else {
-            RawConfig::new()
+        let raw_config = match load_raw_config(&config_file_path) {
+            Ok(config) => config,
+            Err(err) => match err.kind() {
+                // If a path to a config file was explicitly specified, no errors are allowed.
+                // We fall back to a default config if there is no file at the implicit default
+                // location.
+                io::ErrorKind::NotFound if allow_not_found => RawConfig::new(),
+                _ => return Err(map_io_err_to_config_err(err)),
+            },
         };
 
         // Convert to config
@@ -272,21 +270,22 @@ impl Config {
 
 /// Return the path to the config directory.
 ///
-/// The config dir path can be overridden using the `TEALDEER_CONFIG_DIR` env
-/// variable. Otherwise, the user config directory is returned.
+/// The config dir path can be overridden using the console argument or the
+/// `TEALDEER_CONFIG_DIR` env variable. Otherwise, the user config directory is returned.
 ///
 /// Note that this function does not verify whether the directory at that
-/// location exists, or is a directory.
-pub fn get_config_dir() -> Result<(PathBuf, PathSource), TealdeerError> {
-    // Allow overriding the config directory by setting the
-    // $TEALDEER_CONFIG_DIR env variable.
+/// loation exists, or is a directory.
+pub fn get_config_dir(config_arg: &Option<String>) -> Result<PathBuf, TealdeerError> {
+    if let Some(path) = config_arg {
+        return Ok(PathBuf::from(path));
+    }
+
     if let Ok(value) = env::var("TEALDEER_CONFIG_DIR") {
-        return Ok((PathBuf::from(value), PathSource::EnvVar));
+        return Ok(PathBuf::from(value));
     };
 
-    // Otherwise, fall back to the user config directory.
     match get_app_root(AppDataType::UserConfig, &crate::APP_INFO) {
-        Ok(dirs) => Ok((dirs, PathSource::OsConvention)),
+        Ok(dirs) => Ok(dirs),
         Err(_) => Err(ConfigError(
             "Could not determine the user config directory.".into(),
         )),
@@ -297,15 +296,19 @@ pub fn get_config_dir() -> Result<(PathBuf, PathSource), TealdeerError> {
 ///
 /// Note that this function does not verify whether the file at that location
 /// exists, or is a file.
-pub fn get_config_path() -> Result<(PathBuf, PathSource), TealdeerError> {
-    let (config_dir, source) = get_config_dir()?;
-    let config_file_path = config_dir.join(CONFIG_FILE_NAME);
-    Ok((config_file_path, source))
+pub fn get_config_path(config_arg: &Option<String>) -> Result<PathBuf, TealdeerError> {
+    let mut config_file_path = get_config_dir(config_arg)?;
+    // Do not append the default config file name, if a valid path to a file is
+    // already specified (e.g. from the console argument or the environment variable).
+    if config_file_path.exists() && !config_file_path.is_file() {
+        config_file_path.push(CONFIG_FILE_NAME);
+    }
+    Ok(config_file_path)
 }
 
 /// Create default config file.
-pub fn make_default_config() -> Result<PathBuf, TealdeerError> {
-    let (config_dir, _) = get_config_dir()?;
+pub fn make_default_config(config_arg: &Option<String>) -> Result<PathBuf, TealdeerError> {
+    let config_dir = get_config_dir(config_arg)?;
 
     // Ensure that config directory exists
     if !config_dir.exists() {
@@ -322,8 +325,13 @@ pub fn make_default_config() -> Result<PathBuf, TealdeerError> {
         )));
     }
 
+    let config_file_path = if config_dir.exists() && !config_dir.is_file() {
+        config_dir.join(CONFIG_FILE_NAME)
+    } else {
+        config_dir
+    };
+
     // Ensure that a config file doesn't get overwritten
-    let config_file_path = config_dir.join(CONFIG_FILE_NAME);
     if config_file_path.is_file() {
         return Err(ConfigError(format!(
             "A configuration file already exists at {}, no action was taken.",
@@ -344,10 +352,35 @@ pub fn make_default_config() -> Result<PathBuf, TealdeerError> {
     Ok(config_file_path)
 }
 
-#[test]
-fn test_serialize_deserialize() {
-    let raw_config = RawConfig::new();
-    let serialized = toml::to_string(&raw_config).unwrap();
-    let deserialized: RawConfig = toml::from_str(&serialized).unwrap();
-    assert_eq!(raw_config, deserialized);
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_serialize_deserialize() {
+        let raw_config = RawConfig::new();
+        let serialized = toml::to_string(&raw_config).unwrap();
+        let deserialized: RawConfig = toml::from_str(&serialized).unwrap();
+        assert_eq!(raw_config, deserialized);
+    }
+
+    #[test]
+    fn test_config_dir_override() {
+        let config_arg = "~/iloverust/tealdeer/mycoolconfig.toml";
+        let overridden_path = get_config_path(&Some(config_arg.to_owned())).unwrap();
+        assert_eq!(overridden_path.to_str().unwrap(), config_arg);
+    }
+
+    #[test]
+    fn test_append_default_config_file_name() {
+        // Make sure this is an existing, empty directory
+        let tempdir = tempfile::tempdir().unwrap();
+        let config_arg = tempdir.path().to_owned();
+        let overridden_path =
+            get_config_path(&Some(config_arg.to_str().unwrap().to_owned())).unwrap();
+        // Important:
+        // Remove the directory again before maybe panicking in the assertion
+        drop(tempdir);
+        assert_eq!(overridden_path, config_arg.join("config.toml"));
+    }
 }

@@ -19,20 +19,7 @@ fn highlight_command<'a>(
     while let Some(command_start) = example_code[code_part_end_pos..].find(&command) {
         let code_part = &example_code[code_part_end_pos..code_part_end_pos + command_start];
         parts.push(config.style.example_code.paint(code_part));
-        if code_part_end_pos == 0 {
-            // Only highlight command names at the start of the line ...
-            parts.push(config.style.command_name.paint(command));
-        } else {
-            let char_before_command = example_code
-                .chars()
-                .nth(code_part_end_pos + command_start - 1);
-            if char_before_command.filter(|c| c.is_whitespace()).is_some() {
-                // ... or when preceded by a whitespace character.
-                parts.push(config.style.command_name.paint(command));
-            } else {
-                parts.push(config.style.example_code.paint(command));
-            }
-        }
+        parts.push(config.style.command_name.paint(command));
 
         code_part_end_pos += command_start + command.len();
     }

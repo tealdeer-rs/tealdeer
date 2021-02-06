@@ -21,7 +21,6 @@ use std::env;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::iter;
 use std::path::{Path, PathBuf};
 use std::process;
 
@@ -35,15 +34,13 @@ use serde_derive::Deserialize;
 
 mod cache;
 mod config;
-mod dedup;
 mod error;
 mod formatter;
 mod tokenizer;
 mod types;
 
 use crate::cache::Cache;
-use crate::config::{get_config_dir, get_config_path, make_default_config, Config, MAX_CACHE_AGE};
-use crate::dedup::Dedup;
+use crate::config::{get_config_path, make_default_config, Config, MAX_CACHE_AGE};
 use crate::error::TealdeerError::{CacheError, ConfigError, UpdateError};
 use crate::formatter::print_lines;
 use crate::tokenizer::Tokenizer;
@@ -55,12 +52,49 @@ const APP_INFO: AppInfo = AppInfo {
     author: NAME,
 };
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const USAGE: &str = include_str!("usage.docopt");
+const USAGE: &str = "
+Usage:
+
+    tldr [options] <command>...
+    tldr [options]
+
+Options:
+
+    -h --help           Show this screen
+    -v --version        Show version information
+    -l --list           List all commands in the cache
+    -f --render <file>  Render a specific markdown file
+    -o --os <type>      Override the operating system [linux, osx, sunos, windows]
+    -u --update         Update the local cache
+    -c --clear-cache    Clear the local cache
+    -p --pager          Use a pager to page output
+    -m --markdown       Display the raw markdown instead of rendering it
+    -q --quiet          Suppress informational messages
+    --config-path       Show config file path
+    --seed-config       Create a basic config
+    --config <path>     Override config file location
+    --color <when>      Control when to use color [always, auto, never] [default: auto]
+
+Examples:
+
+    $ tldr tar
+    $ tldr --list
+
+To control the cache:
+
+    $ tldr --update
+    $ tldr --clear-cache
+
+To render a local file (for testing):
+
+    $ tldr --render /path/to/file.md
+";
 const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
 #[cfg(not(target_os = "windows"))]
 const PAGER_COMMAND: &str = "less -R";
 
 #[derive(Debug, Deserialize)]
+#[allow(clippy::struct_excessive_bools)]
 struct Args {
     arg_command: Option<Vec<String>>,
     flag_help: bool,
@@ -72,12 +106,11 @@ struct Args {
     flag_clear_cache: bool,
     flag_pager: bool,
     flag_quiet: bool,
-    flag_show_paths: bool,
     flag_config_path: bool,
     flag_seed_config: bool,
+    flag_config: Option<String>,
     flag_markdown: bool,
     flag_color: ColorOptions,
-    flag_language: Option<String>,
 }
 
 /// Print page by path
@@ -179,10 +212,10 @@ fn update_cache(cache: &Cache, quietly: bool) {
     }
 }
 
-/// Show the config path (DEPRECATED)
-fn show_config_path() {
-    match get_config_path() {
-        Ok((config_file_path, _)) => {
+/// Show the config path
+fn show_config_path(config_arg: &Option<String>) {
+    match get_config_path(config_arg) {
+        Ok(config_file_path) => {
             println!("Config path is: {}", config_file_path.to_str().unwrap());
         }
         Err(ConfigError(msg)) => {
@@ -196,48 +229,9 @@ fn show_config_path() {
     }
 }
 
-/// Show file paths
-fn show_paths() {
-    let config_dir = get_config_dir().map_or_else(
-        |e| format!("[Error: {}]", e),
-        |(mut path, source)| {
-            path.push(""); // Trailing path separator
-            match path.to_str() {
-                Some(path) => format!("{} ({})", path, source),
-                None => "[Invalid]".to_string(),
-            }
-        },
-    );
-    let config_path = get_config_path().map_or_else(
-        |e| format!("[Error: {}]", e),
-        |(path, _)| path.to_str().unwrap_or("[Invalid]").to_string(),
-    );
-    let cache_dir = Cache::get_cache_dir().map_or_else(
-        |e| format!("[Error: {}]", e),
-        |(mut path, source)| {
-            path.push(""); // Trailing path separator
-            match path.to_str() {
-                Some(path) => format!("{} ({})", path, source),
-                None => "[Invalid]".to_string(),
-            }
-        },
-    );
-    let pages_dir = Cache::get_cache_dir()
-        .map(|(path, _)| path.join("tldr-master"))
-        .map(|mut path| {
-            path.push(""); // Trailing path separator
-            path.to_str().unwrap_or("[Invalid]").to_string()
-        })
-        .unwrap_or_else(|e| format!("[Error: {}]", e));
-    println!("Config dir:  {}", config_dir);
-    println!("Config path: {}", config_path);
-    println!("Cache dir:   {}", cache_dir);
-    println!("Pages dir:   {}", pages_dir);
-}
-
 /// Create seed config file and exit
-fn create_config_and_exit() {
-    match make_default_config() {
+fn create_config_and_exit(config_arg: &Option<String>) {
+    match make_default_config(config_arg) {
         Ok(config_file_path) => {
             println!(
                 "Successfully created seed config file here: {}",
@@ -298,44 +292,6 @@ fn get_os() -> OsType {
     OsType::Other
 }
 
-fn get_languages(env_lang: Option<String>, env_language: Option<String>) -> Vec<String> {
-    // Language list according to
-    // https://github.com/tldr-pages/tldr/blob/master/CLIENT-SPECIFICATION.md#language
-
-    if let Some(lang) = env_lang {
-        // Create an iterator that contains $LANGUAGES, split by `:`, then followed by $LANG.
-        let locales = env_language
-            .as_deref()
-            .unwrap_or("")
-            .split(':')
-            .chain(iter::once(&*lang));
-
-        let mut lang_list = Vec::new();
-        for locale in locales {
-            // Language plus country code (e.g. `en_US`)
-            if locale.len() >= 5 && locale.chars().nth(2) == Some('_') {
-                lang_list.push(&locale[..5]);
-            }
-            // Language code only (e.g. `en`)
-            if locale.len() >= 2 && locale != "POSIX" {
-                lang_list.push(&locale[..2]);
-            }
-        }
-
-        // Fallback language
-        lang_list.push("en");
-
-        // Deduplicate entries
-        lang_list.clear_duplicates();
-
-        // Convert Vec<&str> into Vec<String>
-        return lang_list.iter().map(|&s| String::from(s)).collect();
-    }
-
-    // Without the LANG environment variable, only English pages should be looked up.
-    vec!["en".to_string()]
-}
-
 fn main() {
     // Initialize logger
     init_log();
@@ -354,16 +310,12 @@ fn main() {
 
     // Show config file and path, pass through
     if args.flag_config_path {
-        eprintln!("Warning: The --config-path flag is deprecated, use --show-paths instead");
-        show_config_path();
-    }
-    if args.flag_show_paths {
-        show_paths();
+        show_config_path(&args.flag_config);
     }
 
     // Create a basic config and exit
     if args.flag_seed_config {
-        create_config_and_exit();
+        create_config_and_exit(&args.flag_config);
     }
 
     // Determine the usage of styles
@@ -387,7 +339,7 @@ fn main() {
     };
 
     // Look up config file, if none is found fall back to default config.
-    let config = match Config::load(enable_styles) {
+    let config = match Config::load(&args.flag_config, enable_styles) {
         Ok(config) => config,
         Err(ConfigError(msg)) => {
             eprintln!("Could not load config: {}", msg);
@@ -467,15 +419,8 @@ fn main() {
             check_cache(&args, enable_styles);
         }
 
-        let languages = if let Some(ref lang) = args.flag_language {
-            // Language overwritten by console argument
-            vec![lang.clone()]
-        } else {
-            get_languages(std::env::var("LANG").ok(), std::env::var("LANGUAGE").ok())
-        };
-
         // Search for command in cache
-        if let Some(path) = cache.find_page(&command, &languages) {
+        if let Some(path) = cache.find_page(&command) {
             if let Err(msg) = print_page(&path, args.flag_markdown, &config) {
                 eprintln!("{}", msg);
                 process::exit(1);
@@ -493,8 +438,7 @@ fn main() {
     }
 
     // Some flags can be run without a command.
-    if !(args.flag_update || args.flag_clear_cache || args.flag_config_path || args.flag_show_paths)
-    {
+    if !(args.flag_update || args.flag_clear_cache || args.flag_config_path) {
         eprintln!("{}", USAGE);
         process::exit(1);
     }
@@ -502,7 +446,7 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use crate::{get_languages, Args, OsType, USAGE};
+    use crate::{Args, OsType, USAGE};
     use docopt::{Docopt, Error};
 
     fn test_helper(argv: &[&str]) -> Result<Args, Error> {
@@ -520,49 +464,5 @@ mod test {
     fn test_docopt_expect_error() {
         let argv = vec!["cp", "--os", "lindows"];
         assert!(!test_helper(&argv).is_ok());
-    }
-
-    mod language {
-        use super::*;
-
-        #[test]
-        fn missing_lang_env() {
-            let lang_list = get_languages(None, Some("de:fr".into()));
-            assert_eq!(lang_list, vec!["en"]);
-            let lang_list = get_languages(None, None);
-            assert_eq!(lang_list, vec!["en"]);
-        }
-
-        #[test]
-        fn missing_language_env() {
-            let lang_list = get_languages(Some("de".into()), None);
-            assert_eq!(lang_list, vec!["de", "en"]);
-        }
-
-        #[test]
-        fn preference_order() {
-            let lang_list = get_languages(Some("de".into()), Some("fr:cn".into()));
-            assert_eq!(lang_list, vec!["fr", "cn", "de", "en"]);
-        }
-
-        #[test]
-        fn country_code_expansion() {
-            let lang_list = get_languages(Some("pt_BR".into()), None);
-            assert_eq!(lang_list, vec!["pt_BR", "pt", "en"]);
-        }
-
-        #[test]
-        fn ignore_posix_and_c() {
-            let lang_list = get_languages(Some("POSIX".into()), None);
-            assert_eq!(lang_list, vec!["en"]);
-            let lang_list = get_languages(Some("C".into()), None);
-            assert_eq!(lang_list, vec!["en"]);
-        }
-
-        #[test]
-        fn no_duplicates() {
-            let lang_list = get_languages(Some("de".into()), Some("fr:de:cn:de".into()));
-            assert_eq!(lang_list, vec!["fr", "de", "cn", "en"]);
-        }
     }
 }

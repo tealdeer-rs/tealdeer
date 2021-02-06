@@ -26,7 +26,3 @@
 - Duplicate the object with id="path123", rotate the duplicate 90 degrees, save the file, and quit Inkscape:
 
 `inkscape {{filename.svg}} --select=path123 --verb=EditDuplicate --verb=ObjectRotate90 --verb=FileSave --verb=FileQuit`
-
-- Some invalid command just to test the correct highlighting of the command name:
-
-`inkscape --use-inkscape=v3.0 file`
