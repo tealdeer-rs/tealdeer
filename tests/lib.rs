@@ -202,20 +202,37 @@ fn test_setup_seed_config() {
 }
 
 #[test]
-fn test_show_config_path() {
+fn test_show_paths() {
     let testenv = TestEnv::new();
 
     testenv
         .command()
-        .args(&["--config-path"])
+        .args(&["--show-paths"])
         .assert()
         .success()
         .stdout(contains(format!(
-            "Config path is: {}",
+            "Config dir:  {}",
+            testenv.config_dir.path().to_str().unwrap(),
+        )))
+        .stdout(contains(format!(
+            "Config path: {}",
             testenv
                 .config_dir
                 .path()
                 .join("config.toml")
+                .to_str()
+                .unwrap(),
+        )))
+        .stdout(contains(format!(
+            "Cache dir:   {}",
+            testenv.cache_dir.path().to_str().unwrap(),
+        )))
+        .stdout(contains(format!(
+            "Pages dir:   {}",
+            testenv
+                .cache_dir
+                .path()
+                .join("tldr-master")
                 .to_str()
                 .unwrap(),
         )));
@@ -308,7 +325,7 @@ fn test_rendering_color_never() {
     );
 }
 
-/// An end-to-end integration test for rendering with constom syntax config.
+/// An end-to-end integration test for rendering with custom syntax config.
 #[test]
 fn test_correct_rendering_with_config() {
     let testenv = TestEnv::new();
