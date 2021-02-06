@@ -73,6 +73,7 @@ struct Args {
     flag_pager: bool,
     flag_quiet: bool,
     flag_show_paths: bool,
+    flag_config: Option<String>,
     flag_config_path: bool,
     flag_seed_config: bool,
     flag_markdown: bool,
@@ -181,7 +182,7 @@ fn update_cache(cache: &Cache, quietly: bool) {
 
 /// Show the config path (DEPRECATED)
 fn show_config_path() {
-    match get_config_path() {
+    match get_config_path(None) {
         Ok((config_file_path, _)) => {
             println!("Config path is: {}", config_file_path.to_str().unwrap());
         }
@@ -197,7 +198,7 @@ fn show_config_path() {
 }
 
 /// Show file paths
-fn show_paths() {
+fn show_paths(custom_config_path: Option<&str>) {
     let config_dir = get_config_dir().map_or_else(
         |e| format!("[Error: {}]", e),
         |(mut path, source)| {
@@ -208,7 +209,7 @@ fn show_paths() {
             }
         },
     );
-    let config_path = get_config_path().map_or_else(
+    let config_path = get_config_path(custom_config_path).map_or_else(
         |e| format!("[Error: {}]", e),
         |(path, _)| path.to_str().unwrap_or("[Invalid]").to_string(),
     );
@@ -236,8 +237,8 @@ fn show_paths() {
 }
 
 /// Create seed config file and exit
-fn create_config_and_exit() {
-    match make_default_config() {
+fn create_config_and_exit(custom_path: Option<&str>) {
+    match make_default_config(custom_path) {
         Ok(config_file_path) => {
             println!(
                 "Successfully created seed config file here: {}",
@@ -358,12 +359,12 @@ fn main() {
         show_config_path();
     }
     if args.flag_show_paths {
-        show_paths();
+        show_paths(args.flag_config.as_deref());
     }
 
     // Create a basic config and exit
     if args.flag_seed_config {
-        create_config_and_exit();
+        create_config_and_exit(args.flag_config.as_deref());
     }
 
     // Determine the usage of styles
@@ -387,7 +388,7 @@ fn main() {
     };
 
     // Look up config file, if none is found fall back to default config.
-    let config = match Config::load(enable_styles) {
+    let config = match Config::load(args.flag_config.as_deref(), enable_styles) {
         Ok(config) => config,
         Err(ConfigError(msg)) => {
             eprintln!("Could not load config: {}", msg);
