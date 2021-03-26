@@ -175,7 +175,7 @@ fn update_cache(cache: &Cache, quietly: bool) {
         process::exit(1);
     });
     if !quietly {
-        println!("Successfully updated cache.");
+        eprintln!("Successfully updated cache.");
     }
 }
 
