@@ -36,7 +36,7 @@ pub enum RawColor {
     Cyan,
     White,
     Ansi(u8),
-    RGB { r: u8, g: u8, b: u8 },
+    Rgb { r: u8, g: u8, b: u8 },
 }
 
 impl From<RawColor> for Color {
@@ -51,7 +51,7 @@ impl From<RawColor> for Color {
             RawColor::Cyan => Self::Cyan,
             RawColor::White => Self::White,
             RawColor::Ansi(num) => Self::Fixed(num),
-            RawColor::RGB { r, g, b } => Self::RGB(r, g, b),
+            RawColor::Rgb { r, g, b } => Self::RGB(r, g, b),
         }
     }
 }
