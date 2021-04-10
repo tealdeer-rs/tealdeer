@@ -14,9 +14,6 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::too_many_lines)]
 
-#[cfg(feature = "logging")]
-extern crate env_logger;
-
 use std::env;
 use std::fs::File;
 use std::io::BufRead;
