@@ -1,11 +1,5 @@
 //! Integration tests.
 
-extern crate assert_cmd;
-extern crate escargot;
-extern crate filetime;
-extern crate predicates;
-extern crate tempfile;
-
 use std::fs::{create_dir_all, File};
 use std::io::Write;
 use std::process::Command;
