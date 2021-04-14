@@ -29,14 +29,19 @@ impl TestEnv {
         }
     }
 
-    /// Add entry for that environment.
+    /// Add entry for that environment to the "common" pages.
     fn add_entry(&self, name: &str, contents: &str) {
+        self.add_os_entry("common", name, contents);
+    }
+
+    /// Add entry for that environment to an OS-specific subfolder.
+    fn add_os_entry(&self, os: &str, name: &str, contents: &str) {
         let dir = self
             .cache_dir
             .path()
             .join("tldr-master")
             .join("pages")
-            .join("common");
+            .join(os);
         create_dir_all(&dir).unwrap();
 
         let mut file = File::create(&dir.join(format!("{}.md", name))).unwrap();
@@ -230,6 +235,19 @@ fn test_show_paths() {
                 .to_str()
                 .unwrap(),
         )));
+}
+
+#[test]
+fn test_os_specific_page() {
+    let testenv = TestEnv::new();
+
+    testenv.add_os_entry("sunos", "truss", "contents");
+
+    testenv
+        .command()
+        .args(&["--os", "sunos", "truss"])
+        .assert()
+        .success();
 }
 
 #[test]

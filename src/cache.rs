@@ -131,12 +131,11 @@ impl Cache {
     }
 
     /// Return the platform directory.
-    #[allow(clippy::match_same_arms)]
     fn get_platform_dir(&self) -> Option<&'static str> {
         match self.os {
             OsType::Linux => Some("linux"),
             OsType::OsX => Some("osx"),
-            OsType::SunOs => None, // TODO: Does Rust support SunOS?
+            OsType::SunOs => Some("sunos"),
             OsType::Windows => Some("windows"),
             OsType::Other => None,
         }
