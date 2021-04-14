@@ -181,8 +181,8 @@ impl Cache {
     }
 
     /// Look up custom patch (<name>.patch). If it exists, store it in a variable.
-    fn find_patch(patch_name: &str, maybe_custom_dir: Option<&Path>) -> Option<PathBuf> {
-        maybe_custom_dir
+    fn find_patch(patch_name: &str, custom_pages_dir: Option<&Path>) -> Option<PathBuf> {
+        custom_pages_dir
             .map(|custom_dir| custom_dir.join(patch_name))
             .filter(|path| path.exists() && path.is_file())
     }
@@ -192,7 +192,7 @@ impl Cache {
         &self,
         name: &str,
         languages: &[String],
-        maybe_config_dir: Option<&Path>,
+        custom_pages_dir: Option<&Path>,
     ) -> Option<PageLookupResult> {
         let page_filename = format!("{}.md", name);
         let patch_filename = format!("{}.patch", name);
@@ -219,15 +219,14 @@ impl Cache {
             .collect();
 
         // Look up custom page (<name>.page). If it exists, return it directly
-        //if let Some(custom_page) = maybe_config_dir.as_ref().map(|dir| dir.join(custom_filename)) {
-        if let Some(config_dir) = maybe_config_dir {
+        if let Some(config_dir) = custom_pages_dir {
             let custom_page = config_dir.join(custom_filename);
             if custom_page.exists() && custom_page.is_file() {
                 return Some(PageLookupResult::with_page(custom_page));
             }
         }
 
-        let maybe_patch = Self::find_patch(&patch_filename, maybe_config_dir.as_deref());
+        let maybe_patch = Self::find_patch(&patch_filename, custom_pages_dir.as_deref());
 
         // Try to find a platform specific path next, append custom patch to it.
         if let Some(pf) = self.get_platform_dir() {
