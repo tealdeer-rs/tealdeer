@@ -148,6 +148,22 @@ impl Default for RawUpdatesConfig {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+struct RawDirectoriesConfig {
+    #[serde(default)]
+    pub custom_pages_dir: Option<PathBuf>,
+}
+
+impl Default for RawDirectoriesConfig {
+    fn default() -> Self {
+        Self {
+            custom_pages_dir: get_app_root(AppDataType::UserData, &crate::APP_INFO)
+                .map(|path| path.join("pages"))
+                .ok(),
+        }
+    }
+}
+
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawConfig {
     #[serde(default)]
@@ -156,6 +172,8 @@ struct RawConfig {
     display: RawDisplayConfig,
     #[serde(default)]
     updates: RawUpdatesConfig,
+    #[serde(default)]
+    directories: RawDirectoriesConfig,
 }
 
 impl RawConfig {
@@ -194,11 +212,17 @@ pub struct UpdatesConfig {
     pub auto_update_interval: Duration,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
+pub struct DirectoriesConfig {
+    pub custom_pages_dir: Option<PathBuf>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct Config {
     pub style: StyleConfig,
     pub display: DisplayConfig,
     pub updates: UpdatesConfig,
+    pub directories: DirectoriesConfig,
 }
 
 impl From<RawConfig> for Config {
@@ -220,6 +244,9 @@ impl From<RawConfig> for Config {
                 auto_update_interval: Duration::from_secs(
                     raw_config.updates.auto_update_interval_hours * 3600,
                 ),
+            },
+            directories: DirectoriesConfig {
+                custom_pages_dir: raw_config.directories.custom_pages_dir,
             },
         }
     }

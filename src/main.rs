@@ -19,7 +19,7 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::iter;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process;
 
 use ansi_term::{Color, Style};
@@ -38,7 +38,7 @@ mod formatter;
 mod tokenizer;
 mod types;
 
-use crate::cache::Cache;
+use crate::cache::{Cache, PageLookupResult};
 use crate::config::{get_config_dir, get_config_path, make_default_config, Config, MAX_CACHE_AGE};
 use crate::dedup::Dedup;
 use crate::error::TealdeerError::{CacheError, ConfigError, UpdateError};
@@ -78,21 +78,27 @@ struct Args {
 }
 
 /// Print page by path
-fn print_page(path: &Path, enable_markdown: bool, config: &Config) -> Result<(), String> {
+fn print_page(
+    page: &PageLookupResult,
+    enable_markdown: bool,
+    config: &Config,
+) -> Result<(), String> {
     // Open file
-    let file = File::open(path).map_err(|msg| format!("Could not open file: {}", msg))?;
-    let reader = BufReader::new(file);
+    for path in page.paths() {
+        let file = File::open(path).map_err(|msg| format!("Could not open file: {}", msg))?;
+        let reader = BufReader::new(file);
 
-    if enable_markdown {
-        // Print the raw markdown of the file.
-        for line in reader.lines() {
-            println!("{}", line.unwrap());
-        }
-    } else {
-        // Create tokenizer and print output
-        let mut tokenizer = Tokenizer::new(reader);
-        print_lines(&mut tokenizer, &config);
-    };
+        if enable_markdown {
+            // Print the raw markdown of the file.
+            for line in reader.lines() {
+                println!("{}", line.unwrap());
+            }
+        } else {
+            // Create tokenizer and print output
+            let mut tokenizer = Tokenizer::new(reader);
+            print_lines(&mut tokenizer, &config);
+        };
+    }
 
     Ok(())
 }
@@ -424,7 +430,7 @@ fn main() {
 
     // Render local file and exit
     if let Some(ref file) = args.flag_render {
-        let path = PathBuf::from(file);
+        let path = PageLookupResult::with_page(PathBuf::from(file));
         if let Err(msg) = print_page(&path, args.flag_markdown, &config) {
             eprintln!("{}", msg);
             process::exit(1);
@@ -472,13 +478,16 @@ fn main() {
         };
 
         // Search for command in cache
-        if let Some(path) = cache.find_page(&command, &languages) {
-            if let Err(msg) = print_page(&path, args.flag_markdown, &config) {
+        if let Some(page) = cache.find_page(
+            &command,
+            &languages,
+            config.directories.custom_pages_dir.as_deref(),
+        ) {
+            if let Err(msg) = print_page(&page, args.flag_markdown, &config) {
                 eprintln!("{}", msg);
                 process::exit(1);
-            } else {
-                process::exit(0);
             }
+            process::exit(0);
         } else {
             if !args.flag_quiet {
                 println!("Page {} not found in cache", &command);
