@@ -66,13 +66,12 @@ impl Cache {
 
             if path.exists() && path.is_dir() {
                 return Ok((path, PathSource::EnvVar));
-            } else {
-                return Err(CacheError(
-                    "Path specified by $TEALDEER_CACHE_DIR \
-                     does not exist or is not a directory."
-                        .into(),
-                ));
             }
+            return Err(CacheError(
+                "Path specified by $TEALDEER_CACHE_DIR \
+                     does not exist or is not a directory."
+                    .into(),
+            ));
         };
 
         // Otherwise, fall back to user cache directory.
