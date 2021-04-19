@@ -24,8 +24,8 @@ fn default_bold() -> bool {
     false
 }
 
-#[serde(rename_all = "lowercase")]
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "lowercase")]
 pub enum RawColor {
     Black,
     Red,
