@@ -12,6 +12,7 @@ use tempfile::{Builder, TempDir};
 
 struct TestEnv {
     pub cache_dir: TempDir,
+    pub custom_pages_dir: TempDir,
     pub config_dir: TempDir,
     pub input_dir: TempDir,
     pub default_features: bool,
@@ -23,10 +24,23 @@ impl TestEnv {
         TestEnv {
             cache_dir: Builder::new().prefix(".tldr.test.cache").tempdir().unwrap(),
             config_dir: Builder::new().prefix(".tldr.test.conf").tempdir().unwrap(),
+            custom_pages_dir: Builder::new()
+                .prefix(".tldr.test.custom")
+                .tempdir()
+                .unwrap(),
             input_dir: Builder::new().prefix(".tldr.test.input").tempdir().unwrap(),
             default_features: true,
             features: vec![],
         }
+    }
+
+    /// Write `content` to "config.toml" in the `config_dir` directory
+    fn write_config(&self, content: impl AsRef<str>) {
+        let config_file_name = self.config_dir.path().join("config.toml");
+        println!("Config path: {:?}", &config_file_name);
+
+        let mut config_file = File::create(&config_file_name).unwrap();
+        config_file.write(content.as_ref().as_bytes()).unwrap();
     }
 
     /// Add entry for that environment to the "common" pages.
@@ -201,8 +215,40 @@ fn test_setup_seed_config() {
 }
 
 #[test]
+fn test_show_paths_custom_pages_() {
+    use app_dirs::{get_app_root, AppDataType, AppInfo};
+
+    let testenv = TestEnv::new();
+    testenv
+        .command()
+        .args(&["--show-paths"])
+        .assert()
+        .success()
+        .stdout(contains(format!(
+            "Custom pages dir: {}",
+            get_app_root(
+                AppDataType::UserData,
+                &AppInfo {
+                    name: "tealdeer",
+                    author: "tealdeer"
+                }
+            )
+            .map(|path| path.join("pages"))
+            .unwrap()
+            .to_str()
+            .unwrap()
+        )));
+}
+
+#[test]
 fn test_show_paths() {
     let testenv = TestEnv::new();
+
+    // Set custom pages directory
+    testenv.write_config(format!(
+        "[directories]\ncustom_pages_dir = '{}'",
+        testenv.custom_pages_dir.path().to_str().unwrap()
+    ));
 
     testenv
         .command()
@@ -210,11 +256,11 @@ fn test_show_paths() {
         .assert()
         .success()
         .stdout(contains(format!(
-            "Config dir:  {}",
+            "Config dir:       {}",
             testenv.config_dir.path().to_str().unwrap(),
         )))
         .stdout(contains(format!(
-            "Config path: {}",
+            "Config path:      {}",
             testenv
                 .config_dir
                 .path()
@@ -223,17 +269,21 @@ fn test_show_paths() {
                 .unwrap(),
         )))
         .stdout(contains(format!(
-            "Cache dir:   {}",
+            "Cache dir:        {}",
             testenv.cache_dir.path().to_str().unwrap(),
         )))
         .stdout(contains(format!(
-            "Pages dir:   {}",
+            "Pages dir:        {}",
             testenv
                 .cache_dir
                 .path()
                 .join("tldr-master")
                 .to_str()
                 .unwrap(),
+        )))
+        .stdout(contains(format!(
+            "Custom pages dir: {}",
+            testenv.custom_pages_dir.path().to_str().unwrap(),
         )));
 }
 

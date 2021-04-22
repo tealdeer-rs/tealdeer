@@ -217,8 +217,8 @@ impl Cache {
             .collect();
 
         // Look up custom page (<name>.page). If it exists, return it directly
-        if let Some(config_dir) = custom_pages_dir {
-            let custom_page = config_dir.join(custom_filename);
+        if let Some(custom_pages_dir) = custom_pages_dir {
+            let custom_page = custom_pages_dir.join(custom_filename);
             if custom_page.exists() && custom_page.is_file() {
                 return Some(PageLookupResult::with_page(custom_page));
             }

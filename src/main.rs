@@ -19,7 +19,7 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::iter;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process;
 
 use ansi_term::{Color, Style};
@@ -39,7 +39,9 @@ mod tokenizer;
 mod types;
 
 use crate::cache::{Cache, PageLookupResult};
-use crate::config::{get_config_dir, get_config_path, make_default_config, Config, MAX_CACHE_AGE};
+use crate::config::{
+    get_config_dir, get_config_path, make_default_config, Config, DirectoriesConfig, MAX_CACHE_AGE,
+};
 use crate::dedup::Dedup;
 use crate::error::TealdeerError::{CacheError, ConfigError, UpdateError};
 use crate::formatter::print_lines;
@@ -200,7 +202,7 @@ fn show_config_path() {
 }
 
 /// Show file paths
-fn show_paths() {
+fn show_paths(custom_pages_dir: Option<impl AsRef<Path>>) {
     let config_dir = get_config_dir().map_or_else(
         |e| format!("[Error: {}]", e),
         |(mut path, source)| {
@@ -235,10 +237,27 @@ fn show_paths() {
                 .unwrap_or_else(|_| String::from("[Invalid]"))
         },
     );
-    println!("Config dir:  {}", config_dir);
-    println!("Config path: {}", config_path);
-    println!("Cache dir:   {}", cache_dir);
-    println!("Pages dir:   {}", pages_dir);
+    let custom_pages_dir = if let Some(dir) = custom_pages_dir {
+        dir.as_ref()
+            .to_path_buf()
+            .into_os_string()
+            .into_string()
+            .unwrap_or_else(|_| String::from("[Invalid]"))
+    } else {
+        // Default custom page directory is guarenteed to be Some(..), so first unwrap here is safe
+        // unless the default is changed
+        DirectoriesConfig::default()
+            .custom_pages_dir
+            .unwrap()
+            .into_os_string()
+            .into_string()
+            .unwrap_or_else(|_| String::from("[Invalid]"))
+    };
+    println!("Config dir:       {}", config_dir);
+    println!("Config path:      {}", config_path);
+    println!("Cache dir:        {}", cache_dir);
+    println!("Pages dir:        {}", pages_dir);
+    println!("Custom pages dir: {}", custom_pages_dir);
 }
 
 /// Create seed config file and exit
@@ -359,15 +378,6 @@ fn main() {
         process::exit(0);
     }
 
-    // Show config file and path, pass through
-    if args.flag_config_path {
-        eprintln!("Warning: The --config-path flag is deprecated, use --show-paths instead");
-        show_config_path();
-    }
-    if args.flag_show_paths {
-        show_paths();
-    }
-
     // Create a basic config and exit
     if args.flag_seed_config {
         create_config_and_exit();
@@ -405,6 +415,15 @@ fn main() {
             process::exit(1);
         }
     };
+
+    // Show config file and path, pass through
+    if args.flag_config_path {
+        eprintln!("Warning: The --config-path flag is deprecated, use --show-paths instead");
+        show_config_path();
+    }
+    if args.flag_show_paths {
+        show_paths(config.directories.custom_pages_dir.as_deref());
+    }
 
     if args.flag_pager || config.display.use_pager {
         configure_pager();
