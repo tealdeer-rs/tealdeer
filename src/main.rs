@@ -486,11 +486,9 @@ fn main() {
             .map_or_else(get_languages_from_env, |flag_lang| vec![flag_lang]);
 
         // Search for command in cache
-        if let Some(page) = cache.find_page(
-            &command,
-            &languages,
-            &config.directories.custom_pages_dir,
-        ) {
+        if let Some(page) =
+            cache.find_page(&command, &languages, &config.directories.custom_pages_dir)
+        {
             if let Err(msg) = print_page(&page, args.flag_markdown, &config) {
                 eprintln!("{}", msg);
                 process::exit(1);

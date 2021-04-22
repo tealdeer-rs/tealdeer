@@ -182,7 +182,7 @@ impl Cache {
     fn find_patch(patch_name: &str, custom_pages_dir: impl AsRef<Path>) -> Option<PathBuf> {
         let patch_path = custom_pages_dir.as_ref().join(patch_name);
         if patch_path.exists() && patch_path.is_file() {
-            return Some(patch_path)
+            return Some(patch_path);
         }
         None
     }

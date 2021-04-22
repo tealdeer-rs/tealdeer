@@ -235,10 +235,12 @@ fn test_show_paths_custom_pages_not_in_config() {
                     author: "tealdeer"
                 }
             )
-            .map(|path| path.join("pages"))
-            .unwrap()
+            .expect("get_app_root failed, this should never happen...")
+            .join("pages")
             .to_str()
-            .unwrap()
+            .expect(
+                "path returned from get_app_root was not valid UTF-8, this should never happen..."
+            )
         )));
 }
 
