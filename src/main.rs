@@ -236,8 +236,6 @@ fn show_paths(custom_pages_dir: impl AsRef<Path>) {
         },
     );
 
-    // This first unwrap will never panic because RawDirectoriesConfig implements Default. The only
-    // reason this is Option is if get_app_root() fails.
     let custom_pages_dir = custom_pages_dir
         .as_ref()
         .to_str()
