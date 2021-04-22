@@ -200,7 +200,7 @@ fn show_config_path() {
 }
 
 /// Show file paths
-fn show_paths(custom_pages_dir: Option<impl AsRef<Path>>) {
+fn show_paths(custom_pages_dir: impl AsRef<Path>) {
     let config_dir = get_config_dir().map_or_else(
         |e| format!("[Error: {}]", e),
         |(mut path, source)| {
@@ -239,7 +239,6 @@ fn show_paths(custom_pages_dir: Option<impl AsRef<Path>>) {
     // This first unwrap will never panic because RawDirectoriesConfig implements Default. The only
     // reason this is Option is if get_app_root() fails.
     let custom_pages_dir = custom_pages_dir
-        .unwrap()
         .as_ref()
         .to_str()
         .map(ToString::to_string)
@@ -413,7 +412,7 @@ fn main() {
         show_config_path();
     }
     if args.flag_show_paths {
-        show_paths(config.directories.custom_pages_dir.as_deref());
+        show_paths(&config.directories.custom_pages_dir);
     }
 
     if args.flag_pager || config.display.use_pager {
@@ -492,7 +491,7 @@ fn main() {
         if let Some(page) = cache.find_page(
             &command,
             &languages,
-            config.directories.custom_pages_dir.as_deref(),
+            &config.directories.custom_pages_dir,
         ) {
             if let Err(msg) = print_page(&page, args.flag_markdown, &config) {
                 eprintln!("{}", msg);

@@ -179,10 +179,12 @@ impl Cache {
     }
 
     /// Look up custom patch (<name>.patch). If it exists, store it in a variable.
-    fn find_patch(patch_name: &str, custom_pages_dir: Option<&Path>) -> Option<PathBuf> {
-        custom_pages_dir
-            .map(|custom_dir| custom_dir.join(patch_name))
-            .filter(|path| path.exists() && path.is_file())
+    fn find_patch(patch_name: &str, custom_pages_dir: impl AsRef<Path>) -> Option<PathBuf> {
+        let patch_path = custom_pages_dir.as_ref().join(patch_name);
+        if patch_path.exists() && patch_path.is_file() {
+            return Some(patch_path)
+        }
+        None
     }
 
     /// Search for a page and return the path to it.
@@ -190,8 +192,9 @@ impl Cache {
         &self,
         name: &str,
         languages: &[String],
-        custom_pages_dir: Option<&Path>,
+        custom_pages_dir: impl AsRef<Path>,
     ) -> Option<PageLookupResult> {
+        let custom_pages_dir = custom_pages_dir.as_ref();
         let page_filename = format!("{}.md", name);
         let patch_filename = format!("{}.patch", name);
         let custom_filename = format!("{}.page", name);
@@ -217,14 +220,12 @@ impl Cache {
             .collect();
 
         // Look up custom page (<name>.page). If it exists, return it directly
-        if let Some(custom_pages_dir) = custom_pages_dir {
-            let custom_page = custom_pages_dir.join(custom_filename);
-            if custom_page.exists() && custom_page.is_file() {
-                return Some(PageLookupResult::with_page(custom_page));
-            }
+        let custom_page = custom_pages_dir.join(custom_filename);
+        if custom_page.exists() && custom_page.is_file() {
+            return Some(PageLookupResult::with_page(custom_page));
         }
 
-        let maybe_patch = Self::find_patch(&patch_filename, custom_pages_dir.as_deref());
+        let maybe_patch = Self::find_patch(&patch_filename, custom_pages_dir);
 
         // Try to find a platform specific path next, append custom patch to it.
         if let Some(pf) = self.get_platform_dir() {
