@@ -323,7 +323,7 @@ mod tests {
     #[test]
     fn test_page_lookup_result_iter_with_patch() {
         let lookup = PageLookupResult::with_page(PathBuf::from("test.page"))
-            .with_optional_patch(Some( PathBuf::from("test.patch") ));
+            .with_optional_patch(Some(PathBuf::from("test.patch")));
         let mut iter = lookup.paths();
         assert_eq!(iter.next(), Some(PathBuf::from("test.page").as_path()));
         assert_eq!(iter.next(), Some(PathBuf::from("test.patch").as_path()));
