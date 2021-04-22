@@ -39,9 +39,7 @@ mod tokenizer;
 mod types;
 
 use crate::cache::{Cache, PageLookupResult};
-use crate::config::{
-    get_config_dir, get_config_path, make_default_config, Config, DirectoriesConfig, MAX_CACHE_AGE,
-};
+use crate::config::{get_config_dir, get_config_path, make_default_config, Config, MAX_CACHE_AGE};
 use crate::dedup::Dedup;
 use crate::error::TealdeerError::{CacheError, ConfigError, UpdateError};
 use crate::formatter::print_lines;
@@ -237,22 +235,15 @@ fn show_paths(custom_pages_dir: Option<impl AsRef<Path>>) {
                 .unwrap_or_else(|_| String::from("[Invalid]"))
         },
     );
-    let custom_pages_dir = if let Some(dir) = custom_pages_dir {
-        dir.as_ref()
-            .to_path_buf()
-            .into_os_string()
-            .into_string()
-            .unwrap_or_else(|_| String::from("[Invalid]"))
-    } else {
-        // Default custom page directory is guarenteed to be Some(..), so first unwrap here is safe
-        // unless the default is changed
-        DirectoriesConfig::default()
-            .custom_pages_dir
-            .unwrap()
-            .into_os_string()
-            .into_string()
-            .unwrap_or_else(|_| String::from("[Invalid]"))
-    };
+
+    // This first unwrap will never panic because RawDirectoriesConfig implements Default. The only
+    // reason this is Option is if get_app_root() fails.
+    let custom_pages_dir = custom_pages_dir
+        .unwrap()
+        .as_ref()
+        .to_str()
+        .map(ToString::to_string)
+        .unwrap_or_else(|| String::from("[Invalid]"));
     println!("Config dir:       {}", config_dir);
     println!("Config path:      {}", config_path);
     println!("Cache dir:        {}", cache_dir);

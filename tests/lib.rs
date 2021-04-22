@@ -214,8 +214,10 @@ fn test_setup_seed_config() {
         .stdout(contains("Successfully created seed config file"));
 }
 
+/// This test is to show that there is a default path for custom_pages_dir if it is not defined in
+/// the config.toml
 #[test]
-fn test_show_paths_custom_pages_() {
+fn test_show_paths_custom_pages_not_in_config() {
     use app_dirs::{get_app_root, AppDataType, AppInfo};
 
     let testenv = TestEnv::new();

@@ -212,7 +212,7 @@ pub struct UpdatesConfig {
     pub auto_update_interval: Duration,
 }
 
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DirectoriesConfig {
     pub custom_pages_dir: Option<PathBuf>,
 }
