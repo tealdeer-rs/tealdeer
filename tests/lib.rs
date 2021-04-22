@@ -12,6 +12,7 @@ use tempfile::{Builder, TempDir};
 
 struct TestEnv {
     pub cache_dir: TempDir,
+    pub custom_pages_dir: TempDir,
     pub config_dir: TempDir,
     pub input_dir: TempDir,
     pub default_features: bool,
@@ -23,10 +24,23 @@ impl TestEnv {
         TestEnv {
             cache_dir: Builder::new().prefix(".tldr.test.cache").tempdir().unwrap(),
             config_dir: Builder::new().prefix(".tldr.test.conf").tempdir().unwrap(),
+            custom_pages_dir: Builder::new()
+                .prefix(".tldr.test.custom-pages")
+                .tempdir()
+                .unwrap(),
             input_dir: Builder::new().prefix(".tldr.test.input").tempdir().unwrap(),
             default_features: true,
             features: vec![],
         }
+    }
+
+    /// Write `content` to "config.toml" in the `config_dir` directory
+    fn write_config(&self, content: impl AsRef<str>) {
+        let config_file_name = self.config_dir.path().join("config.toml");
+        println!("Config path: {:?}", &config_file_name);
+
+        let mut config_file = File::create(&config_file_name).unwrap();
+        config_file.write(content.as_ref().as_bytes()).unwrap();
     }
 
     /// Add entry for that environment to the "common" pages.
@@ -45,6 +59,22 @@ impl TestEnv {
         create_dir_all(&dir).unwrap();
 
         let mut file = File::create(&dir.join(format!("{}.md", name))).unwrap();
+        file.write_all(&contents.as_bytes()).unwrap();
+    }
+
+    /// Add custom patch entry to the custom_pages_dir
+    fn add_page_entry(&self, name: &str, contents: &str) {
+        let dir = self.custom_pages_dir.path();
+        create_dir_all(&dir).unwrap();
+        let mut file = File::create(&dir.join(format!("{}.page", name))).unwrap();
+        file.write_all(&contents.as_bytes()).unwrap();
+    }
+
+    /// Add custom patch entry to the custom_pages_dir
+    fn add_patch_entry(&self, name: &str, contents: &str) {
+        let dir = self.custom_pages_dir.path();
+        create_dir_all(&dir).unwrap();
+        let mut file = File::create(&dir.join(format!("{}.patch", name))).unwrap();
         file.write_all(&contents.as_bytes()).unwrap();
     }
 
@@ -493,6 +523,90 @@ fn test_autoupdate_cache() {
 
     // The cache is not updated with a subsequent call
     check_cache_updated(false);
+}
+
+/// End-end test to ensure .page files overwrite pages in cache_dir
+#[test]
+fn test_custom_page_overwrites() {
+    let testenv = TestEnv::new();
+
+    // set custom pages directory
+    testenv.write_config(format!(
+        "[directories]\ncustom_pages_dir = '{}'",
+        testenv.custom_pages_dir.path().to_str().unwrap()
+    ));
+
+    // Add file that should be ignored to the cache dir
+    testenv.add_entry("inkscape-v2", "");
+    // Add .page file to custome_pages_dir
+    testenv.add_page_entry("inkscape-v2", include_str!("inkscape-v2.md"));
+
+    // Load expected output
+    let expected = include_str!("inkscape-default-no-color.expected");
+
+    testenv
+        .command()
+        .args(&["inkscape-v2", "--color", "never"])
+        .assert()
+        .success()
+        .stdout(similar(expected));
+}
+
+/// End-End test to ensure that .patch files are appened to pages in the cache_dir
+#[test]
+fn test_custom_patch_appends_to_common() {
+    let testenv = TestEnv::new();
+
+    // set custom pages directory
+    testenv.write_config(format!(
+        "[directories]\ncustom_pages_dir = '{}'",
+        testenv.custom_pages_dir.path().to_str().unwrap()
+    ));
+
+    // Add page to the cache dir
+    testenv.add_entry("inkscape-v2", include_str!("inkscape-v2.md"));
+    // Add .page file to custome_pages_dir
+    testenv.add_patch_entry("inkscape-v2", include_str!("inkscape-v2.patch"));
+
+    // Load expected output
+    let expected = include_str!("inkscape-patched-no-color.expected");
+
+    testenv
+        .command()
+        .args(&["inkscape-v2", "--color", "never"])
+        .assert()
+        .success()
+        .stdout(similar(expected));
+}
+
+/// End-End test to ensure that .patch files are not appended to .page files in the custom_pages_dir
+/// Maybe this interaction should change but I put this test here for the coverage
+#[test]
+fn test_custom_patch_does_not_append_to_custom() {
+    let testenv = TestEnv::new();
+
+    // set custom pages directory
+    testenv.write_config(format!(
+        "[directories]\ncustom_pages_dir = '{}'",
+        testenv.custom_pages_dir.path().to_str().unwrap()
+    ));
+
+    testenv.add_entry("test", "");
+
+    // Add page to the cache dir
+    testenv.add_page_entry("inkscape-v2", include_str!("inkscape-v2.md"));
+    // Add .page file to custome_pages_dir
+    testenv.add_patch_entry("inkscape-v2", include_str!("inkscape-v2.patch"));
+
+    // Load expected output
+    let expected = include_str!("inkscape-default-no-color.expected");
+
+    testenv
+        .command()
+        .args(&["inkscape-v2", "--color", "never"])
+        .assert()
+        .success()
+        .stdout(similar(expected));
 }
 
 #[test]

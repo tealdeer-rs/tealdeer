@@ -224,20 +224,20 @@ impl Cache {
             }
         }
 
-        let maybe_patch = Self::find_patch(&patch_filename, custom_pages_dir.as_deref());
+        let patch_path = Self::find_patch(&patch_filename, custom_pages_dir.as_deref());
 
         // Try to find a platform specific path next, append custom patch to it.
         if let Some(pf) = self.get_platform_dir() {
             if let Some(page) =
                 Self::find_page_for_platform(&page_filename, &cache_dir, pf, &lang_dirs)
             {
-                return Some(PageLookupResult::with_page(page).with_optional_patch(maybe_patch));
+                return Some(PageLookupResult::with_page(page).with_optional_patch(patch_path));
             }
         }
 
         // Did not find platform specific results, fall back to "common"
         Self::find_page_for_platform(&page_filename, &cache_dir, "common", &lang_dirs)
-            .map(|page| PageLookupResult::with_page(page).with_optional_patch(maybe_patch))
+            .map(|page| PageLookupResult::with_page(page).with_optional_patch(patch_path))
     }
 
     /// Return the available pages.
