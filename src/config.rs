@@ -157,12 +157,13 @@ struct RawDirectoriesConfig {
 impl Default for RawDirectoriesConfig {
     fn default() -> Self {
         Self {
-            custom_pages_dir: get_app_root(AppDataType::UserData, &crate::APP_INFO)
-                .unwrap_or_else(|_| {
-                    "Could not locate the App Root";
+            custom_pages_dir: get_app_root(AppDataType::UserData, &crate::APP_INFO).map_or_else(
+                |_| {
+                    println!("Could not locate the App Root");
                     std::process::exit(1);
-                })
-                .join("pages"),
+                },
+                |p| p.join("pages"),
+            ),
         }
     }
 }
