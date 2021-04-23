@@ -325,8 +325,8 @@ mod tests {
         let lookup = PageLookupResult::with_page(PathBuf::from("test.page"))
             .with_optional_patch(Some(PathBuf::from("test.patch")));
         let mut iter = lookup.paths();
-        assert_eq!(iter.next(), Some(PathBuf::from("test.page").as_path()));
-        assert_eq!(iter.next(), Some(PathBuf::from("test.patch").as_path()));
+        assert_eq!(iter.next(), Some(Path::new("test.page")));
+        assert_eq!(iter.next(), Some(Path::new("test.patch")));
         assert_eq!(iter.next(), None);
     }
 
@@ -334,7 +334,7 @@ mod tests {
     fn test_page_lookup_result_iter_no_patch() {
         let lookup = PageLookupResult::with_page(PathBuf::from("test.page"));
         let mut iter = lookup.paths();
-        assert_eq!(iter.next(), Some(PathBuf::from("test.page").as_path()));
+        assert_eq!(iter.next(), Some(Path::new("test.page")));
         assert_eq!(iter.next(), None);
     }
 }
