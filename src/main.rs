@@ -235,10 +235,7 @@ fn show_paths(custom_pages_dir: impl AsRef<Path>) {
                 .unwrap_or_else(|_| String::from("[Invalid]"))
         },
     );
-    let custom_pages_dir = custom_pages_dir
-        .as_ref()
-        .to_str()
-        .unwrap_or("[Invalid]");
+    let custom_pages_dir = custom_pages_dir.as_ref().to_str().unwrap_or("[Invalid]");
 
     println!("Config dir:       {}", config_dir);
     println!("Config path:      {}", config_path);
