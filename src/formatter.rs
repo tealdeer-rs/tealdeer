@@ -1,6 +1,6 @@
 //! Functions related to formatting and printing lines from a `Tokenizer`.
 
-use std::io::BufRead;
+use std::io::{BufRead, Write};
 
 use ansi_term::{ANSIString, ANSIStrings};
 use log::debug;
@@ -63,16 +63,17 @@ fn format_code(command: &str, text: &str, config: &Config) -> String {
 }
 
 /// Print a token stream to an ANSI terminal.
-pub fn print_lines<R>(tokenizer: &mut Tokenizer<R>, config: &Config)
+pub fn print_lines<R, T>(writer: &mut T, tokenizer: &mut Tokenizer<R>, config: &Config)
 where
     R: BufRead,
+    T: Write,
 {
     let mut command = String::new();
     while let Some(token) = tokenizer.next_token() {
         match token {
             LineType::Empty => {
                 if !config.display.compact {
-                    println!()
+                    writeln!(writer).unwrap();
                 }
             }
             LineType::Title(title) => {
@@ -83,13 +84,17 @@ where
                 command = title;
                 debug!("Detected command name: {}", &command);
             }
-            LineType::Description(text) => println!("  {}", config.style.description.paint(text)),
-            LineType::ExampleText(text) => println!("  {}", config.style.example_text.paint(text)),
+            LineType::Description(text) => {
+                writeln!(writer, "  {}", config.style.description.paint(text)).unwrap();
+            }
+            LineType::ExampleText(text) => {
+                writeln!(writer, "  {}", config.style.example_text.paint(text)).unwrap();
+            }
             LineType::ExampleCode(text) => {
-                println!("      {}", &format_code(&command, &text, &config))
+                writeln!(writer, "      {}", &format_code(&command, &text, &config)).unwrap();
             }
             LineType::Other(text) => debug!("Unknown line type: {:?}", text),
         }
     }
-    println!();
+    writeln!(writer).unwrap();
 }

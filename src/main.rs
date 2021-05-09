@@ -14,13 +14,13 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::too_many_lines)]
 
-use std::env;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::iter;
 use std::path::PathBuf;
 use std::process;
+use std::{env, io::Write};
 
 use ansi_term::{Color, Style};
 use app_dirs::AppInfo;
@@ -84,7 +84,9 @@ fn print_page(
     enable_markdown: bool,
     config: &Config,
 ) -> Result<(), String> {
-    // Open file
+    let stdout = std::io::stdout();
+    let mut handle = stdout.lock();
+
     for path in page.paths() {
         let file = File::open(path).map_err(|msg| format!("Could not open file: {}", msg))?;
         let reader = BufReader::new(file);
@@ -92,14 +94,20 @@ fn print_page(
         if enable_markdown {
             // Print the raw markdown of the file.
             for line in reader.lines() {
-                println!("{}", line.unwrap());
+                writeln!(handle, "{}", line.unwrap())
+                    .map_err(|_| "Could not write to stdout".to_string())?;
             }
         } else {
             // Create tokenizer and print output
             let mut tokenizer = Tokenizer::new(reader);
-            print_lines(&mut tokenizer, &config);
+            print_lines(&mut handle, &mut tokenizer, &config)
+                .map_err(|_| "Could not write to stdout".to_string())?;
         };
     }
+
+    handle
+        .flush()
+        .map_err(|_| "Could not flush stdout".to_string())?;
 
     Ok(())
 }
