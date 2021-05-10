@@ -178,15 +178,6 @@ impl Cache {
             .find(|path| path.exists() && path.is_file())
     }
 
-    /// Look up custom patch (<name>.patch). If it exists, store it in a variable.
-    fn find_patch(patch_name: &str, custom_pages_dir: impl AsRef<Path>) -> Option<PathBuf> {
-        let patch_path = custom_pages_dir.as_ref().join(patch_name);
-        if patch_path.exists() && patch_path.is_file() {
-            return Some(patch_path);
-        }
-        None
-    }
-
     /// Search for a page and return the path to it.
     pub fn find_page(
         &self,
@@ -221,11 +212,12 @@ impl Cache {
 
         // Look up custom page (<name>.page). If it exists, return it directly
         let custom_page = custom_pages_dir.join(custom_filename);
-        if custom_page.exists() && custom_page.is_file() {
+        if custom_page.is_file() {
             return Some(PageLookupResult::with_page(custom_page));
         }
 
-        let patch_path = Self::find_patch(&patch_filename, custom_pages_dir);
+        // Look up custom patch (<name>.patch). If it exists, store it in a variable.
+        let patch_path = Some(custom_pages_dir.join(&patch_filename)).filter(|p| p.is_file());
 
         // Try to find a platform specific path next, append custom patch to it.
         if let Some(pf) = self.get_platform_dir() {
