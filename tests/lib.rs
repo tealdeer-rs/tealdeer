@@ -40,7 +40,7 @@ impl TestEnv {
         println!("Config path: {:?}", &config_file_name);
 
         let mut config_file = File::create(&config_file_name).unwrap();
-        config_file.write(content.as_ref().as_bytes()).unwrap();
+        config_file.write_all(content.as_ref().as_bytes()).unwrap();
     }
 
     /// Add entry for that environment to the "common" pages.
@@ -379,7 +379,7 @@ fn test_correct_rendering_with_config() {
 
     let mut config_file = File::create(&config_file_path).unwrap();
     config_file
-        .write(include_str!("config.toml").as_bytes())
+        .write_all(include_str!("config.toml").as_bytes())
         .unwrap();
 
     // Create input file
@@ -487,7 +487,7 @@ fn test_autoupdate_cache() {
     // Activate automatic updates, set the auto-update interval to 24 hours
     let mut config_file = File::create(&config_file_path).unwrap();
     config_file
-        .write("[updates]\nauto_update = true\nauto_update_interval_hours = 24".as_bytes())
+        .write_all("[updates]\nauto_update = true\nauto_update_interval_hours = 24".as_bytes())
         .unwrap();
     config_file.flush().unwrap();
 

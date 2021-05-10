@@ -57,6 +57,7 @@ const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar
 #[cfg(not(target_os = "windows"))]
 const PAGER_COMMAND: &str = "less -R";
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Deserialize)]
 struct Args {
     arg_command: Option<Vec<String>>,

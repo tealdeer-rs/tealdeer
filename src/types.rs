@@ -108,6 +108,8 @@ pub enum PathSource {
     OsConvention,
     /// Env variable (TEALDEER_*)
     EnvVar,
+
+    #[allow(dead_code)]
     /// Config file variable
     ConfigVar,
 }
