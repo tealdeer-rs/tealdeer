@@ -144,7 +144,7 @@ fn test_update_cache() {
         .args(&["--update"])
         .assert()
         .success()
-        .stdout(contains("Successfully updated cache."));
+        .stderr(contains("Successfully updated cache."));
 
     testenv.command().args(&["sl"]).assert().success();
 }
@@ -227,7 +227,7 @@ fn test_setup_seed_config() {
         .args(&["--seed-config"])
         .assert()
         .success()
-        .stdout(contains("Successfully created seed config file"));
+        .stderr(contains("Successfully created seed config file here"));
 }
 
 #[test]
@@ -284,12 +284,7 @@ fn test_os_specific_page() {
 fn test_markdown_rendering() {
     let testenv = TestEnv::new();
 
-    testenv
-        .command()
-        .args(&["--update"])
-        .assert()
-        .success()
-        .stdout(contains("Successfully updated cache."));
+    testenv.add_entry("tar", include_str!("tar-markdown.expected"));
 
     let expected = include_str!("tar-markdown.expected");
     testenv
@@ -410,7 +405,7 @@ fn test_spaces_find_command() {
         .args(&["--update"])
         .assert()
         .success()
-        .stdout(contains("Successfully updated cache."));
+        .stderr(contains("Successfully updated cache."));
 
     testenv
         .command()
@@ -428,7 +423,7 @@ fn test_pager_flag_enable() {
         .args(&["--update"])
         .assert()
         .success()
-        .stdout(contains("Successfully updated cache."));
+        .stderr(contains("Successfully updated cache."));
 
     testenv
         .command()
@@ -497,9 +492,9 @@ fn test_autoupdate_cache() {
         let assert = testenv.command().args(&["--list"]).assert().success();
         let pred = contains("Successfully updated cache");
         if expected {
-            assert.stdout(pred)
+            assert.stderr(pred)
         } else {
-            assert.stdout(pred.not())
+            assert.stderr(pred.not())
         };
     };
 
@@ -618,7 +613,7 @@ fn test_pager_warning() {
         .args(&["--update"])
         .assert()
         .success()
-        .stdout(contains("Successfully updated cache."));
+        .stderr(contains("Successfully updated cache."));
 
     // Regular call should not show a "pager flag not available on windows" warning
     testenv

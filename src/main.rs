@@ -164,7 +164,7 @@ fn clear_cache(quietly: bool) {
         process::exit(1);
     });
     if !quietly {
-        println!("Successfully deleted cache.");
+        eprintln!("Successfully deleted cache.");
     }
 }
 
@@ -179,7 +179,7 @@ fn update_cache(cache: &Cache, quietly: bool) {
         process::exit(1);
     });
     if !quietly {
-        println!("Successfully updated cache.");
+        eprintln!("Successfully updated cache.");
     }
 }
 
@@ -246,7 +246,7 @@ fn show_paths() {
 fn create_config_and_exit() {
     match make_default_config() {
         Ok(config_file_path) => {
-            println!(
+            eprintln!(
                 "Successfully created seed config file here: {}",
                 config_file_path.to_str().unwrap()
             );
@@ -492,9 +492,9 @@ fn main() {
             process::exit(0);
         } else {
             if !args.flag_quiet {
-                println!("Page {} not found in cache", &command);
-                println!("Try updating with `tldr --update`, or submit a pull request to:");
-                println!("https://github.com/tldr-pages/tldr");
+                eprintln!("Page {} not found in cache", &command);
+                eprintln!("Try updating with `tldr --update`, or submit a pull request to:");
+                eprintln!("https://github.com/tldr-pages/tldr");
             }
             process::exit(1);
         }
