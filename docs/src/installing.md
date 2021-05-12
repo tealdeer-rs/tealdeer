@@ -2,7 +2,7 @@
 
 There are a few different ways to install Tealdeer:
 
-- Through [packet managers](#packet-managers)
+- Through [package managers](#package-managers)
 - Through [static binaries](#static-binaries-linux)
 - Through [cargo install](#through-cargo-install)
 - By [building from source](#build-from-source)
@@ -10,7 +10,7 @@ There are a few different ways to install Tealdeer:
 Additionally, when not using system packages, you can [manually install
 autocompletions](#autocompletion).
 
-## Packet Managers
+## Package Managers
 
 Tealdeer has been added to a few package managers:
 
@@ -19,7 +19,7 @@ Tealdeer has been added to a few package managers:
   [`tealdeer-git`](https://aur.archlinux.org/packages/tealdeer-git/)
 - Fedora: [`tealdeer`](https://src.fedoraproject.org/rpms/rust-tealdeer)
 - FreeBSD: [`sysutils/tealdeer`](https://www.freshports.org/sysutils/tealdeer/)
-- macOS Homebrew: [`tealdeer`](https://formulae.brew.sh/formula/tealdeer)
+- Homebrew: [`tealdeer`](https://formulae.brew.sh/formula/tealdeer)
 - NetBSD: [`sysutils/tealdeer`](https://pkgsrc.se/sysutils/tealdeer)
 - Nix: [`tealdeer`](https://nixos.org/nixos/packages.html#tealdeer)
 - openSUSE: [`tealdeer`](https://software.opensuse.org/package/tealdeer?search_term=tealdeer)
