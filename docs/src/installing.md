@@ -17,9 +17,9 @@ Tealdeer has been added to a few package managers:
 - Arch Linux AUR: [`tealdeer`](https://aur.archlinux.org/packages/tealdeer/),
   [`tealdeer-bin`](https://aur.archlinux.org/packages/tealdeer-bin/) or
   [`tealdeer-git`](https://aur.archlinux.org/packages/tealdeer-git/)
-- Brew [`tealdeer`](https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/tealdeer.rb)
 - Fedora: [`tealdeer`](https://src.fedoraproject.org/rpms/rust-tealdeer)
 - FreeBSD: [`sysutils/tealdeer`](https://www.freshports.org/sysutils/tealdeer/)
+- Homebrew: [`tealdeer`](https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/tealdeer.rb)
 - NetBSD: [`sysutils/tealdeer`](https://pkgsrc.se/sysutils/tealdeer)
 - Nix: [`tealdeer`](https://nixos.org/nixos/packages.html#tealdeer)
 - openSUSE: [`tealdeer`](https://software.opensuse.org/package/tealdeer?search_term=tealdeer)
