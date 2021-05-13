@@ -284,12 +284,12 @@ fn test_os_specific_page() {
 fn test_markdown_rendering() {
     let testenv = TestEnv::new();
 
-    testenv.add_entry("tar", include_str!("tar-markdown.expected"));
+    testenv.add_entry("which", include_str!("which-markdown.expected"));
 
-    let expected = include_str!("tar-markdown.expected");
+    let expected = include_str!("which-markdown.expected");
     testenv
         .command()
-        .args(&["-m", "tar"])
+        .args(&["-m", "which"])
         .assert()
         .success()
         .stdout(similar(expected));
@@ -427,7 +427,7 @@ fn test_pager_flag_enable() {
 
     testenv
         .command()
-        .args(&["--pager", "tar"])
+        .args(&["--pager", "which"])
         .assert()
         .success();
 }
@@ -618,7 +618,7 @@ fn test_pager_warning() {
     // Regular call should not show a "pager flag not available on windows" warning
     testenv
         .command()
-        .args(&["tar"])
+        .args(&["which"])
         .assert()
         .success()
         .stderr(contains("pager flag not available on Windows").not());
@@ -626,7 +626,7 @@ fn test_pager_warning() {
     // But it should be shown if the pager flag is true
     testenv
         .command()
-        .args(&["tar", "-p"])
+        .args(&["which", "-p"])
         .assert()
         .success()
         .stderr(contains("pager flag not available on Windows"));
