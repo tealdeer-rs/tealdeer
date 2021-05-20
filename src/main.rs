@@ -41,7 +41,7 @@ mod types;
 use crate::cache::{Cache, PageLookupResult};
 use crate::config::{get_config_dir, get_config_path, make_default_config, Config, MAX_CACHE_AGE};
 use crate::dedup::Dedup;
-use crate::error::TealdeerError::{CacheError, ConfigError, UpdateError};
+use crate::error::TealdeerError::ConfigError;
 use crate::formatter::print_lines;
 use crate::tokenizer::Tokenizer;
 use crate::types::{ColorOptions, OsType};
@@ -101,7 +101,7 @@ fn print_page(
             // Create tokenizer and print output
             let mut tokenizer = Tokenizer::new(reader);
             print_lines(&mut handle, &mut tokenizer, &config)
-                .map_err(|_| "Could not write to stdout".to_string())?;
+                .map_err(|e| format!("Could not write to stdout: {}", e.message()))?;
         };
     }
 
@@ -164,11 +164,7 @@ fn check_cache(args: &Args, enable_styles: bool) {
 /// Clear the cache
 fn clear_cache(quietly: bool) {
     Cache::clear().unwrap_or_else(|e| {
-        match e {
-            CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
-                eprintln!("Could not delete cache: {}", msg)
-            }
-        };
+        eprintln!("Could not delete cache: {}", e.message());
         process::exit(1);
     });
     if !quietly {
@@ -179,11 +175,7 @@ fn clear_cache(quietly: bool) {
 /// Update the cache
 fn update_cache(cache: &Cache, quietly: bool) {
     cache.update().unwrap_or_else(|e| {
-        match e {
-            CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
-                eprintln!("Could not update cache: {}", msg)
-            }
-        };
+        eprintln!("Could not update cache: {}", e.message());
         process::exit(1);
     });
     if !quietly {
@@ -461,11 +453,7 @@ fn main() {
 
         // Get list of pages
         let pages = cache.list_pages().unwrap_or_else(|e| {
-            match e {
-                CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
-                    eprintln!("Could not get list of pages: {}", msg)
-                }
-            }
+            eprintln!("Could not get list of pages: {}", e.message());
             process::exit(1);
         });
 
