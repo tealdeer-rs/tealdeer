@@ -14,13 +14,13 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::too_many_lines)]
 
-use std::env;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::iter;
 use std::path::PathBuf;
 use std::process;
+use std::{env, io::Write};
 
 use ansi_term::{Color, Style};
 use app_dirs::AppInfo;
@@ -41,7 +41,7 @@ mod types;
 use crate::cache::{Cache, PageLookupResult};
 use crate::config::{get_config_dir, get_config_path, make_default_config, Config, MAX_CACHE_AGE};
 use crate::dedup::Dedup;
-use crate::error::TealdeerError::{CacheError, ConfigError, UpdateError};
+use crate::error::TealdeerError::ConfigError;
 use crate::formatter::print_lines;
 use crate::tokenizer::Tokenizer;
 use crate::types::{ColorOptions, OsType};
@@ -84,7 +84,9 @@ fn print_page(
     enable_markdown: bool,
     config: &Config,
 ) -> Result<(), String> {
-    // Open file
+    let stdout = std::io::stdout();
+    let mut handle = stdout.lock();
+
     for path in page.paths() {
         let file = File::open(path).map_err(|msg| format!("Could not open file: {}", msg))?;
         let reader = BufReader::new(file);
@@ -92,14 +94,20 @@ fn print_page(
         if enable_markdown {
             // Print the raw markdown of the file.
             for line in reader.lines() {
-                println!("{}", line.unwrap());
+                writeln!(handle, "{}", line.unwrap())
+                    .map_err(|_| "Could not write to stdout".to_string())?;
             }
         } else {
             // Create tokenizer and print output
             let mut tokenizer = Tokenizer::new(reader);
-            print_lines(&mut tokenizer, &config);
+            print_lines(&mut handle, &mut tokenizer, &config)
+                .map_err(|e| format!("Could not write to stdout: {}", e.message()))?;
         };
     }
+
+    handle
+        .flush()
+        .map_err(|_| "Could not flush stdout".to_string())?;
 
     Ok(())
 }
@@ -156,11 +164,7 @@ fn check_cache(args: &Args, enable_styles: bool) {
 /// Clear the cache
 fn clear_cache(quietly: bool) {
     Cache::clear().unwrap_or_else(|e| {
-        match e {
-            CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
-                eprintln!("Could not delete cache: {}", msg)
-            }
-        };
+        eprintln!("Could not delete cache: {}", e.message());
         process::exit(1);
     });
     if !quietly {
@@ -171,11 +175,7 @@ fn clear_cache(quietly: bool) {
 /// Update the cache
 fn update_cache(cache: &Cache, quietly: bool) {
     cache.update().unwrap_or_else(|e| {
-        match e {
-            CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
-                eprintln!("Could not update cache: {}", msg)
-            }
-        };
+        eprintln!("Could not update cache: {}", e.message());
         process::exit(1);
     });
     if !quietly {
@@ -453,11 +453,7 @@ fn main() {
 
         // Get list of pages
         let pages = cache.list_pages().unwrap_or_else(|e| {
-            match e {
-                CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
-                    eprintln!("Could not get list of pages: {}", msg)
-                }
-            }
+            eprintln!("Could not get list of pages: {}", e.message());
             process::exit(1);
         });
 

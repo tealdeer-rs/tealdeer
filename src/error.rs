@@ -7,6 +7,18 @@ pub enum TealdeerError {
     CacheError(String),
     ConfigError(String),
     UpdateError(String),
+    WriteError(String),
+}
+
+impl TealdeerError {
+    pub fn message(&self) -> &str {
+        match self {
+            Self::CacheError(msg)
+            | Self::ConfigError(msg)
+            | Self::UpdateError(msg)
+            | Self::WriteError(msg) => msg,
+        }
+    }
 }
 
 impl From<ReqwestError> for TealdeerError {
@@ -21,6 +33,7 @@ impl fmt::Display for TealdeerError {
             Self::CacheError(e) => write!(f, "CacheError: {}", e),
             Self::ConfigError(e) => write!(f, "ConfigError: {}", e),
             Self::UpdateError(e) => write!(f, "UpdateError: {}", e),
+            Self::WriteError(e) => write!(f, "WriteError: {}", e),
         }
     }
 }

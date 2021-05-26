@@ -1,11 +1,12 @@
 //! Functions related to formatting and printing lines from a `Tokenizer`.
 
-use std::io::BufRead;
+use std::io::{BufRead, Write};
 
 use ansi_term::{ANSIString, ANSIStrings};
 use log::debug;
 
 use crate::config::Config;
+use crate::error::TealdeerError::{self, WriteError};
 use crate::tokenizer::Tokenizer;
 use crate::types::LineType;
 
@@ -63,8 +64,13 @@ fn format_code(command: &str, text: &str, config: &Config) -> String {
 }
 
 /// Print a token stream to an ANSI terminal.
-pub fn print_lines<R>(tokenizer: &mut Tokenizer<R>, config: &Config)
+pub fn print_lines<T, R>(
+    writer: &mut T,
+    tokenizer: &mut Tokenizer<R>,
+    config: &Config,
+) -> Result<(), TealdeerError>
 where
+    T: Write,
     R: BufRead,
 {
     let mut command = String::new();
@@ -72,7 +78,7 @@ where
         match token {
             LineType::Empty => {
                 if !config.display.compact {
-                    println!()
+                    writeln!(writer).map_err(|e| WriteError(e.to_string()))?;
                 }
             }
             LineType::Title(title) => {
@@ -83,13 +89,20 @@ where
                 command = title;
                 debug!("Detected command name: {}", &command);
             }
-            LineType::Description(text) => println!("  {}", config.style.description.paint(text)),
-            LineType::ExampleText(text) => println!("  {}", config.style.example_text.paint(text)),
+            LineType::Description(text) => {
+                writeln!(writer, "  {}", config.style.description.paint(text))
+                    .map_err(|e| WriteError(e.to_string()))?;
+            }
+            LineType::ExampleText(text) => {
+                writeln!(writer, "  {}", config.style.example_text.paint(text))
+                    .map_err(|e| WriteError(e.to_string()))?;
+            }
             LineType::ExampleCode(text) => {
-                println!("      {}", &format_code(&command, &text, &config))
+                writeln!(writer, "      {}", &format_code(&command, &text, &config))
+                    .map_err(|e| WriteError(e.to_string()))?;
             }
             LineType::Other(text) => debug!("Unknown line type: {:?}", text),
         }
     }
-    println!();
+    writeln!(writer).map_err(|e| WriteError(e.to_string()))
 }
