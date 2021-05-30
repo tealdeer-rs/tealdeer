@@ -1,11 +1,5 @@
 //! Integration tests.
 
-extern crate assert_cmd;
-extern crate escargot;
-extern crate filetime;
-extern crate predicates;
-extern crate tempfile;
-
 use std::fs::{create_dir_all, File};
 use std::io::Write;
 use std::process::Command;
@@ -18,6 +12,7 @@ use tempfile::{Builder, TempDir};
 
 struct TestEnv {
     pub cache_dir: TempDir,
+    pub custom_pages_dir: TempDir,
     pub config_dir: TempDir,
     pub input_dir: TempDir,
     pub default_features: bool,
@@ -29,23 +24,57 @@ impl TestEnv {
         TestEnv {
             cache_dir: Builder::new().prefix(".tldr.test.cache").tempdir().unwrap(),
             config_dir: Builder::new().prefix(".tldr.test.conf").tempdir().unwrap(),
+            custom_pages_dir: Builder::new()
+                .prefix(".tldr.test.custom-pages")
+                .tempdir()
+                .unwrap(),
             input_dir: Builder::new().prefix(".tldr.test.input").tempdir().unwrap(),
             default_features: true,
             features: vec![],
         }
     }
 
-    /// Add entry for that environment.
+    /// Write `content` to "config.toml" in the `config_dir` directory
+    fn write_config(&self, content: impl AsRef<str>) {
+        let config_file_name = self.config_dir.path().join("config.toml");
+        println!("Config path: {:?}", &config_file_name);
+
+        let mut config_file = File::create(&config_file_name).unwrap();
+        config_file.write_all(content.as_ref().as_bytes()).unwrap();
+    }
+
+    /// Add entry for that environment to the "common" pages.
     fn add_entry(&self, name: &str, contents: &str) {
+        self.add_os_entry("common", name, contents);
+    }
+
+    /// Add entry for that environment to an OS-specific subfolder.
+    fn add_os_entry(&self, os: &str, name: &str, contents: &str) {
         let dir = self
             .cache_dir
             .path()
             .join("tldr-master")
             .join("pages")
-            .join("common");
+            .join(os);
         create_dir_all(&dir).unwrap();
 
         let mut file = File::create(&dir.join(format!("{}.md", name))).unwrap();
+        file.write_all(&contents.as_bytes()).unwrap();
+    }
+
+    /// Add custom patch entry to the custom_pages_dir
+    fn add_page_entry(&self, name: &str, contents: &str) {
+        let dir = self.custom_pages_dir.path();
+        create_dir_all(&dir).unwrap();
+        let mut file = File::create(&dir.join(format!("{}.page", name))).unwrap();
+        file.write_all(&contents.as_bytes()).unwrap();
+    }
+
+    /// Add custom patch entry to the custom_pages_dir
+    fn add_patch_entry(&self, name: &str, contents: &str) {
+        let dir = self.custom_pages_dir.path();
+        create_dir_all(&dir).unwrap();
+        let mut file = File::create(&dir.join(format!("{}.patch", name))).unwrap();
         file.write_all(&contents.as_bytes()).unwrap();
     }
 
@@ -115,7 +144,7 @@ fn test_update_cache() {
         .args(&["--update"])
         .assert()
         .success()
-        .stdout(contains("Successfully updated cache."));
+        .stderr(contains("Successfully updated cache."));
 
     testenv.command().args(&["sl"]).assert().success();
 }
@@ -198,7 +227,7 @@ fn test_setup_seed_config() {
         .args(&["--seed-config"])
         .assert()
         .success()
-        .stdout(contains("Successfully created seed config file"));
+        .stderr(contains("Successfully created seed config file here"));
 }
 
 #[test]
@@ -239,20 +268,28 @@ fn test_show_paths() {
 }
 
 #[test]
+fn test_os_specific_page() {
+    let testenv = TestEnv::new();
+
+    testenv.add_os_entry("sunos", "truss", "contents");
+
+    testenv
+        .command()
+        .args(&["--os", "sunos", "truss"])
+        .assert()
+        .success();
+}
+
+#[test]
 fn test_markdown_rendering() {
     let testenv = TestEnv::new();
 
-    testenv
-        .command()
-        .args(&["--update"])
-        .assert()
-        .success()
-        .stdout(contains("Successfully updated cache."));
+    testenv.add_entry("which", include_str!("which-markdown.expected"));
 
-    let expected = include_str!("tar-markdown.expected");
+    let expected = include_str!("which-markdown.expected");
     testenv
         .command()
-        .args(&["-m", "tar"])
+        .args(&["-m", "which"])
         .assert()
         .success()
         .stdout(similar(expected));
@@ -337,7 +374,7 @@ fn test_correct_rendering_with_config() {
 
     let mut config_file = File::create(&config_file_path).unwrap();
     config_file
-        .write(include_str!("config.toml").as_bytes())
+        .write_all(include_str!("config.toml").as_bytes())
         .unwrap();
 
     // Create input file
@@ -368,7 +405,7 @@ fn test_spaces_find_command() {
         .args(&["--update"])
         .assert()
         .success()
-        .stdout(contains("Successfully updated cache."));
+        .stderr(contains("Successfully updated cache."));
 
     testenv
         .command()
@@ -386,11 +423,11 @@ fn test_pager_flag_enable() {
         .args(&["--update"])
         .assert()
         .success()
-        .stdout(contains("Successfully updated cache."));
+        .stderr(contains("Successfully updated cache."));
 
     testenv
         .command()
-        .args(&["--pager", "tar"])
+        .args(&["--pager", "which"])
         .assert()
         .success();
 }
@@ -445,7 +482,7 @@ fn test_autoupdate_cache() {
     // Activate automatic updates, set the auto-update interval to 24 hours
     let mut config_file = File::create(&config_file_path).unwrap();
     config_file
-        .write("[updates]\nauto_update = true\nauto_update_interval_hours = 24".as_bytes())
+        .write_all("[updates]\nauto_update = true\nauto_update_interval_hours = 24".as_bytes())
         .unwrap();
     config_file.flush().unwrap();
 
@@ -455,9 +492,9 @@ fn test_autoupdate_cache() {
         let assert = testenv.command().args(&["--list"]).assert().success();
         let pred = contains("Successfully updated cache");
         if expected {
-            assert.stdout(pred)
+            assert.stderr(pred)
         } else {
-            assert.stdout(pred.not())
+            assert.stderr(pred.not())
         };
     };
 
@@ -483,6 +520,90 @@ fn test_autoupdate_cache() {
     check_cache_updated(false);
 }
 
+/// End-end test to ensure .page files overwrite pages in cache_dir
+#[test]
+fn test_custom_page_overwrites() {
+    let testenv = TestEnv::new();
+
+    // set custom pages directory
+    testenv.write_config(format!(
+        "[directories]\ncustom_pages_dir = '{}'",
+        testenv.custom_pages_dir.path().to_str().unwrap()
+    ));
+
+    // Add file that should be ignored to the cache dir
+    testenv.add_entry("inkscape-v2", "");
+    // Add .page file to custome_pages_dir
+    testenv.add_page_entry("inkscape-v2", include_str!("inkscape-v2.md"));
+
+    // Load expected output
+    let expected = include_str!("inkscape-default-no-color.expected");
+
+    testenv
+        .command()
+        .args(&["inkscape-v2", "--color", "never"])
+        .assert()
+        .success()
+        .stdout(similar(expected));
+}
+
+/// End-End test to ensure that .patch files are appened to pages in the cache_dir
+#[test]
+fn test_custom_patch_appends_to_common() {
+    let testenv = TestEnv::new();
+
+    // set custom pages directory
+    testenv.write_config(format!(
+        "[directories]\ncustom_pages_dir = '{}'",
+        testenv.custom_pages_dir.path().to_str().unwrap()
+    ));
+
+    // Add page to the cache dir
+    testenv.add_entry("inkscape-v2", include_str!("inkscape-v2.md"));
+    // Add .page file to custome_pages_dir
+    testenv.add_patch_entry("inkscape-v2", include_str!("inkscape-v2.patch"));
+
+    // Load expected output
+    let expected = include_str!("inkscape-patched-no-color.expected");
+
+    testenv
+        .command()
+        .args(&["inkscape-v2", "--color", "never"])
+        .assert()
+        .success()
+        .stdout(similar(expected));
+}
+
+/// End-End test to ensure that .patch files are not appended to .page files in the custom_pages_dir
+/// Maybe this interaction should change but I put this test here for the coverage
+#[test]
+fn test_custom_patch_does_not_append_to_custom() {
+    let testenv = TestEnv::new();
+
+    // set custom pages directory
+    testenv.write_config(format!(
+        "[directories]\ncustom_pages_dir = '{}'",
+        testenv.custom_pages_dir.path().to_str().unwrap()
+    ));
+
+    testenv.add_entry("test", "");
+
+    // Add page to the cache dir
+    testenv.add_page_entry("inkscape-v2", include_str!("inkscape-v2.md"));
+    // Add .page file to custome_pages_dir
+    testenv.add_patch_entry("inkscape-v2", include_str!("inkscape-v2.patch"));
+
+    // Load expected output
+    let expected = include_str!("inkscape-default-no-color.expected");
+
+    testenv
+        .command()
+        .args(&["inkscape-v2", "--color", "never"])
+        .assert()
+        .success()
+        .stdout(similar(expected));
+}
+
 #[test]
 #[cfg(target_os = "windows")]
 fn test_pager_warning() {
@@ -492,12 +613,12 @@ fn test_pager_warning() {
         .args(&["--update"])
         .assert()
         .success()
-        .stdout(contains("Successfully updated cache."));
+        .stderr(contains("Successfully updated cache."));
 
     // Regular call should not show a "pager flag not available on windows" warning
     testenv
         .command()
-        .args(&["tar"])
+        .args(&["which"])
         .assert()
         .success()
         .stderr(contains("pager flag not available on Windows").not());
@@ -505,7 +626,7 @@ fn test_pager_warning() {
     // But it should be shown if the pager flag is true
     testenv
         .command()
-        .args(&["tar", "-p"])
+        .args(&["which", "-p"])
         .assert()
         .success()
         .stderr(contains("pager flag not available on Windows"));

@@ -1,7 +1,9 @@
 #compdef tldr
 
 _applications() {
-  _values 'applications' "${(uonzf)$(tldr --list | sed -e 's/, /\n/g')}"
+    local -a commands
+    commands=(${(uonzf)"$(tldr --list 2>/dev/null)"//:/\\:})
+    _describe -t commands 'command' commands
 }
 
 _tealdeer() {
@@ -18,6 +20,7 @@ _tealdeer() {
             sunos
             windows
         ))'
+        "($I -L --language)"{-L,--language}"[Override the language settings]:lang"
         "($I -u --update)"{-u,--update}"[Update the local cache]"
         "($I -c --clear-cache)"{-c,--clear-cache}"[Clear the local cache]"
         "($I -p --pager)"{-p,--pager}"[Use a pager to page output]"
@@ -31,8 +34,7 @@ _tealdeer() {
             never
         ))"
         '(- *)'{-h,--help}'[Display help]'
-            '(- *)'{-v,--version}'[Show version information]'
-            '*:file:_files'
+        '(- *)'{-v,--version}'[Show version information]'
         '1: :_applications'
     )
 

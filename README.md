@@ -90,12 +90,8 @@ To run lints:
 
 ## MSRV (Minimally Supported Rust Version)
 
-Tealdeer will not bump the MSRV requirement in patch versions, but it may
-increase it in minor versions. The reason is that many important libraries
-(e.g. the Tokio ecosystem, which is a dependency of reqwest, which is used for
-downloading the cache) do not follow a static MSRV, but instead follow a
-"stable + last n releases" approach. Trying to guarantee the same MSRV across
-all minor releases would be a futile attempt.
+When publishing a Tealdeer release, the Rust version required to build it
+should be stable for at least a month.
 
 
 ## License
