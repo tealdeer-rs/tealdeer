@@ -14,7 +14,7 @@ autocompletions](#autocompletion).
 
 Tealdeer has been added to a few package managers:
 
-- Arch Linux AUR: [`tealdeer-git`](https://aur.archlinux.org/packages/tealdeer-git/)
+- Arch Linux: [`tealdeer`](https://archlinux.org/packages/community/x86_64/tealdeer/)
 - Fedora: [`tealdeer`](https://src.fedoraproject.org/rpms/rust-tealdeer)
 - FreeBSD: [`sysutils/tealdeer`](https://www.freshports.org/sysutils/tealdeer/)
 - Homebrew: [`tealdeer`](https://formulae.brew.sh/formula/tealdeer)
