@@ -18,6 +18,7 @@ underline = false
 [style.example_variable]
 underline = true
 bold = false
+italic = true
 
 [display]
 use_pager = false
