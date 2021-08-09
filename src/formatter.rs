@@ -53,10 +53,10 @@ fn format_code(command: &str, text: &str, config: &Config) -> String {
             let example_code = &between_variables[..variable_start];
             let example_variable = &between_variables[variable_start + 2..];
 
-            highlight_command(&command, &example_code, &config, &mut parts);
+            highlight_command(command, example_code, config, &mut parts);
             parts.push(config.style.example_variable.paint(example_variable));
         } else {
-            highlight_command(&command, &between_variables, &config, &mut parts);
+            highlight_command(command, between_variables, config, &mut parts);
         }
     }
 
@@ -98,7 +98,7 @@ where
                     .map_err(|e| WriteError(e.to_string()))?;
             }
             LineType::ExampleCode(text) => {
-                writeln!(writer, "      {}", &format_code(&command, &text, &config))
+                writeln!(writer, "      {}", &format_code(&command, &text, config))
                     .map_err(|e| WriteError(e.to_string()))?;
             }
             LineType::Other(text) => debug!("Unknown line type: {:?}", text),

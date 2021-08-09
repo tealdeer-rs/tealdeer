@@ -2,7 +2,7 @@ use reqwest::Error as ReqwestError;
 use std::fmt;
 
 #[derive(Debug)]
-#[allow(clippy::pub_enum_variant_names)]
+#[allow(clippy::enum_variant_names)]
 pub enum TealdeerError {
     CacheError(String),
     ConfigError(String),
