@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.52
+          toolchain: stable
           components: clippy
           override: true
       - uses: actions-rs/clippy-check@v1
