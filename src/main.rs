@@ -100,7 +100,7 @@ fn print_page(
         } else {
             // Create tokenizer and print output
             let mut tokenizer = Tokenizer::new(reader);
-            print_lines(&mut handle, &mut tokenizer, &config)
+            print_lines(&mut handle, &mut tokenizer, config)
                 .map_err(|e| format!("Could not write to stdout: {}", e.message()))?;
         };
     }
