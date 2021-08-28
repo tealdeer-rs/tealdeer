@@ -17,7 +17,6 @@
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::iter;
 use std::path::PathBuf;
 use std::process;
 use std::{env, io::Write};
@@ -315,10 +314,7 @@ fn get_languages(env_lang: Option<&str>, env_language: Option<&str>) -> Vec<Stri
     let env_lang = env_lang.unwrap();
 
     // Create an iterator that contains $LANGUAGE (':' separated list) followed by $LANG (single language)
-    let locales = env_language
-        .unwrap_or("")
-        .split(':')
-        .chain(iter::once(env_lang));
+    let locales = env_language.unwrap_or("").split(':').chain([env_lang]);
 
     let mut lang_list = Vec::new();
     for locale in locales {
@@ -510,19 +506,19 @@ mod test {
     use docopt::{Docopt, Error};
 
     fn test_helper(argv: &[&str]) -> Result<Args, Error> {
-        Docopt::new(USAGE).and_then(|d| d.argv(argv.iter()).deserialize())
+        Docopt::new(USAGE).and_then(|d| d.argv(argv).deserialize())
     }
 
     #[test]
     fn test_docopt_os_case_insensitive() {
-        let argv = vec!["cp", "--os", "LiNuX"];
+        let argv = ["cp", "--os", "LiNuX"];
         let os = test_helper(&argv).unwrap().flag_os.unwrap();
         assert_eq!(OsType::Linux, os);
     }
 
     #[test]
     fn test_docopt_expect_error() {
-        let argv = vec!["cp", "--os", "lindows"];
+        let argv = ["cp", "--os", "lindows"];
         assert!(!test_helper(&argv).is_ok());
     }
 
@@ -532,41 +528,41 @@ mod test {
         #[test]
         fn missing_lang_env() {
             let lang_list = get_languages(None, Some("de:fr"));
-            assert_eq!(lang_list, vec!["en"]);
+            assert_eq!(lang_list, ["en"]);
             let lang_list = get_languages(None, None);
-            assert_eq!(lang_list, vec!["en"]);
+            assert_eq!(lang_list, ["en"]);
         }
 
         #[test]
         fn missing_language_env() {
             let lang_list = get_languages(Some("de"), None);
-            assert_eq!(lang_list, vec!["de", "en"]);
+            assert_eq!(lang_list, ["de", "en"]);
         }
 
         #[test]
         fn preference_order() {
             let lang_list = get_languages(Some("de"), Some("fr:cn"));
-            assert_eq!(lang_list, vec!["fr", "cn", "de", "en"]);
+            assert_eq!(lang_list, ["fr", "cn", "de", "en"]);
         }
 
         #[test]
         fn country_code_expansion() {
             let lang_list = get_languages(Some("pt_BR"), None);
-            assert_eq!(lang_list, vec!["pt_BR", "pt", "en"]);
+            assert_eq!(lang_list, ["pt_BR", "pt", "en"]);
         }
 
         #[test]
         fn ignore_posix_and_c() {
             let lang_list = get_languages(Some("POSIX"), None);
-            assert_eq!(lang_list, vec!["en"]);
+            assert_eq!(lang_list, ["en"]);
             let lang_list = get_languages(Some("C"), None);
-            assert_eq!(lang_list, vec!["en"]);
+            assert_eq!(lang_list, ["en"]);
         }
 
         #[test]
         fn no_duplicates() {
             let lang_list = get_languages(Some("de"), Some("fr:de:cn:de"));
-            assert_eq!(lang_list, vec!["fr", "de", "cn", "en"]);
+            assert_eq!(lang_list, ["fr", "de", "cn", "en"]);
         }
     }
 }
