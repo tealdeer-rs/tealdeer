@@ -98,7 +98,7 @@ where
                     .map_err(|e| WriteError(e.to_string()))?;
             }
             LineType::ExampleCode(text) => {
-                writeln!(writer, "      {}", &format_code(&command, &text, config))
+                writeln!(writer, "      {}", format_code(&command, &text, config))
                     .map_err(|e| WriteError(e.to_string()))?;
             }
             LineType::Other(text) => debug!("Unknown line type: {:?}", text),

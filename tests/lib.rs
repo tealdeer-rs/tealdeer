@@ -37,7 +37,7 @@ impl TestEnv {
     /// Write `content` to "config.toml" in the `config_dir` directory
     fn write_config(&self, content: impl AsRef<str>) {
         let config_file_name = self.config_dir.path().join("config.toml");
-        println!("Config path: {:?}", &config_file_name);
+        println!("Config path: {:?}", config_file_name);
 
         let mut config_file = File::create(&config_file_name).unwrap();
         config_file.write_all(content.as_ref().as_bytes()).unwrap();
@@ -59,23 +59,23 @@ impl TestEnv {
         create_dir_all(&dir).unwrap();
 
         let mut file = File::create(&dir.join(format!("{}.md", name))).unwrap();
-        file.write_all(&contents.as_bytes()).unwrap();
+        file.write_all(contents.as_bytes()).unwrap();
     }
 
     /// Add custom patch entry to the custom_pages_dir
     fn add_page_entry(&self, name: &str, contents: &str) {
         let dir = self.custom_pages_dir.path();
-        create_dir_all(&dir).unwrap();
+        create_dir_all(dir).unwrap();
         let mut file = File::create(&dir.join(format!("{}.page", name))).unwrap();
-        file.write_all(&contents.as_bytes()).unwrap();
+        file.write_all(contents.as_bytes()).unwrap();
     }
 
     /// Add custom patch entry to the custom_pages_dir
     fn add_patch_entry(&self, name: &str, contents: &str) {
         let dir = self.custom_pages_dir.path();
-        create_dir_all(&dir).unwrap();
+        create_dir_all(dir).unwrap();
         let mut file = File::create(&dir.join(format!("{}.patch", name))).unwrap();
-        file.write_all(&contents.as_bytes()).unwrap();
+        file.write_all(contents.as_bytes()).unwrap();
     }
 
     /// Disable default features.
@@ -122,7 +122,7 @@ impl TestEnv {
 fn test_missing_cache() {
     TestEnv::new()
         .command()
-        .args(&["sl"])
+        .args(["sl"])
         .assert()
         .failure()
         .stderr(contains("Cache not found. Please run `tldr --update`."));
@@ -134,19 +134,19 @@ fn test_update_cache() {
 
     testenv
         .command()
-        .args(&["sl"])
+        .args(["sl"])
         .assert()
         .failure()
         .stderr(contains("Cache not found. Please run `tldr --update`."));
 
     testenv
         .command()
-        .args(&["--update"])
+        .args(["--update"])
         .assert()
         .success()
         .stderr(contains("Successfully updated cache."));
 
-    testenv.command().args(&["sl"]).assert().success();
+    testenv.command().args(["sl"]).assert().success();
 }
 
 #[test]
@@ -154,14 +154,14 @@ fn test_quiet_cache() {
     let testenv = TestEnv::new();
     testenv
         .command()
-        .args(&["--update", "--quiet"])
+        .args(["--update", "--quiet"])
         .assert()
         .success()
         .stdout(is_empty());
 
     testenv
         .command()
-        .args(&["--clear-cache", "--quiet"])
+        .args(["--clear-cache", "--quiet"])
         .assert()
         .success()
         .stdout(is_empty());
@@ -173,14 +173,14 @@ fn test_quiet_failures() {
 
     testenv
         .command()
-        .args(&["--update", "-q"])
+        .args(["--update", "-q"])
         .assert()
         .success()
         .stdout(is_empty());
 
     testenv
         .command()
-        .args(&["fakeprogram", "-q"])
+        .args(["fakeprogram", "-q"])
         .assert()
         .failure()
         .stdout(is_empty());
@@ -192,7 +192,7 @@ fn test_quiet_old_cache() {
 
     testenv
         .command()
-        .args(&["--update", "-q"])
+        .args(["--update", "-q"])
         .assert()
         .success()
         .stdout(is_empty());
@@ -205,14 +205,14 @@ fn test_quiet_old_cache() {
 
     testenv
         .command()
-        .args(&["tldr"])
+        .args(["tldr"])
         .assert()
         .success()
         .stderr(contains("The cache hasn't been updated for more than "));
 
     testenv
         .command()
-        .args(&["tldr", "--quiet"])
+        .args(["tldr", "--quiet"])
         .assert()
         .success()
         .stderr(contains("The cache hasn't been updated for more than ").not());
@@ -224,7 +224,7 @@ fn test_setup_seed_config() {
 
     testenv
         .command()
-        .args(&["--seed-config"])
+        .args(["--seed-config"])
         .assert()
         .success()
         .stderr(contains("Successfully created seed config file here"));
@@ -236,7 +236,7 @@ fn test_show_paths() {
 
     testenv
         .command()
-        .args(&["--show-paths"])
+        .args(["--show-paths"])
         .assert()
         .success()
         .stdout(contains(format!(
@@ -275,7 +275,7 @@ fn test_os_specific_page() {
 
     testenv
         .command()
-        .args(&["--os", "sunos", "truss"])
+        .args(["--os", "sunos", "truss"])
         .assert()
         .success();
 }
@@ -289,7 +289,7 @@ fn test_markdown_rendering() {
     let expected = include_str!("which-markdown.expected");
     testenv
         .command()
-        .args(&["-m", "which"])
+        .args(["-m", "which"])
         .assert()
         .success()
         .stdout(similar(expected));
@@ -305,13 +305,13 @@ fn _test_correct_rendering(
 
     // Create input file
     let file_path = testenv.input_dir.path().join(filename);
-    println!("Testfile path: {:?}", &file_path);
+    println!("Testfile path: {:?}", file_path);
     let mut file = File::create(&file_path).unwrap();
     file.write_all(input_file.as_bytes()).unwrap();
 
     testenv
         .command()
-        .args(&["--color", color_option, "-f", &file_path.to_str().unwrap()])
+        .args(["--color", color_option, "-f", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(similar(expected));
@@ -370,27 +370,26 @@ fn test_correct_rendering_with_config() {
     // Setup config file
     // TODO should be config::CONFIG_FILE_NAME
     let config_file_path = testenv.config_dir.path().join("config.toml");
-    println!("Config path: {:?}", &config_file_path);
+    println!("Config path: {:?}", config_file_path);
 
     let mut config_file = File::create(&config_file_path).unwrap();
     config_file
-        .write_all(include_str!("config.toml").as_bytes())
+        .write_all(include_bytes!("config.toml"))
         .unwrap();
 
     // Create input file
     let file_path = testenv.input_dir.path().join("inkscape-v2.md");
-    println!("Testfile path: {:?}", &file_path);
+    println!("Testfile path: {:?}", file_path);
 
     let mut file = File::create(&file_path).unwrap();
-    file.write_all(include_str!("inkscape-v2.md").as_bytes())
-        .unwrap();
+    file.write_all(include_bytes!("inkscape-v2.md")).unwrap();
 
     // Load expected output
     let expected = include_str!("inkscape-with-config.expected");
 
     testenv
         .command()
-        .args(&["--color", "always", "-f", &file_path.to_str().unwrap()])
+        .args(["--color", "always", "-f", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(similar(expected));
@@ -402,14 +401,14 @@ fn test_spaces_find_command() {
 
     testenv
         .command()
-        .args(&["--update"])
+        .args(["--update"])
         .assert()
         .success()
         .stderr(contains("Successfully updated cache."));
 
     testenv
         .command()
-        .args(&["git", "checkout"])
+        .args(["git", "checkout"])
         .assert()
         .success();
 }
@@ -420,14 +419,14 @@ fn test_pager_flag_enable() {
 
     testenv
         .command()
-        .args(&["--update"])
+        .args(["--update"])
         .assert()
         .success()
         .stderr(contains("Successfully updated cache."));
 
     testenv
         .command()
-        .args(&["--pager", "which"])
+        .args(["--pager", "which"])
         .assert()
         .success();
 }
@@ -438,7 +437,7 @@ fn test_list_flag_rendering() {
 
     testenv
         .command()
-        .args(&["--list"])
+        .args(["--list"])
         .assert()
         .failure()
         .stderr(contains("Cache not found. Please run `tldr --update`."));
@@ -447,7 +446,7 @@ fn test_list_flag_rendering() {
 
     testenv
         .command()
-        .args(&["--list"])
+        .args(["--list"])
         .assert()
         .success()
         .stdout("foo\n");
@@ -458,7 +457,7 @@ fn test_list_flag_rendering() {
 
     testenv
         .command()
-        .args(&["--list"])
+        .args(["--list"])
         .assert()
         .success()
         .stdout("bar\nbaz\nfoo\nqux\n");
@@ -471,7 +470,7 @@ fn test_autoupdate_cache() {
     // The first time, if automatic updates are disabled, the cache should not be found
     testenv
         .command()
-        .args(&["--list"])
+        .args(["--list"])
         .assert()
         .failure()
         .stderr(contains("Cache not found. Please run `tldr --update`."));
@@ -482,14 +481,14 @@ fn test_autoupdate_cache() {
     // Activate automatic updates, set the auto-update interval to 24 hours
     let mut config_file = File::create(&config_file_path).unwrap();
     config_file
-        .write_all("[updates]\nauto_update = true\nauto_update_interval_hours = 24".as_bytes())
+        .write_all(b"[updates]\nauto_update = true\nauto_update_interval_hours = 24")
         .unwrap();
     config_file.flush().unwrap();
 
     // Helper function that runs `tldr --list` and asserts that the cache is automatically updated
     // or not, depending on the value of `expected`.
     let check_cache_updated = |expected| {
-        let assert = testenv.command().args(&["--list"]).assert().success();
+        let assert = testenv.command().args(["--list"]).assert().success();
         let pred = contains("Successfully updated cache");
         if expected {
             assert.stderr(pred)
@@ -541,7 +540,7 @@ fn test_custom_page_overwrites() {
 
     testenv
         .command()
-        .args(&["inkscape-v2", "--color", "never"])
+        .args(["inkscape-v2", "--color", "never"])
         .assert()
         .success()
         .stdout(similar(expected));
@@ -568,7 +567,7 @@ fn test_custom_patch_appends_to_common() {
 
     testenv
         .command()
-        .args(&["inkscape-v2", "--color", "never"])
+        .args(["inkscape-v2", "--color", "never"])
         .assert()
         .success()
         .stdout(similar(expected));
@@ -598,7 +597,7 @@ fn test_custom_patch_does_not_append_to_custom() {
 
     testenv
         .command()
-        .args(&["inkscape-v2", "--color", "never"])
+        .args(["inkscape-v2", "--color", "never"])
         .assert()
         .success()
         .stdout(similar(expected));
@@ -610,7 +609,7 @@ fn test_pager_warning() {
     let testenv = TestEnv::new();
     testenv
         .command()
-        .args(&["--update"])
+        .args(["--update"])
         .assert()
         .success()
         .stderr(contains("Successfully updated cache."));
@@ -618,7 +617,7 @@ fn test_pager_warning() {
     // Regular call should not show a "pager flag not available on windows" warning
     testenv
         .command()
-        .args(&["which"])
+        .args(["which"])
         .assert()
         .success()
         .stderr(contains("pager flag not available on Windows").not());
@@ -626,7 +625,7 @@ fn test_pager_warning() {
     // But it should be shown if the pager flag is true
     testenv
         .command()
-        .args(&["which", "-p"])
+        .args(["which", "-p"])
         .assert()
         .success()
         .stderr(contains("pager flag not available on Windows"));

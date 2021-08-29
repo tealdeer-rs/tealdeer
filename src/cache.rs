@@ -42,7 +42,7 @@ impl PageLookupResult {
     }
 
     pub fn paths(&self) -> impl Iterator<Item = &Path> {
-        iter::once(self.page_path.as_path()).chain(self.patch_path.as_deref().into_iter())
+        iter::once(self.page_path.as_path()).chain(self.patch_path.as_deref())
     }
 }
 
@@ -224,7 +224,7 @@ impl Cache {
             }
         }
 
-        let patch_path = Self::find_patch(&patch_filename, custom_pages_dir.as_deref());
+        let patch_path = Self::find_patch(&patch_filename, custom_pages_dir);
 
         // Try to find a platform specific path next, append custom patch to it.
         if let Some(pf) = self.get_platform_dir() {
