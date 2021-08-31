@@ -42,7 +42,7 @@ impl PageLookupResult {
     }
 
     pub fn paths(&self) -> impl Iterator<Item = &Path> {
-        iter::once(self.page_path.as_path()).chain(self.patch_path.as_deref().into_iter())
+        iter::once(self.page_path.as_path()).chain(self.patch_path.as_deref())
     }
 }
 

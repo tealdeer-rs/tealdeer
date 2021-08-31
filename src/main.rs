@@ -14,13 +14,12 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::too_many_lines)]
 
-use std::env;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::iter;
 use std::path::{Path, PathBuf};
 use std::process;
+use std::{env, io::Write};
 
 use ansi_term::{Color, Style};
 use app_dirs::AppInfo;
@@ -41,7 +40,7 @@ mod types;
 use crate::cache::{Cache, PageLookupResult};
 use crate::config::{get_config_dir, get_config_path, make_default_config, Config, MAX_CACHE_AGE};
 use crate::dedup::Dedup;
-use crate::error::TealdeerError::{CacheError, ConfigError, UpdateError};
+use crate::error::TealdeerError::ConfigError;
 use crate::formatter::print_lines;
 use crate::tokenizer::Tokenizer;
 use crate::types::{ColorOptions, OsType};
@@ -57,6 +56,7 @@ const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar
 #[cfg(not(target_os = "windows"))]
 const PAGER_COMMAND: &str = "less -R";
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Deserialize)]
 struct Args {
     arg_command: Option<Vec<String>>,
@@ -83,7 +83,9 @@ fn print_page(
     enable_markdown: bool,
     config: &Config,
 ) -> Result<(), String> {
-    // Open file
+    let stdout = std::io::stdout();
+    let mut handle = stdout.lock();
+
     for path in page.paths() {
         let file = File::open(path).map_err(|msg| format!("Could not open file: {}", msg))?;
         let reader = BufReader::new(file);
@@ -91,14 +93,20 @@ fn print_page(
         if enable_markdown {
             // Print the raw markdown of the file.
             for line in reader.lines() {
-                println!("{}", line.unwrap());
+                writeln!(handle, "{}", line.unwrap())
+                    .map_err(|_| "Could not write to stdout".to_string())?;
             }
         } else {
             // Create tokenizer and print output
             let mut tokenizer = Tokenizer::new(reader);
-            print_lines(&mut tokenizer, &config);
+            print_lines(&mut handle, &mut tokenizer, config)
+                .map_err(|e| format!("Could not write to stdout: {}", e.message()))?;
         };
     }
+
+    handle
+        .flush()
+        .map_err(|_| "Could not flush stdout".to_string())?;
 
     Ok(())
 }
@@ -155,30 +163,22 @@ fn check_cache(args: &Args, enable_styles: bool) {
 /// Clear the cache
 fn clear_cache(quietly: bool) {
     Cache::clear().unwrap_or_else(|e| {
-        match e {
-            CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
-                eprintln!("Could not delete cache: {}", msg)
-            }
-        };
+        eprintln!("Could not delete cache: {}", e.message());
         process::exit(1);
     });
     if !quietly {
-        println!("Successfully deleted cache.");
+        eprintln!("Successfully deleted cache.");
     }
 }
 
 /// Update the cache
 fn update_cache(cache: &Cache, quietly: bool) {
     cache.update().unwrap_or_else(|e| {
-        match e {
-            CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
-                eprintln!("Could not update cache: {}", msg)
-            }
-        };
+        eprintln!("Could not update cache: {}", e.message());
         process::exit(1);
     });
     if !quietly {
-        println!("Successfully updated cache.");
+        eprintln!("Successfully updated cache.");
     }
 }
 
@@ -248,7 +248,7 @@ fn show_paths(custom_pages_dir: impl AsRef<Path>) {
 fn create_config_and_exit() {
     match make_default_config() {
         Ok(config_file_path) => {
-            println!(
+            eprintln!(
                 "Successfully created seed config file here: {}",
                 config_file_path.to_str().unwrap()
             );
@@ -317,10 +317,7 @@ fn get_languages(env_lang: Option<&str>, env_language: Option<&str>) -> Vec<Stri
     let env_lang = env_lang.unwrap();
 
     // Create an iterator that contains $LANGUAGE (':' separated list) followed by $LANG (single language)
-    let locales = env_language
-        .unwrap_or("")
-        .split(':')
-        .chain(iter::once(env_lang));
+    let locales = env_language.unwrap_or("").split(':').chain([env_lang]);
 
     let mut lang_list = Vec::new();
     for locale in locales {
@@ -455,11 +452,7 @@ fn main() {
 
         // Get list of pages
         let pages = cache.list_pages().unwrap_or_else(|e| {
-            match e {
-                CacheError(msg) | ConfigError(msg) | UpdateError(msg) => {
-                    eprintln!("Could not get list of pages: {}", msg)
-                }
-            }
+            eprintln!("Could not get list of pages: {}", e.message());
             process::exit(1);
         });
 
@@ -492,9 +485,9 @@ fn main() {
             process::exit(0);
         } else {
             if !args.flag_quiet {
-                println!("Page {} not found in cache", &command);
-                println!("Try updating with `tldr --update`, or submit a pull request to:");
-                println!("https://github.com/tldr-pages/tldr");
+                eprintln!("Page {} not found in cache", &command);
+                eprintln!("Try updating with `tldr --update`, or submit a pull request to:");
+                eprintln!("https://github.com/tldr-pages/tldr");
             }
             process::exit(1);
         }
@@ -514,19 +507,19 @@ mod test {
     use docopt::{Docopt, Error};
 
     fn test_helper(argv: &[&str]) -> Result<Args, Error> {
-        Docopt::new(USAGE).and_then(|d| d.argv(argv.iter()).deserialize())
+        Docopt::new(USAGE).and_then(|d| d.argv(argv).deserialize())
     }
 
     #[test]
     fn test_docopt_os_case_insensitive() {
-        let argv = vec!["cp", "--os", "LiNuX"];
+        let argv = ["cp", "--os", "LiNuX"];
         let os = test_helper(&argv).unwrap().flag_os.unwrap();
         assert_eq!(OsType::Linux, os);
     }
 
     #[test]
     fn test_docopt_expect_error() {
-        let argv = vec!["cp", "--os", "lindows"];
+        let argv = ["cp", "--os", "lindows"];
         assert!(!test_helper(&argv).is_ok());
     }
 
@@ -536,41 +529,41 @@ mod test {
         #[test]
         fn missing_lang_env() {
             let lang_list = get_languages(None, Some("de:fr"));
-            assert_eq!(lang_list, vec!["en"]);
+            assert_eq!(lang_list, ["en"]);
             let lang_list = get_languages(None, None);
-            assert_eq!(lang_list, vec!["en"]);
+            assert_eq!(lang_list, ["en"]);
         }
 
         #[test]
         fn missing_language_env() {
             let lang_list = get_languages(Some("de"), None);
-            assert_eq!(lang_list, vec!["de", "en"]);
+            assert_eq!(lang_list, ["de", "en"]);
         }
 
         #[test]
         fn preference_order() {
             let lang_list = get_languages(Some("de"), Some("fr:cn"));
-            assert_eq!(lang_list, vec!["fr", "cn", "de", "en"]);
+            assert_eq!(lang_list, ["fr", "cn", "de", "en"]);
         }
 
         #[test]
         fn country_code_expansion() {
             let lang_list = get_languages(Some("pt_BR"), None);
-            assert_eq!(lang_list, vec!["pt_BR", "pt", "en"]);
+            assert_eq!(lang_list, ["pt_BR", "pt", "en"]);
         }
 
         #[test]
         fn ignore_posix_and_c() {
             let lang_list = get_languages(Some("POSIX"), None);
-            assert_eq!(lang_list, vec!["en"]);
+            assert_eq!(lang_list, ["en"]);
             let lang_list = get_languages(Some("C"), None);
-            assert_eq!(lang_list, vec!["en"]);
+            assert_eq!(lang_list, ["en"]);
         }
 
         #[test]
         fn no_duplicates() {
             let lang_list = get_languages(Some("de"), Some("fr:de:cn:de"));
-            assert_eq!(lang_list, vec!["fr", "de", "cn", "en"]);
+            assert_eq!(lang_list, ["fr", "de", "cn", "en"]);
         }
     }
 }
