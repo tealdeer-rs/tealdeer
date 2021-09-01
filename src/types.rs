@@ -1,6 +1,11 @@
 //! Shared types used in tealdeer.
 
+use std::convert::TryFrom;
 use std::fmt;
+use std::io::Read;
+use std::fs::File;
+
+use crate::PageLookupResult;
 
 use serde_derive::{Deserialize, Serialize};
 
@@ -128,9 +133,64 @@ impl fmt::Display for PathSource {
     }
 }
 
+
+/// This struct implements the Read Trait such that the `files` will be read in order as if they
+/// were 1 contiguous File.
+/// Within Tealdeer this is meant to cohesively interact with the PageLookupResult in order to
+/// process pages / patches as if they were 1 file.
+pub struct SeqFileReader {
+    files: Vec<File>,
+    curr_file_idx: usize,
+}
+
+impl SeqFileReader {
+    fn new(files: Vec<File>) -> Self {
+        Self {
+            files,
+            curr_file_idx: 0,
+        }
+    }
+}
+
+impl TryFrom<PageLookupResult> for SeqFileReader {
+    type Error = std::io::Error;
+    fn try_from(lookup_result: PageLookupResult) -> std::io::Result<SeqFileReader> {
+        let files = lookup_result.paths().map(|p| File::open(p)).collect::<std::io::Result<Vec<File>>>()?;
+        Ok(Self::new(files))
+    }
+}
+
+impl Read for SeqFileReader {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        // Base Case: No more files to read.
+        if self.curr_file_idx >= self.files.len() {
+            log::info!("All files have been exhausted to EOF");
+            return Ok(0);
+        }
+
+        let bytes_read = self.files[self.curr_file_idx].read(buf)?;
+        
+        if bytes_read != 0 {
+            // Successful read, not EOF
+            return Ok(bytes_read);
+        } else if buf.len() == 0 {
+            // Buffer is full. Cannot be filled.
+            return Ok(0);
+        }
+
+        // Current file reached EOF, go to next file
+        self.curr_file_idx += 1;
+        return self.read(buf);
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::LineType;
+    use super::SeqFileReader;
+    use std::io::{Read, Write};
+    use std::fs::File;
+    use tempfile;
 
     #[test]
     fn test_linetype_from_str() {
@@ -153,4 +213,28 @@ mod test {
             LineType::ExampleCode("$ cargo run".into())
         );
     }
+
+    #[test]
+    fn test_seq_file_reader() {
+        let dir = tempfile::tempdir().unwrap();
+        {
+            let mut f1 = File::create(dir.path().join("testfile1")).unwrap();
+            f1.write_all(b"Hello\n").unwrap();
+            let mut f2 = File::create(dir.path().join("testfile2")).unwrap();
+            f2.write_all(b"World").unwrap();
+        }
+        let f1 = File::open(dir.path().join("testfile1")).unwrap();
+        let f2 = File::open(dir.path().join("testfile2")).unwrap();
+
+        let mut sfr = SeqFileReader {
+            files: vec![f1, f2],
+            curr_file_idx: 0
+        };
+
+        let mut buf = Vec::new();
+        let bytes = sfr.read_to_end(&mut buf).unwrap();
+        assert_eq!(&buf, b"Hello\nWorld");
+        assert_eq!(bytes, 11);
+    }
+
 }

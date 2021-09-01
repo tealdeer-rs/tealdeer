@@ -14,6 +14,7 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::too_many_lines)]
 
+use std::convert::TryFrom;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
@@ -43,7 +44,7 @@ use crate::dedup::Dedup;
 use crate::error::TealdeerError::ConfigError;
 use crate::formatter::print_lines;
 use crate::tokenizer::Tokenizer;
-use crate::types::{ColorOptions, OsType};
+use crate::types::{ColorOptions, OsType, SeqFileReader};
 
 const NAME: &str = "tealdeer";
 const APP_INFO: AppInfo = AppInfo {
@@ -79,30 +80,28 @@ struct Args {
 
 /// Print page by path
 fn print_page(
-    page: &PageLookupResult,
+    lookup_result: PageLookupResult,
     enable_markdown: bool,
     config: &Config,
 ) -> Result<(), String> {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
 
-    for path in page.paths() {
-        let file = File::open(path).map_err(|msg| format!("Could not open file: {}", msg))?;
-        let reader = BufReader::new(file);
+    let sfr = SeqFileReader::try_from(lookup_result).map_err(|msg| format!("Could not open file: {}", msg))?;
+    let reader = BufReader::new(sfr);
 
-        if enable_markdown {
-            // Print the raw markdown of the file.
-            for line in reader.lines() {
-                writeln!(handle, "{}", line.unwrap())
-                    .map_err(|_| "Could not write to stdout".to_string())?;
-            }
-        } else {
-            // Create tokenizer and print output
-            let mut tokenizer = Tokenizer::new(reader);
-            print_lines(&mut handle, &mut tokenizer, config)
-                .map_err(|e| format!("Could not write to stdout: {}", e.message()))?;
-        };
-    }
+    if enable_markdown {
+        // Print the raw markdown of the file.
+        for line in reader.lines() {
+            writeln!(handle, "{}", line.unwrap())
+                .map_err(|_| "Could not write to stdout".to_string())?;
+        }
+    } else {
+        // Create tokenizer and print output
+        let mut tokenizer = Tokenizer::new(reader);
+        print_lines(&mut handle, &mut tokenizer, config)
+            .map_err(|e| format!("Could not write to stdout: {}", e.message()))?;
+    };
 
     handle
         .flush()
@@ -431,8 +430,8 @@ fn main() {
 
     // Render local file and exit
     if let Some(ref file) = args.flag_render {
-        let path = PageLookupResult::with_page(PathBuf::from(file));
-        if let Err(msg) = print_page(&path, args.flag_markdown, &config) {
+        let lookup_result = PageLookupResult::with_page(PathBuf::from(file));
+        if let Err(msg) = print_page(lookup_result, args.flag_markdown, &config) {
             eprintln!("{}", msg);
             process::exit(1);
         } else {
@@ -472,12 +471,12 @@ fn main() {
             .map_or_else(get_languages_from_env, |flag_lang| vec![flag_lang]);
 
         // Search for command in cache
-        if let Some(page) = cache.find_page(
+        if let Some(lookup_result) = cache.find_page(
             &command,
             &languages,
             config.directories.custom_pages_dir.as_deref(),
         ) {
-            if let Err(msg) = print_page(&page, args.flag_markdown, &config) {
+            if let Err(msg) = print_page(lookup_result, args.flag_markdown, &config) {
                 eprintln!("{}", msg);
                 process::exit(1);
             }
