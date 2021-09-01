@@ -2,8 +2,8 @@
 
 use std::convert::TryFrom;
 use std::fmt;
-use std::io::Read;
 use std::fs::File;
+use std::io::Read;
 
 use crate::PageLookupResult;
 
@@ -133,10 +133,9 @@ impl fmt::Display for PathSource {
     }
 }
 
-
 /// This struct implements the Read Trait such that the `files` will be read in order as if they
 /// were 1 contiguous File.
-/// Within Tealdeer this is meant to cohesively interact with the PageLookupResult in order to
+/// Within Tealdeer this is meant to cohesively interact with the `PageLookupResult` in order to
 /// process pages / patches as if they were 1 file.
 pub struct SeqFileReader {
     files: Vec<File>,
@@ -155,7 +154,10 @@ impl SeqFileReader {
 impl TryFrom<PageLookupResult> for SeqFileReader {
     type Error = std::io::Error;
     fn try_from(lookup_result: PageLookupResult) -> std::io::Result<SeqFileReader> {
-        let files = lookup_result.paths().map(|p| File::open(p)).collect::<std::io::Result<Vec<File>>>()?;
+        let files = lookup_result
+            .paths()
+            .map(File::open)
+            .collect::<std::io::Result<Vec<File>>>()?;
         Ok(Self::new(files))
     }
 }
@@ -169,18 +171,18 @@ impl Read for SeqFileReader {
         }
 
         let bytes_read = self.files[self.curr_file_idx].read(buf)?;
-        
+
         if bytes_read != 0 {
             // Successful read, not EOF
             return Ok(bytes_read);
-        } else if buf.len() == 0 {
+        } else if buf.is_empty() {
             // Buffer is full. Cannot be filled.
             return Ok(0);
         }
 
         // Current file reached EOF, go to next file
         self.curr_file_idx += 1;
-        return self.read(buf);
+        self.read(buf)
     }
 }
 
@@ -188,9 +190,8 @@ impl Read for SeqFileReader {
 mod test {
     use super::LineType;
     use super::SeqFileReader;
-    use std::io::{Read, Write};
     use std::fs::File;
-    use tempfile;
+    use std::io::{Read, Write};
 
     #[test]
     fn test_linetype_from_str() {
@@ -228,7 +229,7 @@ mod test {
 
         let mut sfr = SeqFileReader {
             files: vec![f1, f2],
-            curr_file_idx: 0
+            curr_file_idx: 0,
         };
 
         let mut buf = Vec::new();
@@ -236,5 +237,4 @@ mod test {
         assert_eq!(&buf, b"Hello\nWorld");
         assert_eq!(bytes, 11);
     }
-
 }

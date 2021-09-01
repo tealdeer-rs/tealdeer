@@ -15,7 +15,6 @@
 #![allow(clippy::too_many_lines)]
 
 use std::convert::TryFrom;
-use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::path::PathBuf;
@@ -87,7 +86,8 @@ fn print_page(
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
 
-    let sfr = SeqFileReader::try_from(lookup_result).map_err(|msg| format!("Could not open file: {}", msg))?;
+    let sfr = SeqFileReader::try_from(lookup_result)
+        .map_err(|msg| format!("Could not open file: {}", msg))?;
     let reader = BufReader::new(sfr);
 
     if enable_markdown {
