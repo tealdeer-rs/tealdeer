@@ -24,6 +24,10 @@ fn default_bold() -> bool {
     false
 }
 
+fn default_italic() -> bool {
+    false
+}
+
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "lowercase")]
 pub enum RawColor {
@@ -64,6 +68,8 @@ struct RawStyle {
     pub underline: bool,
     #[serde(default = "default_bold")]
     pub bold: bool,
+    #[serde(default = "default_italic")]
+    pub italic: bool,
 }
 
 impl Default for RawStyle {
@@ -73,6 +79,7 @@ impl Default for RawStyle {
             background: None,
             underline: false,
             bold: false,
+            italic: false,
         }
     }
 } // impl RawStyle
@@ -95,6 +102,10 @@ impl From<RawStyle> for Style {
 
         if raw_style.bold {
             style = style.bold();
+        }
+
+        if raw_style.italic {
+            style = style.italic();
         }
 
         style
