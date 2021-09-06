@@ -18,6 +18,7 @@ Using the config file, the style (e.g. colors or underlines) can be customized.
 - `background` (color string, ANSI code, or RGB, see below)
 - `underline` (`true` or `false`)
 - `bold` (`true` or `false`)
+- `italic` (`true` or `false`)
 
 Colors can be specified in one of three ways:
 
