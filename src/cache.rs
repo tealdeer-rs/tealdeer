@@ -64,26 +64,26 @@ impl Cache {
         // Allow overriding the cache directory by setting the env variable.
         if let Ok(value) = env::var(CACHE_DIR_ENV_VAR) {
             let path = PathBuf::from(value);
-            if path.is_dir() {
-                return Ok((path, PathSource::EnvVar));
-            }
-            if path.exists() {
+            let path_exists = path.exists();
+            if path_exists && !path.is_dir() {
                 return Err(CacheError(format!(
                     "Path specified by ${} is not a directory.",
                     CACHE_DIR_ENV_VAR
                 )));
             }
-            // Try to create the complete directory path.
-            fs::create_dir_all(&path).map_err(|_| {
-                CacheError(format!(
-                    "Directory path specified by ${} cannot be created.",
-                    CACHE_DIR_ENV_VAR
-                ))
-            })?;
-            eprintln!(
-                "Successfully created cache directory path `{}`.",
-                path.to_str().unwrap()
-            );
+            if !path_exists {
+                // Try to create the complete directory path.
+                fs::create_dir_all(&path).map_err(|_| {
+                    CacheError(format!(
+                        "Directory path specified by ${} cannot be created.",
+                        CACHE_DIR_ENV_VAR
+                    ))
+                })?;
+                eprintln!(
+                    "Successfully created cache directory path `{}`.",
+                    path.to_str().unwrap()
+                );
+            }
             return Ok((path, PathSource::EnvVar));
         };
 
