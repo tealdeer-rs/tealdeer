@@ -6,7 +6,7 @@ use std::io::{self, BufRead, BufReader, Write};
 use crate::cache::PageLookupResult;
 use crate::config::{Config, StyleConfig};
 use crate::error::TealdeerError::WriteError;
-use crate::formatter::{highlight_lines, HighlightingSnippet};
+use crate::formatter::{highlight_lines, PageSnippet};
 use crate::line_iterator::LineIterator;
 
 /// Print page by path
@@ -29,7 +29,7 @@ pub fn print_page(
                     .map_err(|_| "Could not write to stdout".to_string())?;
             }
         } else {
-            let mut yield_snippet = |snip: HighlightingSnippet<'_>| {
+            let mut process_snippet = |snip: PageSnippet<'_>| {
                 if snip.is_empty() {
                     Ok(())
                 } else {
@@ -39,7 +39,7 @@ pub fn print_page(
             };
             highlight_lines(
                 LineIterator::new(reader),
-                &mut yield_snippet,
+                &mut process_snippet,
                 !config.display.compact,
             )
             .map_err(|e| format!("Could not write to stdout: {}", e.message()))?;
@@ -55,10 +55,10 @@ pub fn print_page(
 
 fn print_snippet(
     writer: &mut impl Write,
-    snip: HighlightingSnippet<'_>,
+    snip: PageSnippet<'_>,
     style: &StyleConfig,
 ) -> Result<(), io::Error> {
-    use HighlightingSnippet::*;
+    use PageSnippet::*;
 
     match snip {
         CommandName(s) => write!(writer, "{}", style.command_name.paint(s)),

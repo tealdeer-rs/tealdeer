@@ -6,8 +6,8 @@ use crate::types::LineType;
 use log::debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Represents a snippet from a page from a specific highlighting class.
-pub enum HighlightingSnippet<'a> {
+/// Represents a snippet from a page of a specific highlighting class.
+pub enum PageSnippet<'a> {
     CommandName(&'a str),
     Variable(&'a str),
     NormalCode(&'a str),
@@ -16,9 +16,9 @@ pub enum HighlightingSnippet<'a> {
     Linebreak,
 }
 
-impl<'a> HighlightingSnippet<'a> {
+impl<'a> PageSnippet<'a> {
     pub fn is_empty(&self) -> bool {
-        use HighlightingSnippet::*;
+        use PageSnippet::*;
 
         match self {
             CommandName(s) | Variable(s) | NormalCode(s) | Description(s) | Text(s) => s.is_empty(),
@@ -30,19 +30,19 @@ impl<'a> HighlightingSnippet<'a> {
 /// Parse the content of each line yielded by `lines` and yield `HighLightingSnippet`s accordingly.
 pub fn highlight_lines<L, F, E>(
     lines: L,
-    yield_snippet: &mut F,
+    process_snippet: &mut F,
     keep_empty_lines: bool,
 ) -> Result<(), E>
 where
     L: Iterator<Item = LineType>,
-    F: for<'snip> FnMut(HighlightingSnippet<'snip>) -> Result<(), E>,
+    F: for<'snip> FnMut(PageSnippet<'snip>) -> Result<(), E>,
 {
     let mut command = String::new();
     for line in lines {
         match line {
             LineType::Empty => {
                 if keep_empty_lines {
-                    yield_snippet(HighlightingSnippet::Linebreak)?;
+                    process_snippet(PageSnippet::Linebreak)?;
                 }
             }
             LineType::Title(title) => {
@@ -53,18 +53,18 @@ where
                 command = title;
                 debug!("Detected command name: {}", &command);
             }
-            LineType::Description(text) => yield_snippet(HighlightingSnippet::Description(&text))?,
-            LineType::ExampleText(text) => yield_snippet(HighlightingSnippet::Text(&text))?,
+            LineType::Description(text) => process_snippet(PageSnippet::Description(&text))?,
+            LineType::ExampleText(text) => process_snippet(PageSnippet::Text(&text))?,
             LineType::ExampleCode(text) => {
-                yield_snippet(HighlightingSnippet::NormalCode("      "))?;
-                highlight_code(&command, &text, yield_snippet)?;
-                yield_snippet(HighlightingSnippet::Linebreak)?;
+                process_snippet(PageSnippet::NormalCode("      "))?;
+                highlight_code(&command, &text, process_snippet)?;
+                process_snippet(PageSnippet::Linebreak)?;
             }
 
             LineType::Other(text) => debug!("Unknown line type: {:?}", text),
         }
     }
-    yield_snippet(HighlightingSnippet::Linebreak)?;
+    process_snippet(PageSnippet::Linebreak)?;
     Ok(())
 }
 
@@ -72,14 +72,14 @@ where
 fn highlight_code<'a, E>(
     command: &'a str,
     text: &'a str,
-    yield_snippet: &mut impl FnMut(HighlightingSnippet<'a>) -> Result<(), E>,
+    process_snippet: &mut impl FnMut(PageSnippet<'a>) -> Result<(), E>,
 ) -> Result<(), E> {
     let variable_splits = text
         .split("}}")
         .map(|s| s.split_once("{{").unwrap_or((s, "")));
     for (code_segment, variable) in variable_splits {
-        highlight_code_segment(command, code_segment, yield_snippet)?;
-        yield_snippet(HighlightingSnippet::Variable(variable))?;
+        highlight_code_segment(command, code_segment, process_snippet)?;
+        process_snippet(PageSnippet::Variable(variable))?;
     }
     Ok(())
 }
@@ -90,15 +90,15 @@ fn highlight_code<'a, E>(
 fn highlight_code_segment<'a, E>(
     command_name: &'a str,
     mut segment: &'a str,
-    yield_snippet: &mut impl FnMut(HighlightingSnippet<'a>) -> Result<(), E>,
+    process_snippet: &mut impl FnMut(PageSnippet<'a>) -> Result<(), E>,
 ) -> Result<(), E> {
     if !command_name.is_empty() {
         let mut search_start = 0;
         while let Some(match_start) = segment.find_from(command_name, search_start) {
             let match_end = match_start + command_name.len();
             if is_freestanding_substring(segment, (match_start, match_end)) {
-                yield_snippet(HighlightingSnippet::NormalCode(&segment[..match_start]))?;
-                yield_snippet(HighlightingSnippet::CommandName(command_name))?;
+                process_snippet(PageSnippet::NormalCode(&segment[..match_start]))?;
+                process_snippet(PageSnippet::CommandName(command_name))?;
                 segment = &segment[match_end..];
                 search_start = 0;
             } else {
@@ -109,7 +109,7 @@ fn highlight_code_segment<'a, E>(
             }
         }
     }
-    yield_snippet(HighlightingSnippet::NormalCode(segment))?;
+    process_snippet(PageSnippet::NormalCode(segment))?;
     Ok(())
 }
 
@@ -133,7 +133,7 @@ fn is_freestanding_substring(surrouding: &str, substring: (usize, usize)) -> boo
 #[cfg(test)]
 mod tests {
     use super::*;
-    use HighlightingSnippet::*;
+    use PageSnippet::*;
 
     #[test]
     fn test_is_freestanding_substring() {
@@ -160,16 +160,16 @@ mod tests {
         ));
     }
 
-    fn run<'a>(cmd: &'a str, segment: &'a str) -> Vec<HighlightingSnippet<'a>> {
+    fn run<'a>(cmd: &'a str, segment: &'a str) -> Vec<PageSnippet<'a>> {
         let mut yielded = Vec::new();
-        let mut yield_snippet = |snip: HighlightingSnippet<'a>| {
+        let mut process_snippet = |snip: PageSnippet<'a>| {
             if !snip.is_empty() {
                 yielded.push(snip);
             }
             Ok::<(), ()>(())
         };
 
-        highlight_code_segment(cmd, segment, &mut yield_snippet)
+        highlight_code_segment(cmd, segment, &mut process_snippet)
             .expect("highlight code segment failed");
         yielded
     }
