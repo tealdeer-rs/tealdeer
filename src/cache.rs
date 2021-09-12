@@ -64,8 +64,10 @@ impl Cache {
         // Allow overriding the cache directory by setting the env variable.
         if let Ok(value) = env::var(CACHE_DIR_ENV_VAR) {
             let path = PathBuf::from(value);
-            let path_exists = path.exists();
-            if path_exists && !path.is_dir() {
+            let (path_exists, path_is_dir) = path
+                .metadata()
+                .map_or((false, false), |md| (true, md.is_dir()));
+            if path_exists && !path_is_dir {
                 return Err(CacheError(format!(
                     "Path specified by ${} is not a directory.",
                     CACHE_DIR_ENV_VAR
