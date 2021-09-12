@@ -16,6 +16,8 @@ use walkdir::{DirEntry, WalkDir};
 use crate::error::TealdeerError::{self, CacheError, UpdateError};
 use crate::types::{OsType, PathSource};
 
+static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
+
 #[derive(Debug)]
 pub struct Cache {
     url: String,
@@ -59,19 +61,32 @@ impl Cache {
 
     /// Return the path to the cache directory.
     pub fn get_cache_dir() -> Result<(PathBuf, PathSource), TealdeerError> {
-        // Allow overriding the cache directory by setting the
-        // $TEALDEER_CACHE_DIR env variable.
-        if let Ok(value) = env::var("TEALDEER_CACHE_DIR") {
+        // Allow overriding the cache directory by setting the env variable.
+        if let Ok(value) = env::var(CACHE_DIR_ENV_VAR) {
             let path = PathBuf::from(value);
-
-            if path.exists() && path.is_dir() {
-                return Ok((path, PathSource::EnvVar));
+            let (path_exists, path_is_dir) = path
+                .metadata()
+                .map_or((false, false), |md| (true, md.is_dir()));
+            if path_exists && !path_is_dir {
+                return Err(CacheError(format!(
+                    "Path specified by ${} is not a directory.",
+                    CACHE_DIR_ENV_VAR
+                )));
             }
-            return Err(CacheError(
-                "Path specified by $TEALDEER_CACHE_DIR \
-                     does not exist or is not a directory."
-                    .into(),
-            ));
+            if !path_exists {
+                // Try to create the complete directory path.
+                fs::create_dir_all(&path).map_err(|_| {
+                    CacheError(format!(
+                        "Directory path specified by ${} cannot be created.",
+                        CACHE_DIR_ENV_VAR
+                    ))
+                })?;
+                eprintln!(
+                    "Successfully created cache directory path `{}`.",
+                    path.to_str().unwrap()
+                );
+            }
+            return Ok((path, PathSource::EnvVar));
         };
 
         // Otherwise, fall back to user cache directory.
