@@ -34,9 +34,9 @@ walkdir = "2.0.1"
 pager = "0.16"
 
 [dev-dependencies]
-assert_cmd = "1.0.1"
+assert_cmd = "2.0.1"
 escargot = "0.5"
-predicates = "1.0"
+predicates = "2.0.2"
 tempfile = "3.1.0"
 filetime = "0.2.10"
 

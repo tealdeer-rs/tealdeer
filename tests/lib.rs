@@ -7,7 +7,7 @@ use std::time::{Duration, SystemTime};
 
 use assert_cmd::prelude::*;
 use predicates::boolean::PredicateBooleanExt;
-use predicates::prelude::predicate::str::{contains, is_empty, similar};
+use predicates::prelude::predicate::str::{contains, diff, is_empty};
 use tempfile::{Builder, TempDir};
 
 // TODO: Should be 'cache::CACHE_DIR_ENV_VAR'. This requires to have a library crate for the logic.
@@ -336,7 +336,7 @@ fn test_markdown_rendering() {
         .args(["-m", "which"])
         .assert()
         .success()
-        .stdout(similar(expected));
+        .stdout(diff(expected));
 }
 
 fn _test_correct_rendering(
@@ -358,7 +358,7 @@ fn _test_correct_rendering(
         .args(["--color", color_option, "-f", file_path.to_str().unwrap()])
         .assert()
         .success()
-        .stdout(similar(expected));
+        .stdout(diff(expected));
 }
 
 /// An end-to-end integration test for direct file rendering (v1 syntax).
@@ -446,7 +446,7 @@ fn test_correct_rendering_with_config() {
         .args(["--color", "always", "-f", file_path.to_str().unwrap()])
         .assert()
         .success()
-        .stdout(similar(expected));
+        .stdout(diff(expected));
 }
 
 #[test]
@@ -597,7 +597,7 @@ fn test_custom_page_overwrites() {
         .args(["inkscape-v2", "--color", "never"])
         .assert()
         .success()
-        .stdout(similar(expected));
+        .stdout(diff(expected));
 }
 
 /// End-End test to ensure that .patch files are appened to pages in the cache_dir
@@ -624,7 +624,7 @@ fn test_custom_patch_appends_to_common() {
         .args(["inkscape-v2", "--color", "never"])
         .assert()
         .success()
-        .stdout(similar(expected));
+        .stdout(diff(expected));
 }
 
 /// End-End test to ensure that .patch files are not appended to .page files in the custom_pages_dir
@@ -654,7 +654,7 @@ fn test_custom_patch_does_not_append_to_custom() {
         .args(["inkscape-v2", "--color", "never"])
         .assert()
         .success()
-        .stdout(similar(expected));
+        .stdout(diff(expected));
 }
 
 #[test]
