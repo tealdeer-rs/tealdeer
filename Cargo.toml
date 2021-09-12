@@ -31,7 +31,7 @@ toml = "0.5.1"
 walkdir = "2.0.1"
 
 [target.'cfg(not(windows))'.dependencies]
-pager = "0.15"
+pager = "0.16"
 
 [dev-dependencies]
 assert_cmd = "1.0.1"

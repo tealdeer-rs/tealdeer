@@ -854,9 +854,9 @@ checksum = "692fcb63b64b1758029e0a96ee63e049ce8c5948587f2f7208df04625e5f6b56"
 
 [[package]]
 name = "pager"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b69ced2bfa977c4541743a7427b89c94120684791a9629941fe6028dccab6528"
+checksum = "05c7d08cf0d0b55c4f0ffedb5e06569ea212e85d622975071370393970491968"
 dependencies = [
  "errno",
  "libc",
