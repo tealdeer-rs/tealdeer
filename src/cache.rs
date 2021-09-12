@@ -1,9 +1,11 @@
-use std::env;
-use std::ffi::OsStr;
-use std::fs;
-use std::io::Read;
-use std::iter;
-use std::path::{Path, PathBuf};
+use std::{
+    env,
+    ffi::OsStr,
+    fs,
+    io::Read,
+    iter,
+    path::{Path, PathBuf},
+};
 
 use app_dirs::{get_app_root, AppDataType};
 use flate2::read::GzDecoder;
@@ -13,8 +15,10 @@ use std::time::{Duration, SystemTime};
 use tar::Archive;
 use walkdir::{DirEntry, WalkDir};
 
-use crate::error::TealdeerError::{self, CacheError, UpdateError};
-use crate::types::{OsType, PathSource};
+use crate::{
+    error::TealdeerError::{self, CacheError, UpdateError},
+    types::{OsType, PathSource},
+};
 
 static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
 

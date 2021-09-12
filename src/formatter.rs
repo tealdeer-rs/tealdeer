@@ -1,7 +1,6 @@
 //! Functions related to formatting and printing lines from a `Tokenizer`.
 
-use crate::extensions::FindFrom;
-use crate::types::LineType;
+use crate::{extensions::FindFrom, types::LineType};
 
 use log::debug;
 

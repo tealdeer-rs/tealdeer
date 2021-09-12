@@ -1,13 +1,17 @@
 //! Integration tests.
 
-use std::fs::{create_dir_all, File};
-use std::io::Write;
-use std::process::Command;
-use std::time::{Duration, SystemTime};
+use std::{
+    fs::{create_dir_all, File},
+    io::Write,
+    process::Command,
+    time::{Duration, SystemTime},
+};
 
 use assert_cmd::prelude::*;
-use predicates::boolean::PredicateBooleanExt;
-use predicates::prelude::predicate::str::{contains, diff, is_empty};
+use predicates::{
+    boolean::PredicateBooleanExt,
+    prelude::predicate::str::{contains, diff, is_empty},
+};
 use tempfile::{Builder, TempDir};
 
 // TODO: Should be 'cache::CACHE_DIR_ENV_VAR'. This requires to have a library crate for the logic.
