@@ -2,8 +2,9 @@
 
 use std::io::BufRead;
 
-use crate::types::LineType;
 use log::warn;
+
+use crate::types::LineType;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum TldrFormat {

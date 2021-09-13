@@ -1,13 +1,17 @@
 //! Functions for printing pages to the terminal
 
-use std::fs::File;
-use std::io::{self, BufRead, BufReader, Write};
+use std::{
+    fs::File,
+    io::{self, BufRead, BufReader, Write},
+};
 
-use crate::cache::PageLookupResult;
-use crate::config::{Config, StyleConfig};
-use crate::error::TealdeerError::WriteError;
-use crate::formatter::{highlight_lines, PageSnippet};
-use crate::line_iterator::LineIterator;
+use crate::{
+    cache::PageLookupResult,
+    config::{Config, StyleConfig},
+    error::TealdeerError::WriteError,
+    formatter::{highlight_lines, PageSnippet},
+    line_iterator::LineIterator,
+};
 
 /// Print page by path
 pub fn print_page(

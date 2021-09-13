@@ -15,9 +15,7 @@
 #![allow(clippy::similar_names)]
 #![allow(clippy::too_many_lines)]
 
-use std::env;
-use std::path::PathBuf;
-use std::process;
+use std::{env, path::PathBuf, process};
 
 use ansi_term::{Color, Style};
 use app_dirs::AppInfo;
@@ -36,12 +34,14 @@ mod line_iterator;
 mod output;
 mod types;
 
-use crate::cache::{Cache, PageLookupResult};
-use crate::config::{get_config_dir, get_config_path, make_default_config, Config, MAX_CACHE_AGE};
-use crate::error::TealdeerError::ConfigError;
-use crate::extensions::Dedup;
-use crate::output::print_page;
-use crate::types::{ColorOptions, OsType};
+use crate::{
+    cache::{Cache, PageLookupResult},
+    config::{get_config_dir, get_config_path, make_default_config, Config, MAX_CACHE_AGE},
+    error::TealdeerError::ConfigError,
+    extensions::Dedup,
+    output::print_page,
+    types::{ColorOptions, OsType},
+};
 
 const NAME: &str = "tealdeer";
 const APP_INFO: AppInfo = AppInfo {

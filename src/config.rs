@@ -1,16 +1,19 @@
-use std::env;
-use std::fs;
-use std::io::{Error as IoError, Read, Write};
-use std::path::PathBuf;
-use std::time::Duration;
+use std::{
+    env, fs,
+    io::{Error as IoError, Read, Write},
+    path::PathBuf,
+    time::Duration,
+};
 
 use ansi_term::{Color, Style};
 use app_dirs::{get_app_root, AppDataType};
 use log::debug;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::error::TealdeerError::{self, ConfigError};
-use crate::types::PathSource;
+use crate::{
+    error::TealdeerError::{self, ConfigError},
+    types::PathSource,
+};
 
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
