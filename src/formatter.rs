@@ -226,4 +226,14 @@ mod tests {
             ],
         );
     }
+
+    #[test]
+    fn test_empty_command() {
+        let segment = "some code";
+        let snippets = [NormalCode(segment)];
+
+        assert_eq!(run("", segment), snippets);
+        assert_eq!(run(" ", segment), snippets);
+        assert_eq!(run("  \t ", segment), snippets);
+    }
 }
