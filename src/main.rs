@@ -15,7 +15,7 @@
 #![allow(clippy::similar_names)]
 #![allow(clippy::too_many_lines)]
 
-use std::{env, path::PathBuf, process};
+use std::{env, fs, path::PathBuf, process};
 
 use ansi_term::{Color, Style};
 use app_dirs::AppInfo;
@@ -35,7 +35,7 @@ mod output;
 mod types;
 
 use crate::{
-    cache::{Cache, PageLookupResult},
+    cache::{Cache, PageLookupResult, TLDR_PAGES_DIR},
     config::{get_config_dir, get_config_path, make_default_config, Config, MAX_CACHE_AGE},
     error::TealdeerError::ConfigError,
     extensions::Dedup,
@@ -50,7 +50,7 @@ const APP_INFO: AppInfo = AppInfo {
 };
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const USAGE: &str = include_str!("usage.docopt");
-const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
+const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/main.tar.gz";
 #[cfg(not(target_os = "windows"))]
 const PAGER_COMMAND: &str = "less -R";
 
@@ -118,6 +118,17 @@ fn check_cache(args: &Args, enable_styles: bool) {
         }
         Some(_) => {}
         None => {
+            if let Ok((cache_dir, _)) = Cache::get_cache_dir() {
+                if let Some(old_pages_dir) = cache_dir.read_dir().into_iter().flatten().next() {
+                    let old_pages_dir = old_pages_dir.unwrap().path();
+                    let new_pages_dir = old_pages_dir.clone().with_file_name(TLDR_PAGES_DIR);
+
+                    fs::rename(old_pages_dir, new_pages_dir)
+                        .expect("failed to move existing cache dir");
+
+                    return;
+                }
+            }
             eprintln!("Cache not found. Please run `tldr --update`.");
             process::exit(1);
         }
@@ -192,7 +203,7 @@ fn show_paths() {
     let pages_dir = Cache::get_cache_dir().map_or_else(
         |e| format!("[Error: {}]", e),
         |(mut path, _)| {
-            path.push("tldr-master");
+            path.push(TLDR_PAGES_DIR);
             path.push(""); // Trailing path separator
             path.into_os_string()
                 .into_string()
