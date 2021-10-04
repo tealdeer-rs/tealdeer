@@ -121,7 +121,7 @@ fn check_cache(args: &Args, enable_styles: bool) {
             if let Ok((cache_dir, _)) = Cache::get_cache_dir() {
                 if let Some(old_pages_dir) = cache_dir.read_dir().into_iter().flatten().next() {
                     let old_pages_dir = old_pages_dir.unwrap().path();
-                    let new_pages_dir = old_pages_dir.clone().with_file_name(TLDR_PAGES_DIR);
+                    let new_pages_dir = old_pages_dir.with_file_name(TLDR_PAGES_DIR);
 
                     fs::rename(old_pages_dir, new_pages_dir)
                         .expect("failed to move existing cache dir");
