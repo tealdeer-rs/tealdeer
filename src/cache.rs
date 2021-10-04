@@ -163,12 +163,17 @@ impl Cache {
 
     /// Return the duration since the cache directory was last modified.
     pub fn last_update() -> Option<Duration> {
-        if let Ok((cache_dir, _)) = Self::get_cache_dir() {
-            if let Ok(metadata) = fs::metadata(cache_dir.join(TLDR_PAGES_DIR)) {
-                if let Ok(mtime) = metadata.modified() {
-                    let now = SystemTime::now();
-                    return now.duration_since(mtime).ok();
-                };
+        if let Ok((cache_dir, _)) = Cache::get_cache_dir() {
+            return Cache::last_update_with_path(&cache_dir.join(TLDR_PAGES_DIR));
+        }
+        None
+    }
+
+    pub fn last_update_with_path(path: &Path) -> Option<Duration> {
+        if let Ok(metadata) = fs::metadata(path) {
+            if let Ok(mtime) = metadata.modified() {
+                let now = SystemTime::now();
+                return now.duration_since(mtime).ok();
             };
         };
         None

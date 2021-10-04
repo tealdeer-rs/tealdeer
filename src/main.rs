@@ -15,7 +15,7 @@
 #![allow(clippy::similar_names)]
 #![allow(clippy::too_many_lines)]
 
-use std::{env, fs, path::PathBuf, process};
+use std::{env, fs, path::PathBuf, process, time::Duration};
 
 use ansi_term::{Color, Style};
 use app_dirs::AppInfo;
@@ -94,7 +94,11 @@ fn should_update_cache(args: &Args, config: &Config) -> bool {
 
 /// Check the cache for freshness
 fn check_cache(args: &Args, enable_styles: bool) {
-    match Cache::last_update() {
+    check_cache_with_last_update(args, enable_styles, Cache::last_update());
+}
+
+fn check_cache_with_last_update(args: &Args, enable_styles: bool, last_update: Option<Duration>) {
+    match last_update {
         Some(ago) if ago > MAX_CACHE_AGE => {
             if args.flag_quiet {
                 return;
@@ -121,10 +125,14 @@ fn check_cache(args: &Args, enable_styles: bool) {
             if let Ok((cache_dir, _)) = Cache::get_cache_dir() {
                 if let Some(old_pages_dir) = cache_dir.read_dir().into_iter().flatten().next() {
                     let old_pages_dir = old_pages_dir.unwrap().path();
+                    let old_last_update = Cache::last_update_with_path(&old_pages_dir);
+
                     let new_pages_dir = old_pages_dir.with_file_name(TLDR_PAGES_DIR);
 
                     fs::rename(old_pages_dir, new_pages_dir)
                         .expect("failed to move existing cache dir");
+
+                    check_cache_with_last_update(args, enable_styles, old_last_update);
 
                     return;
                 }
