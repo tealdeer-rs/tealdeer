@@ -178,21 +178,29 @@ impl Default for RawDirectoriesConfig {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(default)]
 struct RawConfig {
-    #[serde(default)]
     style: RawStyleConfig,
-    #[serde(default)]
     display: RawDisplayConfig,
-    #[serde(default)]
     updates: RawUpdatesConfig,
-    #[serde(default)]
     directories: RawDirectoriesConfig,
 }
 
 impl RawConfig {
     fn new() -> Self {
-        let mut raw_config = Self::default();
+        Self::default()
+    }
+}
+
+impl Default for RawConfig {
+    fn default() -> Self {
+        let mut raw_config = RawConfig {
+            style: RawStyleConfig::default(),
+            display: RawDisplayConfig::default(),
+            updates: RawUpdatesConfig::default(),
+            directories: RawDirectoriesConfig::default()
+        };
 
         // Set default config
         raw_config.style.example_text.foreground = Some(RawColor::Green);
