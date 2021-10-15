@@ -52,6 +52,15 @@ impl PageLookupResult {
     }
 }
 
+pub enum CacheFreshness {
+    /// The cache is still fresh (less than MAX_CACHE_AGE old)
+    Fresh,
+    /// The cache is stale and should be updated
+    Stale(Duration),
+    /// The cache is missing
+    Missing,
+}
+
 impl Cache {
     pub fn new<S>(url: S, os: OsType) -> Self
     where
@@ -171,6 +180,15 @@ impl Cache {
             };
         };
         None
+    }
+
+    /// Return the freshness of the cache (fresh, stale or missing).
+    pub fn freshness() -> CacheFreshness {
+        match Cache::last_update() {
+            Some(ago) if ago > crate::config::MAX_CACHE_AGE => CacheFreshness::Stale(ago),
+            Some(_) => CacheFreshness::Fresh,
+            None => CacheFreshness::Missing,
+        }
     }
 
     /// Return the platform directory.
