@@ -35,8 +35,8 @@ mod output;
 mod types;
 
 use crate::{
-    cache::{Cache, PageLookupResult},
-    config::{get_config_dir, get_config_path, make_default_config, Config, MAX_CACHE_AGE},
+    cache::{Cache, CacheFreshness, PageLookupResult},
+    config::{get_config_dir, get_config_path, make_default_config, Config},
     error::TealdeerError::ConfigError,
     extensions::Dedup,
     output::print_page,
@@ -86,42 +86,48 @@ fn configure_pager() {
     eprintln!("Warning: -p / --pager flag not available on Windows!");
 }
 
-fn should_update_cache(args: &Args, config: &Config) -> bool {
+/// The cache should get updated if this was requested by the user, or if auto
+/// updates are enabled and the cache age is longer than the auto update interval.
+fn should_update_cache(args: &Args, config: &Config, cache: &Cache) -> bool {
     args.flag_update
         || (config.updates.auto_update
-            && Cache::last_update().map_or(true, |ago| ago >= config.updates.auto_update_interval))
+            && cache
+                .last_update()
+                .map_or(true, |ago| ago >= config.updates.auto_update_interval))
 }
 
-/// Check the cache for freshness
-fn check_cache(args: &Args, enable_styles: bool) {
-    match Cache::last_update() {
-        Some(ago) if ago > MAX_CACHE_AGE => {
-            if args.flag_quiet {
-                return;
-            }
+#[derive(PartialEq)]
+enum CheckCacheResult {
+    CacheFound,
+    CacheMissing,
+}
 
-            // Only use color if enabled
+/// Check the cache for freshness. If it's stale or missing, show a warning.
+fn check_cache(cache: &Cache, args: &Args, enable_styles: bool) -> CheckCacheResult {
+    match cache.freshness() {
+        CacheFreshness::Fresh => CheckCacheResult::CacheFound,
+        CacheFreshness::Stale(_) if args.flag_quiet => CheckCacheResult::CacheFound,
+        CacheFreshness::Stale(age) => {
             let warning_style = if enable_styles {
                 Style::new().fg(Color::Yellow)
             } else {
                 Style::default()
             };
-
             eprintln!(
                 "{}",
                 warning_style.paint(format!(
-                    "The cache hasn't been updated for more than {} days.\n\
-                         You should probably run `tldr --update` soon.",
-                    MAX_CACHE_AGE.as_secs() / 24 / 3600
+                    "The cache hasn't been updated for {} days.\n\
+                     You should probably run `tldr --update` soon.",
+                    age.as_secs() / 24 / 3600
                 ))
             );
+            CheckCacheResult::CacheFound
         }
-        Some(_) => {}
-        None => {
+        CacheFreshness::Missing => {
             eprintln!("Cache not found. Please run `tldr --update`.");
-            process::exit(1);
+            CheckCacheResult::CacheMissing
         }
-    };
+    }
 }
 
 /// Clear the cache
@@ -377,23 +383,7 @@ fn main() {
         None => get_os(),
     };
 
-    // Initialize cache
-    let cache = Cache::new(ARCHIVE_URL, os);
-
-    // Clear cache, pass through
-    if args.flag_clear_cache {
-        clear_cache(args.flag_quiet);
-    }
-
-    // Update cache, pass through
-    let cache_updated = if should_update_cache(&args, &config) {
-        update_cache(&cache, args.flag_quiet);
-        true
-    } else {
-        false
-    };
-
-    // Render local file and exit
+    // If a local file was passed in, render it and exit
     if let Some(ref file) = args.flag_render {
         let path = PageLookupResult::with_page(PathBuf::from(file));
         if let Err(msg) = print_page(&path, args.flag_markdown, &config) {
@@ -404,13 +394,31 @@ fn main() {
         };
     }
 
+    // Initialize cache
+    let cache = Cache::new(ARCHIVE_URL, os);
+
+    // Clear cache, pass through
+    if args.flag_clear_cache {
+        clear_cache(args.flag_quiet);
+    }
+
+    // Cache update, pass through
+    let cache_updated = if should_update_cache(&args, &config, &cache) {
+        update_cache(&cache, args.flag_quiet);
+        true
+    } else {
+        false
+    };
+
+    // Check cache presence and freshness
+    if !cache_updated && (args.flag_list || args.arg_command.is_some()) {
+        if check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing {
+            process::exit(1);
+        }
+    }
+
     // List cached commands and exit
     if args.flag_list {
-        if !cache_updated {
-            // Check cache for freshness
-            check_cache(&args, enable_styles);
-        }
-
         // Get list of pages
         let pages = cache.list_pages().unwrap_or_else(|e| {
             eprintln!("Could not get list of pages: {}", e.message());
@@ -425,11 +433,6 @@ fn main() {
     // Show command from cache
     if let Some(ref command) = args.arg_command {
         let command = command.join("-");
-
-        if !cache_updated {
-            // Check cache for freshness
-            check_cache(&args, enable_styles);
-        }
 
         let languages = args
             .flag_language
