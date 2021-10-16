@@ -199,7 +199,7 @@ impl Default for RawConfig {
             style: RawStyleConfig::default(),
             display: RawDisplayConfig::default(),
             updates: RawUpdatesConfig::default(),
-            directories: RawDirectoriesConfig::default()
+            directories: RawDirectoriesConfig::default(),
         };
 
         // Set default config
