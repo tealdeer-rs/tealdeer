@@ -334,12 +334,21 @@ impl Cache {
     pub fn clear() -> Result<(), TealdeerError> {
         let (path, _) = Self::get_cache_dir()?;
         if path.exists() && path.is_dir() {
-            fs::remove_dir_all(&path).map_err(|_| {
-                CacheError(format!(
-                    "Could not remove cache directory ({}).",
-                    path.display()
-                ))
-            })?;
+            // Delete old tldr-pages cache location as well if present
+            // TODO: To be removed in the future
+            for pages_dir_name in [TLDR_PAGES_DIR, TLDR_OLD_PAGES_DIR] {
+                let pages_dir = path.join(pages_dir_name);
+
+                if pages_dir.exists() {
+                    fs::remove_dir_all(&pages_dir).map_err(|e| {
+                        CacheError(format!(
+                            "Could not remove cache directory ({}): {}",
+                            pages_dir.display(),
+                            e
+                        ))
+                    })?;
+                }
+            }
         } else if path.exists() {
             return Err(CacheError(format!(
                 "Cache path ({}) is not a directory.",
