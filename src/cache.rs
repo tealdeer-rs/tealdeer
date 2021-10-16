@@ -340,10 +340,11 @@ impl Cache {
                 let pages_dir = path.join(pages_dir_name);
 
                 if pages_dir.exists() {
-                    fs::remove_dir_all(&pages_dir).map_err(|_| {
+                    fs::remove_dir_all(&pages_dir).map_err(|e| {
                         CacheError(format!(
-                            "Could not remove cache directory ({}).",
-                            pages_dir.display()
+                            "Could not remove cache directory ({}).: {}",
+                            pages_dir.display(),
+                            e
                         ))
                     })?;
                 }
