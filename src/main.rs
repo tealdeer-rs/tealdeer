@@ -19,7 +19,7 @@
 use std::{env, path::PathBuf, process};
 
 use ansi_term::{Color, Style};
-use app_dirs::AppInfo;
+use app_dirs::{get_app_root, AppDataType, AppInfo};
 use atty::Stream;
 use clap::{AppSettings, Parser};
 #[cfg(not(target_os = "windows"))]
@@ -51,6 +51,8 @@ const APP_INFO: AppInfo = AppInfo {
 const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
 #[cfg(not(target_os = "windows"))]
 const PAGER_COMMAND: &str = "less -R";
+
+static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
 
 // Note: flag names are specified explicitly in clap attributes
 // to improve readability and allow contributors to grep names like "clear-cache"
@@ -194,17 +196,6 @@ fn check_cache(args: &Args, enable_styles: bool) -> CheckCacheResult {
             eprintln!("Cache not found. Please run `tldr --update`.");
             CheckCacheResult::CacheMissing
         }
-    }
-}
-
-/// Clear the cache
-fn clear_cache(quietly: bool) {
-    Cache::clear().unwrap_or_else(|e| {
-        eprintln!("Could not delete cache: {}", e.message());
-        process::exit(1);
-    });
-    if !quietly {
-        eprintln!("Successfully deleted cache.");
     }
 }
 
@@ -428,12 +419,42 @@ fn main() {
         };
     }
 
-    // Initialize cache
-    let cache = Cache::new(ARCHIVE_URL, os);
+    // Allow overriding the cache directory by setting the env variable.
+    let cache_dir;
+    if let Ok(value) = env::var(CACHE_DIR_ENV_VAR) {
+        cache_dir = PathBuf::from(value);
+    } else {
+        // Otherwise, fall back to user cache directory.
+        cache_dir = match get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
+            Ok(value) => value,
+            Err(_) => {
+                eprintln!("Could not determine user cache directory.");
+                process::exit(1);
+            }
+        }
+    }
+
+    let cache = match Cache::new(ARCHIVE_URL, os, cache_dir) {
+        Ok(cache) => cache,
+        Err(e) => {
+            eprintln!("Failed to create cache: {}", e.message());
+            process::exit(1);
+        },
+    };
 
     // Clear cache, pass through
     if args.clear_cache {
-        clear_cache(args.quiet);
+        match cache.clear() {
+            Ok(_) => {
+                if !args.quiet {
+                    eprintln!("Successfully deleted cache.");
+                }
+            },
+            Err(e) => {
+                eprintln!("Could not delete cache: {}", e.message());
+                process::exit(1);
+            }
+        };
     }
 
     // Cache update, pass through

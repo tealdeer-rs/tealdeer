@@ -7,7 +7,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use app_dirs::{get_app_root, AppDataType};
 use log::debug;
 use reqwest::{blocking::Client, Proxy};
 use std::time::{Duration, SystemTime};
@@ -28,6 +27,7 @@ static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 pub struct Cache {
     url: String,
     os: OsType,
+    cache_dir: PathBuf,
 }
 
 #[derive(Debug)]
@@ -64,53 +64,45 @@ pub enum CacheFreshness {
 }
 
 impl Cache {
-    pub fn new<S>(url: S, os: OsType) -> Self
+    pub fn new<S, P>(url: S, os: OsType, cache_dir: P) -> Result<Self, TealdeerError>
     where
         S: Into<String>,
+        P: Into<PathBuf>,
     {
-        Self {
+        let cache_dir = cache_dir.into();
+        let (cache_dir_exists, cache_dir_is_dir) = cache_dir
+            .metadata()
+            .map_or((false, false), |md| (true, md.is_dir()));
+        if cache_dir_exists && !cache_dir_is_dir {
+            return Err(CacheError(format!(
+                "Path specified by ${} is not a directory.",
+                CACHE_DIR_ENV_VAR
+            )));
+        }
+        if !cache_dir_exists {
+            // Try to create the complete directory path.
+            fs::create_dir_all(&cache_dir).map_err(|_| {
+                CacheError(format!(
+                    "Directory path specified by ${} cannot be created.",
+                    CACHE_DIR_ENV_VAR
+                ))
+            })?;
+            eprintln!(
+                "Successfully created cache directory path `{}`.",
+                cache_dir.to_str().unwrap()
+            );
+        }
+
+        Ok(Self {
             url: url.into(),
             os,
-        }
+            cache_dir,
+        })
     }
 
     /// Return the path to the cache directory.
     pub fn get_cache_dir() -> Result<(PathBuf, PathSource), TealdeerError> {
-        // Allow overriding the cache directory by setting the env variable.
-        if let Ok(value) = env::var(CACHE_DIR_ENV_VAR) {
-            let path = PathBuf::from(value);
-            let (path_exists, path_is_dir) = path
-                .metadata()
-                .map_or((false, false), |md| (true, md.is_dir()));
-            if path_exists && !path_is_dir {
-                return Err(CacheError(format!(
-                    "Path specified by ${} is not a directory.",
-                    CACHE_DIR_ENV_VAR
-                )));
-            }
-            if !path_exists {
-                // Try to create the complete directory path.
-                fs::create_dir_all(&path).map_err(|_| {
-                    CacheError(format!(
-                        "Directory path specified by ${} cannot be created.",
-                        CACHE_DIR_ENV_VAR
-                    ))
-                })?;
-                eprintln!(
-                    "Successfully created cache directory path `{}`.",
-                    path.to_str().unwrap()
-                );
-            }
-            return Ok((path, PathSource::EnvVar));
-        };
-
-        // Otherwise, fall back to user cache directory.
-        match get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
-            Ok(dirs) => Ok((dirs, PathSource::OsConvention)),
-            Err(_) => Err(CacheError(
-                "Could not determine user cache directory.".into(),
-            )),
-        }
+        Ok((PathBuf::from(""), PathSource::EnvVar))
     }
 
     /// Download the archive
@@ -162,7 +154,7 @@ impl Cache {
         // But renaming a directory doesn't work across filesystems and Rust
         // does not yet offer a recursive directory copying function. So for
         // now, we'll use this approach.
-        Self::clear()?;
+        self.clear()?;
 
         // Extract archive
         archive
@@ -324,13 +316,12 @@ impl Cache {
     }
 
     /// Delete the cache directory.
-    pub fn clear() -> Result<(), TealdeerError> {
-        let (path, _) = Self::get_cache_dir()?;
-        if path.exists() && path.is_dir() {
+    pub fn clear(&self) -> Result<(), TealdeerError> {
+        if self.cache_dir.exists() && self.cache_dir.is_dir() {
             // Delete old tldr-pages cache location as well if present
             // TODO: To be removed in the future
             for pages_dir_name in [TLDR_PAGES_DIR, TLDR_OLD_PAGES_DIR] {
-                let pages_dir = path.join(pages_dir_name);
+                let pages_dir = self.cache_dir.join(pages_dir_name);
 
                 if pages_dir.exists() {
                     fs::remove_dir_all(&pages_dir).map_err(|e| {
@@ -342,15 +333,15 @@ impl Cache {
                     })?;
                 }
             }
-        } else if path.exists() {
+        } else if self.cache_dir.exists() {
             return Err(CacheError(format!(
-                "Cache path ({}) is not a directory.",
-                path.display()
+                "Cache dir ({}) is not a directory.",
+                self.cache_dir.display()
             )));
         } else {
             return Err(CacheError(format!(
-                "Cache path ({}) does not exist.",
-                path.display()
+                "Cache dir ({}) does not exist.",
+                self.cache_dir.display()
             )));
         };
         Ok(())
