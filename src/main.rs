@@ -411,10 +411,11 @@ fn main() {
     };
 
     // Check cache presence and freshness
-    if !cache_updated && (args.flag_list || args.arg_command.is_some()) {
-        if check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing {
-            process::exit(1);
-        }
+    if !cache_updated
+        && (args.flag_list || args.arg_command.is_some())
+        && check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing
+    {
+        process::exit(1);
     }
 
     // List cached commands and exit
