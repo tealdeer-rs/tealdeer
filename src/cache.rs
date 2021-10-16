@@ -339,12 +339,14 @@ impl Cache {
             for page_dir in [TLDR_PAGES_DIR, TLDR_OLD_PAGES_DIR] {
                 let pages_dir = path.join(page_dir);
 
-                fs::remove_dir_all(&pages_dir).map_err(|_| {
-                    CacheError(format!(
-                        "Could not remove cache directory ({}).",
-                        pages_dir.display()
-                    ))
-                })?;
+                if pages_dir.exists() {
+                    fs::remove_dir_all(&pages_dir).map_err(|_| {
+                        CacheError(format!(
+                            "Could not remove cache directory ({}).",
+                            pages_dir.display()
+                        ))
+                    })?;
+                }
             }
         } else if path.exists() {
             return Err(CacheError(format!(
