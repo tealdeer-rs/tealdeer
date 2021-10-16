@@ -336,8 +336,8 @@ impl Cache {
         if path.exists() && path.is_dir() {
             // Delete old tldr-pages cache location as well if present
             // TODO: To be removed in the future
-            for page_dir in [TLDR_PAGES_DIR, TLDR_OLD_PAGES_DIR] {
-                let pages_dir = path.join(page_dir);
+            for pages_dir_name in [TLDR_PAGES_DIR, TLDR_OLD_PAGES_DIR] {
+                let pages_dir = path.join(pages_dir_name);
 
                 if pages_dir.exists() {
                     fs::remove_dir_all(&pages_dir).map_err(|_| {
