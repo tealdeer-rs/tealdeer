@@ -1265,7 +1265,6 @@ dependencies = [
  "env_logger",
  "escargot",
  "filetime",
- "flate2",
  "log",
  "pager",
  "predicates",
