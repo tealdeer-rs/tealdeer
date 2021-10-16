@@ -35,7 +35,7 @@ mod output;
 mod types;
 
 use crate::{
-    cache::{Cache, CacheFreshness, PageLookupResult},
+    cache::{Cache, CacheFreshness, PageLookupResult, TLDR_PAGES_DIR},
     config::{get_config_dir, get_config_path, make_default_config, Config},
     error::TealdeerError::ConfigError,
     extensions::Dedup,
@@ -50,7 +50,7 @@ const APP_INFO: AppInfo = AppInfo {
 };
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const USAGE: &str = include_str!("usage.docopt");
-const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
+const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
 #[cfg(not(target_os = "windows"))]
 const PAGER_COMMAND: &str = "less -R";
 
@@ -196,7 +196,7 @@ fn show_paths() {
     let pages_dir = Cache::get_cache_dir().map_or_else(
         |e| format!("[Error: {}]", e),
         |(mut path, _)| {
-            path.push("tldr-master");
+            path.push(TLDR_PAGES_DIR);
             path.push(""); // Trailing path separator
             path.into_os_string()
                 .into_string()

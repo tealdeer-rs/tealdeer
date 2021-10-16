@@ -17,6 +17,8 @@ use tempfile::{Builder, TempDir};
 // TODO: Should be 'cache::CACHE_DIR_ENV_VAR'. This requires to have a library crate for the logic.
 static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
 
+pub static TLDR_PAGES_DIR: &str = "tldr-pages";
+
 struct TestEnv {
     pub cache_dir: TempDir,
     pub custom_pages_dir: TempDir,
@@ -60,7 +62,7 @@ impl TestEnv {
         let dir = self
             .cache_dir
             .path()
-            .join("tldr-master")
+            .join(TLDR_PAGES_DIR)
             .join("pages")
             .join(os);
         create_dir_all(&dir).unwrap();
@@ -202,7 +204,7 @@ fn test_quiet_old_cache() {
         .stdout(is_empty());
 
     filetime::set_file_mtime(
-        testenv.cache_dir.path().join("tldr-master"),
+        testenv.cache_dir.path().join(TLDR_PAGES_DIR),
         filetime::FileTime::from_unix_time(1, 0),
     )
     .unwrap();
@@ -309,7 +311,7 @@ fn test_show_paths() {
             testenv
                 .cache_dir
                 .path()
-                .join("tldr-master")
+                .join(TLDR_PAGES_DIR)
                 .to_str()
                 .unwrap(),
         )));
@@ -534,7 +536,7 @@ fn test_autoupdate_cache() {
         .stderr(contains("Cache not found. Please run `tldr --update`."));
 
     let config_file_path = testenv.config_dir.path().join("config.toml");
-    let cache_file_path = testenv.cache_dir.path().join("tldr-master");
+    let cache_file_path = testenv.cache_dir.path().join(TLDR_PAGES_DIR);
 
     // Activate automatic updates, set the auto-update interval to 24 hours
     let mut config_file = File::create(&config_file_path).unwrap();
