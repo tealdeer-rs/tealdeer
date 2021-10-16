@@ -88,12 +88,10 @@ fn configure_pager() {
 
 /// The cache should get updated if this was requested by the user, or if auto
 /// updates are enabled and the cache age is longer than the auto update interval.
-fn should_update_cache(args: &Args, config: &Config, cache: &Cache) -> bool {
+fn should_update_cache(args: &Args, config: &Config) -> bool {
     args.flag_update
         || (config.updates.auto_update
-            && cache
-                .last_update()
-                .map_or(true, |ago| ago >= config.updates.auto_update_interval))
+            && Cache::last_update().map_or(true, |ago| ago >= config.updates.auto_update_interval))
 }
 
 #[derive(PartialEq)]
@@ -103,8 +101,8 @@ enum CheckCacheResult {
 }
 
 /// Check the cache for freshness. If it's stale or missing, show a warning.
-fn check_cache(cache: &Cache, args: &Args, enable_styles: bool) -> CheckCacheResult {
-    match cache.freshness() {
+fn check_cache(args: &Args, enable_styles: bool) -> CheckCacheResult {
+    match Cache::freshness() {
         CacheFreshness::Fresh => CheckCacheResult::CacheFound,
         CacheFreshness::Stale(_) if args.flag_quiet => CheckCacheResult::CacheFound,
         CacheFreshness::Stale(age) => {
@@ -403,7 +401,7 @@ fn main() {
     }
 
     // Cache update, pass through
-    let cache_updated = if should_update_cache(&args, &config, &cache) {
+    let cache_updated = if should_update_cache(&args, &config) {
         update_cache(&cache, args.flag_quiet);
         true
     } else {
@@ -413,7 +411,7 @@ fn main() {
     // Check cache presence and freshness
     if !cache_updated
         && (args.flag_list || args.arg_command.is_some())
-        && check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing
+        && check_cache(&args, enable_styles) == CheckCacheResult::CacheMissing
     {
         process::exit(1);
     }

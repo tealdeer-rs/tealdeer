@@ -173,7 +173,7 @@ impl Cache {
     }
 
     /// Return the duration since the cache directory was last modified.
-    pub fn last_update(&self) -> Option<Duration> {
+    pub fn last_update() -> Option<Duration> {
         if let Ok((cache_dir, _)) = Self::get_cache_dir() {
             if let Ok(metadata) = fs::metadata(cache_dir.join(TLDR_PAGES_DIR)) {
                 if let Ok(mtime) = metadata.modified() {
@@ -186,8 +186,8 @@ impl Cache {
     }
 
     /// Return the freshness of the cache (fresh, stale or missing).
-    pub fn freshness(&self) -> CacheFreshness {
-        match self.last_update() {
+    pub fn freshness() -> CacheFreshness {
+        match Cache::last_update() {
             Some(ago) if ago > crate::config::MAX_CACHE_AGE => CacheFreshness::Stale(ago),
             Some(_) => CacheFreshness::Fresh,
             None => CacheFreshness::Missing,
