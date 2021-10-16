@@ -29,6 +29,7 @@ serde_derive = "1.0.21"
 tar = "0.4.14"
 toml = "0.5.1"
 walkdir = "2.0.1"
+zip = "0.5"
 
 [target.'cfg(not(windows))'.dependencies]
 pager = "0.16"
