@@ -35,7 +35,7 @@ mod output;
 mod types;
 
 use crate::{
-    cache::{Cache, CacheFreshness, PageLookupResult},
+    cache::{Cache, CacheFreshness, PageLookupResult, TLDR_PAGES_DIR},
     config::{get_config_dir, get_config_path, make_default_config, Config},
     error::TealdeerError::ConfigError,
     extensions::Dedup,
@@ -198,7 +198,7 @@ fn show_paths() {
     let pages_dir = Cache::get_cache_dir().map_or_else(
         |e| format!("[Error: {}]", e),
         |(mut path, _)| {
-            path.push("tldr-master");
+            path.push(TLDR_PAGES_DIR);
             path.push(""); // Trailing path separator
             path.into_os_string()
                 .into_string()

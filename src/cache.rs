@@ -22,6 +22,9 @@ use crate::{
 
 static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
 
+pub static TLDR_PAGES_DIR: &str = "tldr-pages";
+static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
+
 #[derive(Debug)]
 pub struct Cache {
     url: String,
@@ -172,7 +175,7 @@ impl Cache {
     /// Return the duration since the cache directory was last modified.
     pub fn last_update(&self) -> Option<Duration> {
         if let Ok((cache_dir, _)) = Self::get_cache_dir() {
-            if let Ok(metadata) = fs::metadata(cache_dir.join("tldr-master")) {
+            if let Ok(metadata) = fs::metadata(cache_dir.join(TLDR_PAGES_DIR)) {
                 if let Ok(mtime) = metadata.modified() {
                     let now = SystemTime::now();
                     return now.duration_since(mtime).ok();
@@ -235,7 +238,7 @@ impl Cache {
 
         // Get cache dir
         let cache_dir = match Self::get_cache_dir() {
-            Ok((cache_dir, _)) => cache_dir.join("tldr-master"),
+            Ok((cache_dir, _)) => cache_dir.join(TLDR_PAGES_DIR),
             Err(e) => {
                 log::error!("Could not get cache directory: {}", e);
                 return None;
@@ -281,7 +284,7 @@ impl Cache {
     pub fn list_pages(&self) -> Result<Vec<String>, TealdeerError> {
         // Determine platforms directory and platform
         let (cache_dir, _) = Self::get_cache_dir()?;
-        let platforms_dir = cache_dir.join("tldr-master").join("pages");
+        let platforms_dir = cache_dir.join(TLDR_PAGES_DIR).join("pages");
         let platform_dir = self.get_platform_dir();
 
         // Closure that allows the WalkDir instance to traverse platform
