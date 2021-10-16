@@ -45,23 +45,23 @@ measures the execution times on a cold disk cache. The benchmarking is run in a
 Docker container using sharkdp's [`hyperfine`][hyperfine-gh]
 ([Dockerfile][benchmark-dockerfile]).
 
-| Client (50 runs, 29.07.2021)      | Programming Language | Mean in ms | Deviation in ms | Comments                |
+| Client (50 runs, 17.10.2021)      | Programming Language | Mean in ms | Deviation in ms | Comments                |
 | :---:                             | :---:                | :---:      | :---:           | :---:                   |
-| `tealdeer`                        | Rust                 | 16.2       | 1.2             |                         |
-| [`tldr-c`][c-gh]                  | C                    | 35.7       | 3.2             |                         |
-| [`tldr-hs`][hs-gh]                | Haskell              | 23.6       | 1.0             | no example highlighting |
-| [`fast-tldr`][fast-tldr-gh]       | Haskell              | 15.2       | 0.7             | no example highlighting |
-| [`tldr-bash`][bash-gh]            | Bash                 | 28.3       | 1.1             |                         |
-| [`tldr-python-client`][python-gh] | Python               | 97.9       | 3.5             |                         |
-| [`outfieldr`][outfieldr-gh]       | Zig                  | 4.7        | 0.5             | no user configuration   |
-| [`tldr-node-client`][node-gh]     | Javascript / Node    | 533.1      | 12.5            |                         |
+| [`outfieldr`][outfieldr-gh]       | Zig                  | 9.1        | 0.5             | no user configuration   |
+| `tealdeer`                        | Rust                 | 13.2       | 0.5             |                         |
+| [`fast-tldr`][fast-tldr-gh]       | Haskell              | 17.0       | 0.6             | no example highlighting |
+| [`tldr-hs`][hs-gh]                | Haskell              | 25.1       | 0.5             | no example highlighting |
+| [`tldr-bash`][bash-gh]            | Bash                 | 30.0       | 0.8             |                         |
+| [`tldr-c`][c-gh]                  | C                    | 38.4       | 1.0             |                         |
+| [`tldr-python-client`][python-gh] | Python               | 87.0       | 2.4             |                         |
+| [`tldr-node-client`][node-gh]     | JavaScript / NodeJS  | 407.1      | 12.9            |                         |
 
-As you can see, `tealdeer` is not the fastest of the tested clients anymore. We
-strive for useful features and code quality over raw performance, even if that
-means that we don't come out on top in this friendly competition. That said, we
-are still optimizing the code, for example when the `outfieldr` developers
-[suggested to switch][outfieldr-comment-tls] to a native TLS implementation
-instead of the native libraries.
+As you can see, `tealdeer` is one of the fastest of the tested clients.
+However, we strive for useful features and code quality over raw performance,
+even if that means that we don't come out on top in this friendly competition.
+That said, we are still optimizing the code, for example when the `outfieldr`
+developers [suggested to switch][outfieldr-comment-tls] to a native TLS
+implementation instead of the native libraries.
 
 ## Development
 
