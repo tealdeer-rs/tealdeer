@@ -2,18 +2,17 @@ use std::{
     env,
     ffi::OsStr,
     fs,
-    io::Read,
+    io::{Cursor, Read, Seek},
     iter,
     path::{Path, PathBuf},
 };
 
 use app_dirs::{get_app_root, AppDataType};
-use flate2::read::GzDecoder;
 use log::debug;
 use reqwest::{blocking::Client, Proxy};
 use std::time::{Duration, SystemTime};
-use tar::Archive;
 use walkdir::{DirEntry, WalkDir};
+use zip::ZipArchive;
 
 use crate::{
     error::TealdeerError::{self, CacheError, UpdateError},
@@ -136,8 +135,8 @@ impl Cache {
     }
 
     /// Decompress and open the archive
-    fn decompress<R: Read>(reader: R) -> Archive<GzDecoder<R>> {
-        Archive::new(GzDecoder::new(reader))
+    fn decompress<R: Read + Seek>(reader: R) -> ZipArchive<R> {
+        ZipArchive::new(reader).unwrap()
     }
 
     /// Update the pages cache.
@@ -146,10 +145,11 @@ impl Cache {
         let bytes: Vec<u8> = self.download()?;
 
         // Decompress the response body into an `Archive`
-        let mut archive = Self::decompress(&bytes[..]);
+        let mut archive = Self::decompress(Cursor::new(bytes));
 
         // Determine paths
         let (cache_dir, _) = Self::get_cache_dir()?;
+        let pages_dir = cache_dir.join(TLDR_PAGES_DIR);
 
         // Make sure that cache directory exists
         debug!("Ensure cache directory {:?} exists", &cache_dir);
@@ -166,7 +166,7 @@ impl Cache {
 
         // Extract archive
         archive
-            .unpack(&cache_dir)
+            .extract(&pages_dir)
             .map_err(|e| UpdateError(format!("Could not unpack compressed data: {}", e)))?;
 
         Ok(())
