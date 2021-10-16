@@ -50,7 +50,7 @@ const APP_INFO: AppInfo = AppInfo {
 };
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const USAGE: &str = include_str!("usage.docopt");
-const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/archive/master.tar.gz";
+const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
 #[cfg(not(target_os = "windows"))]
 const PAGER_COMMAND: &str = "less -R";
 
