@@ -419,14 +419,15 @@ fn main() {
     let cache_dir;
     if let Ok(value) = env::var(CACHE_DIR_ENV_VAR) {
         cache_dir = PathBuf::from(value);
+    } else if let Some(value) = &config.directories.cache_dir {
+        cache_dir = value.clone();
     } else {
         // Otherwise, fall back to user cache directory.
-        cache_dir = match get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
-            Ok(value) => value,
-            Err(_) => {
-                eprintln!("Could not determine user cache directory.");
-                process::exit(1);
-            }
+        if let Ok(value) = get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
+            cache_dir = value;
+        } else {
+            eprintln!("Could not determine user cache directory.");
+            process::exit(1);
         }
     }
 

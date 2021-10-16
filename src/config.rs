@@ -166,6 +166,8 @@ impl Default for RawUpdatesConfig {
 struct RawDirectoriesConfig {
     #[serde(default)]
     pub custom_pages_dir: Option<PathBuf>,
+    #[serde(default)]
+    pub cache_dir: Option<PathBuf>,
 }
 
 impl Default for RawDirectoriesConfig {
@@ -174,6 +176,7 @@ impl Default for RawDirectoriesConfig {
             custom_pages_dir: get_app_root(AppDataType::UserData, &crate::APP_INFO)
                 .map(|path| path.join("pages"))
                 .ok(),
+            cache_dir: None,
         }
     }
 }
@@ -237,6 +240,7 @@ pub struct UpdatesConfig {
 #[derive(Clone, Debug, PartialEq)]
 pub struct DirectoriesConfig {
     pub custom_pages_dir: Option<PathBuf>,
+    pub cache_dir: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -269,6 +273,7 @@ impl From<RawConfig> for Config {
             },
             directories: DirectoriesConfig {
                 custom_pages_dir: raw_config.directories.custom_pages_dir,
+                cache_dir: raw_config.directories.cache_dir,
             },
         }
     }
