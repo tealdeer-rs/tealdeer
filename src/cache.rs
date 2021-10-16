@@ -2,18 +2,17 @@ use std::{
     env,
     ffi::OsStr,
     fs,
-    io::Read,
+    io::{Cursor, Read, Seek},
     iter,
     path::{Path, PathBuf},
 };
 
 use app_dirs::{get_app_root, AppDataType};
-use flate2::read::GzDecoder;
 use log::debug;
 use reqwest::{blocking::Client, Proxy};
 use std::time::{Duration, SystemTime};
-use tar::Archive;
 use walkdir::{DirEntry, WalkDir};
+use zip::ZipArchive;
 
 use crate::{
     error::TealdeerError::{self, CacheError, UpdateError},
@@ -21,6 +20,9 @@ use crate::{
 };
 
 static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
+
+pub static TLDR_PAGES_DIR: &str = "tldr-pages";
+static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 
 #[derive(Debug)]
 pub struct Cache {
@@ -50,6 +52,15 @@ impl PageLookupResult {
     pub fn paths(&self) -> impl Iterator<Item = &Path> {
         iter::once(self.page_path.as_path()).chain(self.patch_path.as_deref())
     }
+}
+
+pub enum CacheFreshness {
+    /// The cache is still fresh (less than MAX_CACHE_AGE old)
+    Fresh,
+    /// The cache is stale and should be updated
+    Stale(Duration),
+    /// The cache is missing
+    Missing,
 }
 
 impl Cache {
@@ -124,8 +135,8 @@ impl Cache {
     }
 
     /// Decompress and open the archive
-    fn decompress<R: Read>(reader: R) -> Archive<GzDecoder<R>> {
-        Archive::new(GzDecoder::new(reader))
+    fn decompress<R: Read + Seek>(reader: R) -> ZipArchive<R> {
+        ZipArchive::new(reader).unwrap()
     }
 
     /// Update the pages cache.
@@ -134,10 +145,11 @@ impl Cache {
         let bytes: Vec<u8> = self.download()?;
 
         // Decompress the response body into an `Archive`
-        let mut archive = Self::decompress(&bytes[..]);
+        let mut archive = Self::decompress(Cursor::new(bytes));
 
         // Determine paths
         let (cache_dir, _) = Self::get_cache_dir()?;
+        let pages_dir = cache_dir.join(TLDR_PAGES_DIR);
 
         // Make sure that cache directory exists
         debug!("Ensure cache directory {:?} exists", &cache_dir);
@@ -154,7 +166,7 @@ impl Cache {
 
         // Extract archive
         archive
-            .unpack(&cache_dir)
+            .extract(&pages_dir)
             .map_err(|e| UpdateError(format!("Could not unpack compressed data: {}", e)))?;
 
         Ok(())
@@ -163,7 +175,7 @@ impl Cache {
     /// Return the duration since the cache directory was last modified.
     pub fn last_update() -> Option<Duration> {
         if let Ok((cache_dir, _)) = Self::get_cache_dir() {
-            if let Ok(metadata) = fs::metadata(cache_dir.join("tldr-master")) {
+            if let Ok(metadata) = fs::metadata(cache_dir.join(TLDR_PAGES_DIR)) {
                 if let Ok(mtime) = metadata.modified() {
                     let now = SystemTime::now();
                     return now.duration_since(mtime).ok();
@@ -171,6 +183,15 @@ impl Cache {
             };
         };
         None
+    }
+
+    /// Return the freshness of the cache (fresh, stale or missing).
+    pub fn freshness() -> CacheFreshness {
+        match Cache::last_update() {
+            Some(ago) if ago > crate::config::MAX_CACHE_AGE => CacheFreshness::Stale(ago),
+            Some(_) => CacheFreshness::Fresh,
+            None => CacheFreshness::Missing,
+        }
     }
 
     /// Return the platform directory.
@@ -217,7 +238,7 @@ impl Cache {
 
         // Get cache dir
         let cache_dir = match Self::get_cache_dir() {
-            Ok((cache_dir, _)) => cache_dir.join("tldr-master"),
+            Ok((cache_dir, _)) => cache_dir.join(TLDR_PAGES_DIR),
             Err(e) => {
                 log::error!("Could not get cache directory: {}", e);
                 return None;
@@ -263,7 +284,7 @@ impl Cache {
     pub fn list_pages(&self) -> Result<Vec<String>, TealdeerError> {
         // Determine platforms directory and platform
         let (cache_dir, _) = Self::get_cache_dir()?;
-        let platforms_dir = cache_dir.join("tldr-master").join("pages");
+        let platforms_dir = cache_dir.join(TLDR_PAGES_DIR).join("pages");
         let platform_dir = self.get_platform_dir();
 
         // Closure that allows the WalkDir instance to traverse platform
@@ -313,12 +334,21 @@ impl Cache {
     pub fn clear() -> Result<(), TealdeerError> {
         let (path, _) = Self::get_cache_dir()?;
         if path.exists() && path.is_dir() {
-            fs::remove_dir_all(&path).map_err(|_| {
-                CacheError(format!(
-                    "Could not remove cache directory ({}).",
-                    path.display()
-                ))
-            })?;
+            // Delete old tldr-pages cache location as well if present
+            // TODO: To be removed in the future
+            for pages_dir_name in [TLDR_PAGES_DIR, TLDR_OLD_PAGES_DIR] {
+                let pages_dir = path.join(pages_dir_name);
+
+                if pages_dir.exists() {
+                    fs::remove_dir_all(&pages_dir).map_err(|e| {
+                        CacheError(format!(
+                            "Could not remove cache directory ({}): {}",
+                            pages_dir.display(),
+                            e
+                        ))
+                    })?;
+                }
+            }
         } else if path.exists() {
             return Err(CacheError(format!(
                 "Cache path ({}) is not a directory.",
