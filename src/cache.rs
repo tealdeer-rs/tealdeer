@@ -15,7 +15,8 @@ use zip::ZipArchive;
 
 use crate::{
     error::TealdeerError::{self, CacheError, UpdateError},
-    types::{OsType, PathSource},
+    types::OsType,
+    config::MAX_CACHE_AGE,
 };
 
 static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
@@ -27,7 +28,7 @@ static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 pub struct Cache {
     url: String,
     os: OsType,
-    cache_dir: PathBuf,
+    pub cache_dir: PathBuf,
 }
 
 #[derive(Debug)]
@@ -100,11 +101,6 @@ impl Cache {
         })
     }
 
-    /// Return the path to the cache directory.
-    pub fn get_cache_dir() -> Result<(PathBuf, PathSource), TealdeerError> {
-        Ok((PathBuf::from(""), PathSource::EnvVar))
-    }
-
     /// Download the archive
     fn download(&self) -> Result<Vec<u8>, TealdeerError> {
         let mut builder = Client::builder();
@@ -139,13 +135,11 @@ impl Cache {
         // Decompress the response body into an `Archive`
         let mut archive = Self::decompress(Cursor::new(bytes));
 
-        // Determine paths
-        let (cache_dir, _) = Self::get_cache_dir()?;
-        let pages_dir = cache_dir.join(TLDR_PAGES_DIR);
+        let pages_dir = self.cache_dir.join(TLDR_PAGES_DIR);
 
         // Make sure that cache directory exists
-        debug!("Ensure cache directory {:?} exists", &cache_dir);
-        fs::create_dir_all(&cache_dir)
+        debug!("Ensure cache directory {:?} exists", &self.cache_dir);
+        fs::create_dir_all(&self.cache_dir)
             .map_err(|e| UpdateError(format!("Could not create cache directory: {}", e)))?;
 
         // Clear cache directory
@@ -165,22 +159,20 @@ impl Cache {
     }
 
     /// Return the duration since the cache directory was last modified.
-    pub fn last_update() -> Option<Duration> {
-        if let Ok((cache_dir, _)) = Self::get_cache_dir() {
-            if let Ok(metadata) = fs::metadata(cache_dir.join(TLDR_PAGES_DIR)) {
-                if let Ok(mtime) = metadata.modified() {
-                    let now = SystemTime::now();
-                    return now.duration_since(mtime).ok();
-                };
+    pub fn last_update(&self) -> Option<Duration> {
+        if let Ok(metadata) = fs::metadata(self.cache_dir.join(TLDR_PAGES_DIR)) {
+            if let Ok(mtime) = metadata.modified() {
+                let now = SystemTime::now();
+                return now.duration_since(mtime).ok();
             };
         };
         None
     }
 
     /// Return the freshness of the cache (fresh, stale or missing).
-    pub fn freshness() -> CacheFreshness {
-        match Cache::last_update() {
-            Some(ago) if ago > crate::config::MAX_CACHE_AGE => CacheFreshness::Stale(ago),
+    pub fn freshness(&self) -> CacheFreshness {
+        match self.last_update() {
+            Some(ago) if ago > MAX_CACHE_AGE => CacheFreshness::Stale(ago),
             Some(_) => CacheFreshness::Fresh,
             None => CacheFreshness::Missing,
         }
@@ -228,13 +220,7 @@ impl Cache {
         let custom_filename = format!("{}.page", name);
 
         // Get cache dir
-        let cache_dir = match Self::get_cache_dir() {
-            Ok((cache_dir, _)) => cache_dir.join(TLDR_PAGES_DIR),
-            Err(e) => {
-                log::error!("Could not get cache directory: {}", e);
-                return None;
-            }
-        };
+        let cache_dir = self.cache_dir.join(TLDR_PAGES_DIR);
 
         let lang_dirs: Vec<String> = languages
             .iter()
@@ -273,8 +259,7 @@ impl Cache {
     /// Return the available pages.
     pub fn list_pages(&self) -> Result<Vec<String>, TealdeerError> {
         // Determine platforms directory and platform
-        let (cache_dir, _) = Self::get_cache_dir()?;
-        let platforms_dir = cache_dir.join(TLDR_PAGES_DIR).join("pages");
+        let platforms_dir = self.cache_dir.join(TLDR_PAGES_DIR).join("pages");
         let platform_dir = self.get_platform_dir();
 
         // Closure that allows the WalkDir instance to traverse platform

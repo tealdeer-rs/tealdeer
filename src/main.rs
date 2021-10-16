@@ -16,7 +16,7 @@
 #![allow(clippy::struct_excessive_bools)]
 #![allow(clippy::too_many_lines)]
 
-use std::{env, path::PathBuf, process};
+use std::{env, path::{Path, PathBuf}, process};
 
 use ansi_term::{Color, Style};
 use app_dirs::{get_app_root, AppDataType, AppInfo};
@@ -159,10 +159,10 @@ fn configure_pager() {
 
 /// The cache should get updated if this was requested by the user, or if auto
 /// updates are enabled and the cache age is longer than the auto update interval.
-fn should_update_cache(args: &Args, config: &Config) -> bool {
+fn should_update_cache(cache: &Cache, args: &Args, config: &Config) -> bool {
     args.update
         || (config.updates.auto_update
-            && Cache::last_update().map_or(true, |ago| ago >= config.updates.auto_update_interval))
+            && cache.last_update().map_or(true, |ago| ago >= config.updates.auto_update_interval))
 }
 
 #[derive(PartialEq)]
@@ -172,8 +172,8 @@ enum CheckCacheResult {
 }
 
 /// Check the cache for freshness. If it's stale or missing, show a warning.
-fn check_cache(args: &Args, enable_styles: bool) -> CheckCacheResult {
-    match Cache::freshness() {
+fn check_cache(cache: &Cache, args: &Args, enable_styles: bool) -> CheckCacheResult {
+    match cache.freshness() {
         CacheFreshness::Fresh => CheckCacheResult::CacheFound,
         CacheFreshness::Stale(_) if args.quiet => CheckCacheResult::CacheFound,
         CacheFreshness::Stale(age) => {
@@ -228,7 +228,10 @@ fn show_config_path() {
 }
 
 /// Show file paths
-fn show_paths() {
+fn show_paths<P>(cache_dir: P)
+where
+    P: AsRef<Path>,
+{
     let config_dir = get_config_dir().map_or_else(
         |e| format!("[Error: {}]", e),
         |(mut path, source)| {
@@ -239,30 +242,26 @@ fn show_paths() {
             }
         },
     );
+
     let config_path = get_config_path().map_or_else(
         |e| format!("[Error: {}]", e),
         |(path, _)| path.to_str().unwrap_or("[Invalid]").to_string(),
     );
-    let cache_dir = Cache::get_cache_dir().map_or_else(
-        |e| format!("[Error: {}]", e),
-        |(mut path, source)| {
-            path.push(""); // Trailing path separator
-            match path.to_str() {
-                Some(path) => format!("{} ({})", path, source),
-                None => "[Invalid]".to_string(),
-            }
-        },
-    );
-    let pages_dir = Cache::get_cache_dir().map_or_else(
-        |e| format!("[Error: {}]", e),
-        |(mut path, _)| {
-            path.push(TLDR_PAGES_DIR);
-            path.push(""); // Trailing path separator
-            path.into_os_string()
-                .into_string()
-                .unwrap_or_else(|_| String::from("[Invalid]"))
-        },
-    );
+    let mut pages_dir = cache_dir.as_ref().to_path_buf();
+    pages_dir.push(TLDR_PAGES_DIR);
+    pages_dir.push(""); // Trailing path separator
+    let pages_dir = pages_dir
+        .to_str()
+        .unwrap_or("[Invalid]")
+    ;
+
+    let mut cache_dir = cache_dir.as_ref().to_path_buf();
+    cache_dir.push("");
+    let cache_dir = cache_dir
+        .to_str()
+        .unwrap_or("[Invalid]")
+    ;
+
     println!("Config dir:  {}", config_dir);
     println!("Config path: {}", config_path);
     println!("Cache dir:   {}", cache_dir);
@@ -356,9 +355,6 @@ fn main() {
         eprintln!("Warning: The --config-path flag is deprecated, use --show-paths instead");
         show_config_path();
     }
-    if args.show_paths {
-        show_paths();
-    }
 
     // Create a basic config and exit
     if args.seed_config {
@@ -442,6 +438,10 @@ fn main() {
         },
     };
 
+    if args.show_paths {
+        show_paths(&cache.cache_dir);
+    }
+
     // Clear cache, pass through
     if args.clear_cache {
         match cache.clear() {
@@ -458,7 +458,7 @@ fn main() {
     }
 
     // Cache update, pass through
-    let cache_updated = if should_update_cache(&args, &config) {
+    let cache_updated = if should_update_cache(&cache, &args, &config) {
         update_cache(&cache, args.quiet);
         true
     } else {
@@ -468,7 +468,7 @@ fn main() {
     // Check cache presence and freshness
     if !cache_updated
         && (args.list || !args.command.is_empty())
-        && check_cache(&args, enable_styles) == CheckCacheResult::CacheMissing
+        && check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing
     {
         process::exit(1);
     }
