@@ -229,42 +229,37 @@ package is called <code>libssl-dev</code> on Ubuntu.)</em></p>
 <h1><a class="header" href="#usage" id="usage">Usage</a></h1>
 <p>Tealdeer is straightforward to use, through the binary named <code>tldr</code>.</p>
 <p>You can view the available options using <code>tldr --help</code>:</p>
-<pre><code>Usage:
+<!-- Note: To update the file below, run `cargo run -- --help > docs/src/usage.txt`. -->
+<pre><code>tealdeer 1.4.1
 
-    tldr [options] &lt;command&gt;...
-    tldr [options]
+Danilo Bargen &lt;mail@dbrgn.ch&gt;, Niklas Mohrin &lt;dev@niklasmohrin.de&gt;
 
-Options:
+A fast TLDR client
 
-    -h --help             Show this screen
-    -v --version          Show version information
-    -l --list             List all commands in the cache
-    -f --render &lt;file&gt;    Render a specific markdown file
-    -o --os &lt;type&gt;        Override the operating system [linux, osx, sunos, windows]
-    -L --language &lt;lang&gt;  Override the language settings
-    -u --update           Update the local cache
-    -c --clear-cache      Clear the local cache
-    -p --pager            Use a pager to page output
-    -m --markdown         Display the raw markdown instead of rendering it
-    -q --quiet            Suppress informational messages
-    --show-paths          Show file and directory paths used by tealdeer
-    --config-path         Show config file path (deprecated)
-    --seed-config         Create a basic config
-    --color &lt;when&gt;        Control when to use color [always, auto, never] [default: auto]
+USAGE:
+    tldr [OPTIONS] [COMMAND]...
 
-Examples:
+ARGS:
+    &lt;COMMAND&gt;...    The command to show (e.g. `tar` or `git log`)
 
-    $ tldr tar
-    $ tldr --list
+OPTIONS:
+    -l, --list                   List all commands in the cache
+    -f, --render &lt;FILE&gt;          Render a specific markdown file
+    -o, --os &lt;OS&gt;                Override the operating system [linux, osx, sunos, windows]
+    -L, --language &lt;LANGUAGE&gt;    Override the language
+    -u, --update                 Update the local cache
+    -c, --clear-cache            Clear the local cache
+    -p, --pager                  Use a pager to page output
+    -r, --raw                    Display the raw markdown instead of rendering it
+    -q, --quiet                  Suppress informational messages
+        --show-paths             Show file and directory paths used by tealdeer
+        --config-path            Show config file path
+        --seed-config            Create a basic config
+        --color &lt;WHEN&gt;           Control whether to use color [always, auto, never]
+    -v, --version                Print the version
+    -h, --help                   Print help information
 
-To control the cache:
-
-    $ tldr --update
-    $ tldr --clear-cache
-
-To render a local file (for testing):
-
-    $ tldr --render /path/to/file.md
+To view the user documentation, please visit https://dbrgn.github.io/tealdeer/.
 </code></pre>
 <h1><a class="header" href="#configuration" id="configuration">Configuration</a></h1>
 <p>Tealdeer can be customized with a config file called <code>config.toml</code>.  Creating
