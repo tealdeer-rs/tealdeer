@@ -134,14 +134,12 @@ version = "3.0.0-beta.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "feff3878564edb93745d58cf63e17b63f24142506e7a20c87a5521ed7bfb1d63"
 dependencies = [
- "atty",
  "bitflags",
  "clap_derive",
  "indexmap",
  "lazy_static",
  "os_str_bytes",
  "strsim 0.10.0",
- "termcolor",
  "textwrap",
 ]
 
