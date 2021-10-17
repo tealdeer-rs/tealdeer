@@ -2,7 +2,7 @@
 #
 # To run the benchmarks, execute
 #
-#     docker build -t tldr-benchmark .
+#     docker build --pull -t tldr-benchmark .
 #     docker run --privileged --rm -it tldr-benchmark
 #
 # as root in the directory of this Dockerfile. This will build the compared
