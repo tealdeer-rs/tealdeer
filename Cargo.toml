@@ -1,5 +1,8 @@
 [package]
-authors = ["Danilo Bargen <mail@dbrgn.ch>"]
+authors = [
+    "Danilo Bargen <mail@dbrgn.ch>",
+    "Niklas Mohrin <dev@niklasmohrin.de>",
+]
 description = "Fetch and show tldr help pages for many CLI commands. Full featured offline client with caching support."
 homepage = "https://github.com/dbrgn/tealdeer/"
 license = "MIT/Apache-2.0"
