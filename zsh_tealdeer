@@ -24,7 +24,7 @@ _tealdeer() {
         "($I -u --update)"{-u,--update}"[Update the local cache]"
         "($I -c --clear-cache)"{-c,--clear-cache}"[Clear the local cache]"
         "($I -p --pager)"{-p,--pager}"[Use a pager to page output]"
-        "($I -m --markdown)"{-m,--markdown}"[Display the raw markdown instead of rendering it]"
+        "($I -r --raw)"{-r,--raw}"[Display the raw markdown instead of rendering it]"
         "($I -q --quiet)"{-q,--quiet}"[Suppress informational messages]"
         "($I)--show-paths[Show file and directory paths used by tealdeer]"
         "($I)--seed-config[Create a basic config]"

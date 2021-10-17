@@ -85,7 +85,7 @@ impl Default for RawStyle {
             italic: false,
         }
     }
-} // impl RawStyle
+}
 
 impl From<RawStyle> for Style {
     fn from(raw_style: RawStyle) -> Self {
