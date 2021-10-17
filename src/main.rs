@@ -40,7 +40,7 @@ use crate::{
     error::TealdeerError::ConfigError,
     extensions::Dedup,
     output::print_page,
-    types::{ColorOptions, OsType},
+    types::{ColorOptions, PlatformType},
 };
 
 const NAME: &str = "tealdeer";
@@ -82,12 +82,21 @@ struct Args {
 
     /// Override the operating system
     #[clap(
+        short = 'p',
+        long = "platform",
+        requires = "command",
+        possible_values = ["linux", "osx", "sunos", "windows"],
+    )]
+    platform: Option<PlatformType>,
+
+    /// Deprecated alias of `platform`
+    #[clap(
         short = 'o',
         long = "os",
         requires = "command",
-        possible_values = ["linux", "osx", "sunos", "windows"]
+        possible_values = ["linux", "osx", "sunos", "windows"],
     )]
-    os: Option<OsType>,
+    os: Option<PlatformType>,
 
     /// Override the language
     #[clap(short = 'L', long = "language")]
@@ -102,7 +111,7 @@ struct Args {
     clear_cache: bool,
 
     /// Use a pager to page output
-    #[clap(short = 'p', long = "pager", requires = "command")]
+    #[clap(long = "pager", requires = "command")]
     pager: bool,
 
     /// Display the raw markdown instead of rendering it
@@ -356,6 +365,10 @@ fn main() {
             args.raw = true;
             eprintln!("Warning: The -m / --markdown flag is deprecated, use -r / --raw instead");
         }
+        if args.os.is_some() {
+            eprintln!("Warning: The -o / --os flag is deprecated, use -p / --platform instead");
+        }
+        args.platform = args.platform.or(args.os);
 
         args
     };
@@ -412,10 +425,7 @@ fn main() {
     }
 
     // Specify target OS
-    let os: OsType = match args.os {
-        Some(os) => os,
-        None => OsType::current(),
-    };
+    let platform: PlatformType = args.platform.unwrap_or_else(PlatformType::current);
 
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
@@ -429,7 +439,7 @@ fn main() {
     }
 
     // Initialize cache
-    let cache = Cache::new(ARCHIVE_URL, os);
+    let cache = Cache::new(ARCHIVE_URL, platform);
 
     // Clear cache, pass through
     if args.clear_cache {

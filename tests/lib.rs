@@ -325,7 +325,7 @@ fn test_os_specific_page() {
 
     testenv
         .command()
-        .args(["--os", "sunos", "truss"])
+        .args(["--platform", "sunos", "truss"])
         .assert()
         .success();
 }
@@ -685,7 +685,7 @@ fn test_pager_warning() {
     // But it should be shown if the pager flag is true
     testenv
         .command()
-        .args(["which", "-p"])
+        .args(["--pager", "which"])
         .assert()
         .success()
         .stderr(contains("pager flag not available on Windows"));
