@@ -95,7 +95,11 @@ struct Args {
     pager: bool,
 
     /// Display the raw markdown instead of rendering it
-    #[clap(short = 'm', long = "markdown", requires = "command")]
+    #[clap(short = 'r', long = "--raw", requires = "command")]
+    raw: bool,
+
+    /// Deprecated alias of `raw`
+    #[clap(long = "markdown", short = 'm', requires = "command", hidden = true)]
     markdown: bool,
 
     /// Suppress informational messages
@@ -363,7 +367,17 @@ fn main() {
     init_log();
 
     // Parse arguments
-    let args: Args = Args::parse();
+    let args = {
+        let mut args = Args::parse();
+
+        // Handle renamed arguments
+        if args.markdown {
+            args.raw = true;
+            eprintln!("Warning: The -m / --markdown flag is deprecated, use -r / --raw instead");
+        }
+
+        args
+    };
 
     // Show config file and path, pass through
     if args.config_path {
@@ -425,7 +439,7 @@ fn main() {
     // If a local file was passed in, render it and exit
     if let Some(ref file) = args.render {
         let path = PageLookupResult::with_page(PathBuf::from(file));
-        if let Err(msg) = print_page(&path, args.markdown, &config) {
+        if let Err(msg) = print_page(&path, args.raw, &config) {
             eprintln!("{}", msg);
             process::exit(1);
         } else {
@@ -484,7 +498,7 @@ fn main() {
             &languages,
             config.directories.custom_pages_dir.as_deref(),
         ) {
-            if let Err(msg) = print_page(&page, args.markdown, &config) {
+            if let Err(msg) = print_page(&page, args.raw, &config) {
                 eprintln!("{}", msg);
                 process::exit(1);
             }

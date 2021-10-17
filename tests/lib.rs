@@ -339,7 +339,7 @@ fn test_markdown_rendering() {
     let expected = include_str!("which-markdown.expected");
     testenv
         .command()
-        .args(["-m", "which"])
+        .args(["--raw", "which"])
         .assert()
         .success()
         .stdout(diff(expected));

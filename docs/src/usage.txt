@@ -18,7 +18,7 @@ OPTIONS:
     -u, --update                 Update the local cache
     -c, --clear-cache            Clear the local cache
     -p, --pager                  Use a pager to page output
-    -m, --markdown               Display the raw markdown instead of rendering it
+    -r, --raw                    Display the raw markdown instead of rendering it
     -q, --quiet                  Suppress informational messages
         --show-paths             Show file and directory paths used by tealdeer
         --config-path            Show config file path
