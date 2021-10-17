@@ -56,6 +56,9 @@ const PAGER_COMMAND: &str = "less -R";
 #[clap(setting = AppSettings::ArgRequiredElseHelp)]
 #[clap(setting = AppSettings::HelpRequired)]
 #[clap(setting = AppSettings::DeriveDisplayOrder)]
+#[clap(
+    after_help = "To view the user documentation, please visit https://dbrgn.github.io/tealdeer/."
+)]
 struct Args {
     /// The command to show (e.g. `tar` or `git log`)
     #[clap(min_values = 1)]

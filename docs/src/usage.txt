@@ -26,3 +26,5 @@ OPTIONS:
         --color <WHEN>           Control whether to use color [always, auto, never]
     -v, --version                Print the version
     -h, --help                   Print help information
+
+To view the user documentation, please visit https://dbrgn.github.io/tealdeer/.
