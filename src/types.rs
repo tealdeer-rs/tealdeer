@@ -66,6 +66,12 @@ impl str::FromStr for ColorOptions {
     }
 }
 
+impl Default for ColorOptions {
+    fn default() -> Self {
+        Self::Auto
+    }
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum LineType {
     Empty,

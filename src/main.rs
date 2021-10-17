@@ -385,7 +385,7 @@ fn main() {
     #[cfg(not(target_os = "windows"))]
     let ansi_support = true;
 
-    let enable_styles = match args.color.unwrap_or(ColorOptions::Auto) {
+    let enable_styles = match args.color.unwrap_or_default() {
         // Attempt to use styling if instructed
         ColorOptions::Always => true,
         // Enable styling if:
