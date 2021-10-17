@@ -84,7 +84,7 @@ struct Args {
         short = 'p',
         long = "platform",
         requires = "command",
-        possible_values = ["linux", "osx", "sunos", "windows"],
+        possible_values = ["linux", "macos", "windows", "sunos", "osx"],
     )]
     platform: Option<PlatformType>,
 
@@ -93,7 +93,8 @@ struct Args {
         short = 'o',
         long = "os",
         requires = "command",
-        possible_values = ["linux", "osx", "sunos", "windows"],
+        possible_values = ["linux", "macos", "windows", "sunos", "osx"],
+        hide_possible_values = true,
     )]
     os: Option<PlatformType>,
 

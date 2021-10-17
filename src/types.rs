@@ -31,11 +31,11 @@ impl str::FromStr for PlatformType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "linux" => Ok(Self::Linux),
-            "osx" => Ok(Self::OsX),
+            "osx" | "macos" => Ok(Self::OsX),
             "sunos" => Ok(Self::SunOs),
             "windows" => Ok(Self::Windows),
             other => Err(format!(
-                "Unknown OS: {}. Possible values: linux, osx, sunos, windows",
+                "Unknown OS: {}. Possible values: linux, macos, osx, sunos, windows",
                 other
             )),
         }
