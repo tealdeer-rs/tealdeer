@@ -42,6 +42,42 @@ impl str::FromStr for OsType {
     }
 }
 
+impl OsType {
+    #[cfg(target_os = "linux")]
+    pub fn current() -> Self {
+        Self::Linux
+    }
+
+    #[cfg(any(
+        target_os = "macos",
+        target_os = "freebsd",
+        target_os = "netbsd",
+        target_os = "openbsd",
+        target_os = "dragonfly"
+    ))]
+    pub fn current() -> Self {
+        Self::OsX
+    }
+
+    #[cfg(target_os = "windows")]
+    pub fn current() -> Self {
+        Self::Windows
+    }
+
+    #[cfg(not(any(
+        target_os = "linux",
+        target_os = "macos",
+        target_os = "freebsd",
+        target_os = "netbsd",
+        target_os = "openbsd",
+        target_os = "dragonfly",
+        target_os = "windows"
+    )))]
+    pub fn current() -> Self {
+        Self::Other
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ColorOptions {

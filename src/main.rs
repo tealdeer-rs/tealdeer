@@ -292,40 +292,6 @@ fn init_log() {
 #[cfg(not(feature = "logging"))]
 fn init_log() {}
 
-#[cfg(target_os = "linux")]
-fn get_os() -> OsType {
-    OsType::Linux
-}
-
-#[cfg(any(
-    target_os = "macos",
-    target_os = "freebsd",
-    target_os = "netbsd",
-    target_os = "openbsd",
-    target_os = "dragonfly"
-))]
-fn get_os() -> OsType {
-    OsType::OsX
-}
-
-#[cfg(target_os = "windows")]
-fn get_os() -> OsType {
-    OsType::Windows
-}
-
-#[cfg(not(any(
-    target_os = "linux",
-    target_os = "macos",
-    target_os = "freebsd",
-    target_os = "netbsd",
-    target_os = "openbsd",
-    target_os = "dragonfly",
-    target_os = "windows"
-)))]
-fn get_os() -> OsType {
-    OsType::Other
-}
-
 fn get_languages(env_lang: Option<&str>, env_language: Option<&str>) -> Vec<String> {
     // Language list according to
     // https://github.com/tldr-pages/tldr/blob/master/CLIENT-SPECIFICATION.md#language
@@ -433,7 +399,7 @@ fn main() {
     // Specify target OS
     let os: OsType = match args.os {
         Some(os) => os,
-        None => get_os(),
+        None => OsType::current(),
     };
 
     // If a local file was passed in, render it and exit
