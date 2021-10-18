@@ -65,65 +65,70 @@ struct Args {
     command: Vec<String>,
 
     /// List all commands in the cache
-    #[clap(short, long)]
+    #[clap(short = 'l', long = "list")]
     list: bool,
 
     /// Render a specific markdown file
-    #[clap(short = 'f', long, value_name = "FILE", conflicts_with = "command")]
+    #[clap(
+        short = 'f',
+        long = "render",
+        value_name = "FILE",
+        conflicts_with = "command"
+    )]
     render: Option<PathBuf>,
 
     /// Override the operating system
-    #[clap(short, long, requires = "command", possible_values = &["linux", "osx", "sunos", "windows"])]
+    #[clap(short = 'o', long = "os", requires = "command", possible_values = &["linux", "osx", "sunos", "windows"])]
     os: Option<OsType>,
 
     /// Override the language
-    #[clap(short = 'L', long)]
+    #[clap(short = 'L', long = "language")]
     language: Option<String>,
 
     /// Update the local cache
-    #[clap(short, long)]
+    #[clap(short = 'u', long = "update")]
     update: bool,
 
     /// Clear the local cache
-    #[clap(short, long)]
+    #[clap(short = 'c', long = "clear-cache")]
     clear_cache: bool,
 
     /// Use a pager to page output
-    #[clap(short, long, requires = "command")]
+    #[clap(short = 'p', long = "pager", requires = "command")]
     pager: bool,
 
     /// Display the raw markdown instead of rendering it
-    #[clap(short, long, requires = "command")]
+    #[clap(short = 'r', long = "--raw", requires = "command")]
     raw: bool,
 
     /// Deprecated alias of `raw`
-    #[clap(short, long, requires = "command", hidden = true)]
+    #[clap(long = "markdown", short = 'm', requires = "command", hidden = true)]
     markdown: bool,
 
     /// Suppress informational messages
-    #[clap(short, long)]
+    #[clap(short = 'q', long = "quiet")]
     quiet: bool,
 
     /// Show file and directory paths used by tealdeer
-    #[clap(long)]
+    #[clap(long = "show-paths")]
     show_paths: bool,
 
     /// Show config file path
-    #[clap(long)]
+    #[clap(long = "config-path")]
     config_path: bool,
 
     /// Create a basic config
-    #[clap(long)]
+    #[clap(long = "seed-config")]
     seed_config: bool,
 
     /// Control whether to use color
-    #[clap(long, value_name = "WHEN", possible_values = &["always", "auto", "never"])]
+    #[clap(long = "color", value_name = "WHEN", possible_values = &["always", "auto", "never"])]
     color: Option<ColorOptions>,
 
     /// Print the version
     // Note: We override the version flag because clap uses `-V` by default,
     // while TLDR specification requires `-v` to be used.
-    #[clap(short, long)]
+    #[clap(short = 'v', long = "version")]
     version: bool,
 }
 
