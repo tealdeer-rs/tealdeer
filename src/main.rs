@@ -78,7 +78,12 @@ struct Args {
     render: Option<PathBuf>,
 
     /// Override the operating system
-    #[clap(short = 'o', long = "os", requires = "command", possible_values = &["linux", "osx", "sunos", "windows"])]
+    #[clap(
+        short = 'o',
+        long = "os",
+        requires = "command",
+        possible_values = ["linux", "osx", "sunos", "windows"]
+    )]
     os: Option<OsType>,
 
     /// Override the language
@@ -122,7 +127,11 @@ struct Args {
     seed_config: bool,
 
     /// Control whether to use color
-    #[clap(long = "color", value_name = "WHEN", possible_values = &["always", "auto", "never"])]
+    #[clap(
+        long = "color",
+        value_name = "WHEN",
+        possible_values = ["always", "auto", "never"]
+    )]
     color: Option<ColorOptions>,
 
     /// Print the version
