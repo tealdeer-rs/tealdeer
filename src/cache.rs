@@ -14,9 +14,9 @@ use walkdir::{DirEntry, WalkDir};
 use zip::ZipArchive;
 
 use crate::{
+    config::MAX_CACHE_AGE,
     error::TealdeerError::{self, CacheError, UpdateError},
     types::OsType,
-    config::MAX_CACHE_AGE,
 };
 
 static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";

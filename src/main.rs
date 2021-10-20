@@ -16,7 +16,11 @@
 #![allow(clippy::struct_excessive_bools)]
 #![allow(clippy::too_many_lines)]
 
-use std::{env, path::{Path, PathBuf}, process};
+use std::{
+    env,
+    path::{Path, PathBuf},
+    process,
+};
 
 use ansi_term::{Color, Style};
 use app_dirs::{get_app_root, AppDataType, AppInfo};
@@ -163,7 +167,9 @@ fn configure_pager() {
 fn should_update_cache(cache: &Cache, args: &Args, config: &Config) -> bool {
     args.update
         || (config.updates.auto_update
-            && cache.last_update().map_or(true, |ago| ago >= config.updates.auto_update_interval))
+            && cache
+                .last_update()
+                .map_or(true, |ago| ago >= config.updates.auto_update_interval))
 }
 
 #[derive(PartialEq)]
@@ -251,17 +257,11 @@ where
     let mut pages_dir = cache_dir.as_ref().to_path_buf();
     pages_dir.push(TLDR_PAGES_DIR);
     pages_dir.push(""); // Trailing path separator
-    let pages_dir = pages_dir
-        .to_str()
-        .unwrap_or("[Invalid]")
-    ;
+    let pages_dir = pages_dir.to_str().unwrap_or("[Invalid]");
 
     let mut cache_dir = cache_dir.as_ref().to_path_buf();
     cache_dir.push("");
-    let cache_dir = cache_dir
-        .to_str()
-        .unwrap_or("[Invalid]")
-    ;
+    let cache_dir = cache_dir.to_str().unwrap_or("[Invalid]");
 
     println!("Config dir:  {}", config_dir);
     println!("Config path: {}", config_path);
@@ -438,7 +438,7 @@ fn main() {
         Err(e) => {
             eprintln!("Failed to create cache: {}", e.message());
             process::exit(1);
-        },
+        }
     };
 
     if args.show_paths {
@@ -452,7 +452,7 @@ fn main() {
                 if !args.quiet {
                     eprintln!("Successfully deleted cache.");
                 }
-            },
+            }
             Err(e) => {
                 eprintln!("Could not delete cache: {}", e.message());
                 process::exit(1);
