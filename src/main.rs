@@ -477,10 +477,7 @@ fn main() {
     // List cached commands and exit
     if args.list {
         // Get list of pages
-        let pages = cache.list_pages().unwrap_or_else(|e| {
-            eprintln!("Could not get list of pages: {}", e.message());
-            process::exit(1);
-        });
+        let pages = cache.list_pages();
 
         // Print pages
         println!("{}", pages.join("\n"));

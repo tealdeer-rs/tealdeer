@@ -257,7 +257,7 @@ impl Cache {
     }
 
     /// Return the available pages.
-    pub fn list_pages(&self) -> Result<Vec<String>, TealdeerError> {
+    pub fn list_pages(&self) -> Vec<String> {
         // Determine platforms directory and platform
         let platforms_dir = self.cache_dir.join(TLDR_PAGES_DIR).join("pages");
         let platform_dir = self.get_platform_dir();
@@ -297,7 +297,7 @@ impl Cache {
             .collect::<Vec<String>>();
         pages.sort();
         pages.dedup();
-        Ok(pages)
+        pages
     }
 
     /// Delete the cache directory.
