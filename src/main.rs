@@ -419,6 +419,7 @@ fn main() {
     // Allow overriding the cache directory by setting the env variable.
     let cache_dir;
     if let Ok(value) = env::var(CACHE_DIR_ENV_VAR) {
+        eprintln!("Warning: The CACHE_DIR_ENV_VAR is deprecated, use the cache_dir option in the config file instead.");
         cache_dir = PathBuf::from(value);
     } else if let Some(value) = &config.directories.cache_dir {
         cache_dir = value.clone();
