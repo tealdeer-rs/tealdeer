@@ -57,6 +57,7 @@ static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
 // Note: flag names are specified explicitly in clap attributes
 // to improve readability and allow contributors to grep names like "clear-cache"
 #[derive(Parser, Debug)]
+#[allow(clippy::struct_excessive_bools)]
 #[clap(about = "A fast TLDR client", author, version)]
 #[clap(setting = AppSettings::ArgRequiredElseHelp)]
 #[clap(setting = AppSettings::HelpRequired)]
