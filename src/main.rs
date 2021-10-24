@@ -51,6 +51,8 @@ const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
 #[cfg(not(target_os = "windows"))]
 const PAGER_COMMAND: &str = "less -R";
 
+// Note: flag names are specified explicitly in clap attributes
+// to improve readability and allow contributors to grep names like "clear-cache"
 #[derive(Parser, Debug)]
 #[clap(about = "A fast TLDR client", author, version)]
 #[clap(setting = AppSettings::ArgRequiredElseHelp)]
@@ -75,10 +77,15 @@ struct Args {
         value_name = "FILE",
         conflicts_with = "command"
     )]
-    render: Option<String>,
+    render: Option<PathBuf>,
 
-    /// Override the operating system [linux, osx, sunos, windows]
-    #[clap(short = 'o', long = "os", requires = "command")]
+    /// Override the operating system
+    #[clap(
+        short = 'o',
+        long = "os",
+        requires = "command",
+        possible_values = ["linux", "osx", "sunos", "windows"]
+    )]
     os: Option<OsType>,
 
     /// Override the language
@@ -121,8 +128,12 @@ struct Args {
     #[clap(long = "seed-config")]
     seed_config: bool,
 
-    /// Control whether to use color [always, auto, never]
-    #[clap(long = "color", value_name = "WHEN")]
+    /// Control whether to use color
+    #[clap(
+        long = "color",
+        value_name = "WHEN",
+        possible_values = ["always", "auto", "never"]
+    )]
     color: Option<ColorOptions>,
 
     /// Print the version
@@ -406,8 +417,8 @@ fn main() {
     };
 
     // If a local file was passed in, render it and exit
-    if let Some(ref file) = args.render {
-        let path = PageLookupResult::with_page(PathBuf::from(file));
+    if let Some(file) = args.render {
+        let path = PageLookupResult::with_page(file);
         if let Err(msg) = print_page(&path, args.raw, &config) {
             eprintln!("{}", msg);
             process::exit(1);
