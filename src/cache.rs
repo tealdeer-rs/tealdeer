@@ -195,12 +195,12 @@ impl Cache {
     }
 
     /// Return the platform directory.
-    fn get_platform_dir(&self) -> Option<&'static str> {
+    fn get_platform_dir(&self) -> &'static str {
         match self.os {
-            OsType::Linux => Some("linux"),
-            OsType::OsX => Some("osx"),
-            OsType::SunOs => Some("sunos"),
-            OsType::Windows => Some("windows"),
+            OsType::Linux => "linux",
+            OsType::OsX => "osx",
+            OsType::SunOs => "sunos",
+            OsType::Windows => "windows",
         }
     }
 
@@ -266,12 +266,11 @@ impl Cache {
         let patch_path = Self::find_patch(&patch_filename, custom_pages_dir);
 
         // Try to find a platform specific path next, append custom patch to it.
-        if let Some(pf) = self.get_platform_dir() {
-            if let Some(page) =
-                Self::find_page_for_platform(&page_filename, &cache_dir, pf, &lang_dirs)
-            {
-                return Some(PageLookupResult::with_page(page).with_optional_patch(patch_path));
-            }
+        let platform_dir = self.get_platform_dir();
+        if let Some(page) =
+            Self::find_page_for_platform(&page_filename, &cache_dir, platform_dir, &lang_dirs)
+        {
+            return Some(PageLookupResult::with_page(page).with_optional_patch(patch_path));
         }
 
         // Did not find platform specific results, fall back to "common"
@@ -295,12 +294,7 @@ impl Cache {
                 None => return false,
             };
             if file_type.is_dir() {
-                if file_name == "common" {
-                    return true;
-                }
-                if let Some(platform) = platform_dir {
-                    return file_name == platform;
-                }
+                return file_name == "common" || file_name == platform_dir;
             } else if file_type.is_file() {
                 return true;
             }
