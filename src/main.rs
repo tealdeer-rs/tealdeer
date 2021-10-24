@@ -13,6 +13,7 @@
 #![allow(clippy::enum_glob_use)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::similar_names)]
+#![allow(clippy::struct_excessive_bools)]
 #![allow(clippy::too_many_lines)]
 
 use std::{env, path::PathBuf, process};
