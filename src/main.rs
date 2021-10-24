@@ -51,6 +51,8 @@ const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
 #[cfg(not(target_os = "windows"))]
 const PAGER_COMMAND: &str = "less -R";
 
+// Note: flag names are specified explicitly in clap attributes
+// to improve readability and allow contributors to grep names like "clear-cache"
 #[derive(Parser, Debug)]
 #[clap(about = "A fast TLDR client", author, version)]
 #[clap(setting = AppSettings::ArgRequiredElseHelp)]
