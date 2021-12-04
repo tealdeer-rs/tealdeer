@@ -312,7 +312,7 @@ impl Cache {
                 let extension = &path.extension().and_then(OsStr::to_str).unwrap_or("");
                 if e.file_type().is_file() && extension == &"md" {
                     path.file_stem()
-                        .and_then(|stem| stem.to_str().map(|s| s.into()))
+                        .and_then(|stem| stem.to_str().map(Into::into))
                 } else {
                     None
                 }
