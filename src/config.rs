@@ -75,6 +75,7 @@ struct RawStyle {
     pub italic: bool,
 }
 
+#[allow(clippy::derivable_impls)] // Explicitly control defaults
 impl Default for RawStyle {
     fn default() -> Self {
         Self {
