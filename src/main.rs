@@ -20,7 +20,7 @@ use std::{env, path::PathBuf, process};
 
 use app_dirs::AppInfo;
 use atty::Stream;
-use clap::{AppSettings, Parser};
+use clap::{AppSettings, ArgGroup, Parser};
 #[cfg(not(target_os = "windows"))]
 use pager::Pager;
 
@@ -61,6 +61,7 @@ const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
 #[clap(
     after_help = "To view the user documentation, please visit https://dbrgn.github.io/tealdeer/."
 )]
+#[clap(group = ArgGroup::new("command_or_file").args(&["command", "render"]))]
 struct Args {
     /// The command to show (e.g. `tar` or `git log`)
     #[clap(min_values = 1)]
@@ -83,7 +84,6 @@ struct Args {
     #[clap(
         short = 'p',
         long = "platform",
-        requires = "command",
         possible_values = ["linux", "macos", "windows", "sunos", "osx"],
     )]
     platform: Option<PlatformType>,
@@ -92,7 +92,6 @@ struct Args {
     #[clap(
         short = 'o',
         long = "os",
-        requires = "command",
         possible_values = ["linux", "macos", "windows", "sunos", "osx"],
         hide_possible_values = true,
     )]
@@ -111,15 +110,20 @@ struct Args {
     clear_cache: bool,
 
     /// Use a pager to page output
-    #[clap(long = "pager", requires = "command")]
+    #[clap(long = "pager", requires = "command_or_file")]
     pager: bool,
 
     /// Display the raw markdown instead of rendering it
-    #[clap(short = 'r', long = "--raw", requires = "command")]
+    #[clap(short = 'r', long = "--raw", requires = "command_or_file")]
     raw: bool,
 
     /// Deprecated alias of `raw`
-    #[clap(long = "markdown", short = 'm', requires = "command", hidden = true)]
+    #[clap(
+        long = "markdown",
+        short = 'm',
+        requires = "command_or_file",
+        hidden = true
+    )]
     markdown: bool,
 
     /// Suppress informational messages
