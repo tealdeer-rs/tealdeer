@@ -709,3 +709,34 @@ fn test_lowercased_page_lookup() {
     // Lookup `eyeD3`, should succeed as well
     testenv.command().args(["eyeD3"]).assert().success();
 }
+
+/// Regression test for #219: It should be possible to combine `--raw` and `-f`.
+#[test]
+fn test_raw_render_file() {
+    let testenv = TestEnv::new();
+
+    // Create input file
+    let file_path = testenv.input_dir.path().join("inkscape.md");
+    let mut file = File::create(&file_path).unwrap();
+    file.write_all(include_bytes!("inkscape-v1.md")).unwrap();
+
+    // Base args
+    let mut args = vec!["--color", "never", "-f", file_path.to_str().unwrap()];
+
+    // Default render
+    testenv
+        .command()
+        .args(&args)
+        .assert()
+        .success()
+        .stdout(diff(include_str!("inkscape-default-no-color.expected")));
+
+    // Raw render
+    args.push("--raw");
+    testenv
+        .command()
+        .args(&args)
+        .assert()
+        .success()
+        .stdout(diff(include_str!("inkscape-v1.md")));
+}
