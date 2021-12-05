@@ -80,22 +80,28 @@ struct Args {
     )]
     render: Option<PathBuf>,
 
-    /// Override the operating system
+    /// Override the operating system [possible values: linux, macos, windows, sunos, all]
     #[clap(
         short = 'p',
         long = "platform",
-        possible_values = ["linux", "macos", "windows", "sunos", "osx"],
+        possible_values = ["linux", "macos", "windows", "sunos", "osx", "current", "all"],
+        default_value = "current",
+        hide_possible_values = true,
+        hide_default_value = true,
     )]
-    platform: Option<PlatformType>,
+    platform: PlatformType,
 
     /// Deprecated alias of `platform`
     #[clap(
         short = 'o',
         long = "os",
-        possible_values = ["linux", "macos", "windows", "sunos", "osx"],
+        conflicts_with = "platform",
+        possible_values = ["linux", "macos", "windows", "sunos", "osx", "current", "all"],
+        default_value = "current",
         hide_possible_values = true,
+        hide_default_value = true,
     )]
-    os: Option<PlatformType>,
+    os: PlatformType,
 
     /// Override the language
     #[clap(short = 'L', long = "language")]
@@ -400,13 +406,14 @@ fn main() {
             "The -m / --markdown flag is deprecated, use -r / --raw instead",
         );
     }
-    if args.os.is_some() {
+    let default_platform = PlatformType::current(false);
+    if args.os != default_platform {
         print_warning(
             enable_styles,
             "The -o / --os flag is deprecated, use -p / --platform instead",
         );
+        args.platform = args.os;
     }
-    args.platform = args.platform.or(args.os);
 
     // Show config file and path, pass through
     if args.config_path {
@@ -442,9 +449,6 @@ fn main() {
         configure_pager(enable_styles);
     }
 
-    // Specify target OS
-    let platform: PlatformType = args.platform.unwrap_or_else(PlatformType::current);
-
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
         let path = PageLookupResult::with_page(file);
@@ -457,7 +461,7 @@ fn main() {
     }
 
     // Initialize cache
-    let cache = Cache::new(ARCHIVE_URL, platform);
+    let cache = Cache::new(ARCHIVE_URL, args.platform);
 
     // Clear cache, pass through
     if args.clear_cache {

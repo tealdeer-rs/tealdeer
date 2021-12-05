@@ -197,10 +197,10 @@ impl Cache {
     /// Return the platform directory.
     fn get_platform_dir(&self) -> &'static str {
         match self.platform {
-            PlatformType::Linux => "linux",
-            PlatformType::OsX => "osx",
-            PlatformType::SunOs => "sunos",
-            PlatformType::Windows => "windows",
+            PlatformType::Linux { .. } => "linux",
+            PlatformType::OsX { .. } => "osx",
+            PlatformType::SunOs { .. } => "sunos",
+            PlatformType::Windows { .. } => "windows",
         }
     }
 

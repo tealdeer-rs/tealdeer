@@ -8,19 +8,19 @@ use serde_derive::{Deserialize, Serialize};
 #[serde(rename_all = "lowercase")]
 #[allow(dead_code)]
 pub enum PlatformType {
-    Linux,
-    OsX,
-    SunOs,
-    Windows,
+    Linux { all: bool },
+    OsX { all: bool },
+    SunOs { all: bool },
+    Windows { all: bool },
 }
 
 impl fmt::Display for PlatformType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Linux => write!(f, "Linux"),
-            Self::OsX => write!(f, "macOS / BSD"),
-            Self::SunOs => write!(f, "SunOS"),
-            Self::Windows => write!(f, "Windows"),
+            Self::Linux { .. } => write!(f, "Linux"),
+            Self::OsX { .. } => write!(f, "macOS / BSD"),
+            Self::SunOs { .. } => write!(f, "SunOS"),
+            Self::Windows { .. } => write!(f, "Windows"),
         }
     }
 }
@@ -30,12 +30,14 @@ impl str::FromStr for PlatformType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "linux" => Ok(Self::Linux),
-            "osx" | "macos" => Ok(Self::OsX),
-            "sunos" => Ok(Self::SunOs),
-            "windows" => Ok(Self::Windows),
+            "linux" => Ok(Self::Linux { all: false }),
+            "osx" | "macos" => Ok(Self::OsX { all: false }),
+            "windows" => Ok(Self::Windows { all: false }),
+            "sunos" => Ok(Self::SunOs { all: false }),
+            "current" => Ok(PlatformType::current(false)),
+            "all" => Ok(PlatformType::current(true)),
             other => Err(format!(
-                "Unknown OS: {}. Possible values: linux, macos, osx, sunos, windows",
+                "Unknown platform: {}. Possible values: linux, macos, osx, windows, sunos, current, all",
                 other
             )),
         }
@@ -44,8 +46,8 @@ impl str::FromStr for PlatformType {
 
 impl PlatformType {
     #[cfg(target_os = "linux")]
-    pub fn current() -> Self {
-        Self::Linux
+    pub fn current(all: bool) -> Self {
+        Self::Linux { all }
     }
 
     #[cfg(any(
@@ -55,13 +57,13 @@ impl PlatformType {
         target_os = "openbsd",
         target_os = "dragonfly"
     ))]
-    pub fn current() -> Self {
-        Self::OsX
+    pub fn current(all: bool) -> Self {
+        Self::OsX { all }
     }
 
     #[cfg(target_os = "windows")]
-    pub fn current() -> Self {
-        Self::Windows
+    pub fn current(all: bool) -> Self {
+        Self::Windows { all }
     }
 
     #[cfg(not(any(
@@ -73,8 +75,8 @@ impl PlatformType {
         target_os = "dragonfly",
         target_os = "windows"
     )))]
-    pub fn current() -> Self {
-        Self::Other
+    pub fn current(all: bool) -> Self {
+        Self::Other { all }
     }
 }
 
