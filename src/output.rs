@@ -11,14 +11,33 @@ use crate::{
     line_iterator::LineIterator,
 };
 
+// Set up display pager
+#[cfg(not(target_os = "windows"))]
+fn configure_pager(_: bool) {
+    pager::Pager::with_default_pager("less -R").setup();
+}
+
+#[cfg(target_os = "windows")]
+fn configure_pager(enable_styles: bool) {
+    use crate::utils::print_warning;
+    print_warning(enable_styles, "--pager flag not available on Windows!");
+}
+
 /// Print page by path
 pub fn print_page(
     lookup_result: &PageLookupResult,
     enable_markdown: bool,
+    enable_styles: bool,
+    use_pager: bool,
     config: &Config,
 ) -> Result<()> {
     // Create reader from file(s)
     let reader = lookup_result.reader()?;
+
+    // Configure pager if applicable
+    if use_pager || config.display.use_pager {
+        configure_pager(enable_styles);
+    }
 
     // Lock stdout only once, this improves performance considerably
     let stdout = io::stdout();

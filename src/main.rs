@@ -21,8 +21,6 @@ use std::{env, path::PathBuf, process};
 use app_dirs::AppInfo;
 use atty::Stream;
 use clap::{AppSettings, ArgGroup, Parser};
-#[cfg(not(target_os = "windows"))]
-use pager::Pager;
 
 mod cache;
 mod config;
@@ -153,17 +151,6 @@ struct Args {
     // while TLDR specification requires `-v` to be used.
     #[clap(short = 'v', long = "version")]
     version: bool,
-}
-
-/// Set up display pager
-#[cfg(not(target_os = "windows"))]
-fn configure_pager(_: bool) {
-    Pager::with_default_pager("less -R").setup();
-}
-
-#[cfg(target_os = "windows")]
-fn configure_pager(enable_styles: bool) {
-    print_warning(enable_styles, "--pager flag not available on Windows!");
 }
 
 /// The cache should get updated if this was requested by the user, or if auto
@@ -412,11 +399,6 @@ fn main() {
         }
     };
 
-    // Set up pager
-    if args.pager || config.display.use_pager {
-        configure_pager(enable_styles);
-    }
-
     // Show various paths
     if args.show_paths {
         show_paths(&config);
@@ -433,7 +415,7 @@ fn main() {
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
         let path = PageLookupResult::with_page(file);
-        if let Err(ref e) = print_page(&path, args.raw, &config) {
+        if let Err(ref e) = print_page(&path, args.raw, enable_styles, args.pager, &config) {
             print_error(enable_styles, e);
             process::exit(1);
         } else {
@@ -496,7 +478,9 @@ fn main() {
             &languages,
             config.directories.custom_pages_dir.as_deref(),
         ) {
-            if let Err(ref e) = print_page(&lookup_result, args.raw, &config) {
+            if let Err(ref e) =
+                print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)
+            {
                 print_error(enable_styles, e);
                 process::exit(1);
             }
