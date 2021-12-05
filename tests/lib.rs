@@ -524,6 +524,40 @@ fn test_list_flag_rendering() {
 }
 
 #[test]
+fn test_list_platform_filtering() {
+    let testenv = TestEnv::new();
+
+    testenv.add_os_entry("common", "a-common", "");
+    testenv.add_os_entry("windows", "a-windows", "");
+    testenv.add_os_entry("linux", "a-linux", "");
+    testenv.add_os_entry("linux", "b-linux", "");
+
+    // Filter: linux
+    testenv
+        .command()
+        .args(["--list", "--platform", "linux"])
+        .assert()
+        .success()
+        .stdout("a-common\na-linux\nb-linux\n");
+
+    // Filter: windows
+    testenv
+        .command()
+        .args(["--list", "--platform", "windows"])
+        .assert()
+        .success()
+        .stdout("a-common\na-windows\n");
+
+    // Filter: all
+    testenv
+        .command()
+        .args(["--list", "--platform", "all"])
+        .assert()
+        .success()
+        .stdout("a-common\na-linux\na-windows\nb-linux\n");
+}
+
+#[test]
 fn test_autoupdate_cache() {
     let testenv = TestEnv::new();
 

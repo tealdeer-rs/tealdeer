@@ -305,7 +305,7 @@ impl Cache {
         let mut pages = WalkDir::new(platforms_dir)
             .min_depth(1) // Skip root directory
             .into_iter()
-            .filter_entry(|e| should_walk(e)) // Filter out pages for other architectures
+            .filter_entry(|e| self.platform.is_all() || should_walk(e)) // Filter out pages for other architectures
             .filter_map(Result::ok) // Convert results to options, filter out errors
             .filter_map(|e| {
                 let path = e.path();

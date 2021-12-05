@@ -78,6 +78,19 @@ impl PlatformType {
     pub fn current(all: bool) -> Self {
         Self::Other { all }
     }
+
+    /// Return whether or not the `all` flag is set.
+    ///
+    /// This flag is only relevant when listing pages: When `all` is set to
+    /// `true`, then the pages for all platforms should be listed.
+    pub fn is_all(self) -> bool {
+        match self {
+            Self::Linux { all }
+            | Self::OsX { all }
+            | Self::SunOs { all }
+            | Self::Windows { all } => all,
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Deserialize)]
