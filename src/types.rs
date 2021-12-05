@@ -7,14 +7,14 @@ use serde_derive::{Deserialize, Serialize};
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[allow(dead_code)]
-pub enum OsType {
+pub enum PlatformType {
     Linux,
     OsX,
     SunOs,
     Windows,
 }
 
-impl fmt::Display for OsType {
+impl fmt::Display for PlatformType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Linux => write!(f, "Linux"),
@@ -25,7 +25,7 @@ impl fmt::Display for OsType {
     }
 }
 
-impl str::FromStr for OsType {
+impl str::FromStr for PlatformType {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -42,7 +42,7 @@ impl str::FromStr for OsType {
     }
 }
 
-impl OsType {
+impl PlatformType {
     #[cfg(target_os = "linux")]
     pub fn current() -> Self {
         Self::Linux
