@@ -13,10 +13,9 @@ ARGS:
 OPTIONS:
     -l, --list                   List all commands in the cache
     -f, --render <FILE>          Render a specific markdown file
-    -p, --platform <PLATFORM>    Override the operating system [possible values: linux, osx, sunos,
-                                 windows]
-    -o, --os <OS>                Deprecated alias of `platform` [possible values: linux, osx, sunos,
-                                 windows]
+    -p, --platform <PLATFORM>    Override the operating system [possible values: linux, macos,
+                                 windows, sunos, osx]
+    -o, --os <OS>                Deprecated alias of `platform`
     -L, --language <LANGUAGE>    Override the language
     -u, --update                 Update the local cache
     -c, --clear-cache            Clear the local cache
