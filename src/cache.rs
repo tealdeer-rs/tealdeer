@@ -16,7 +16,7 @@ use zip::ZipArchive;
 
 use crate::{
     error::TealdeerError::{self, CacheError, UpdateError},
-    types::{PathSource, PlatformType},
+    types::{PathSource, PlatformStrategy, PlatformType},
 };
 
 static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
@@ -27,7 +27,7 @@ static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 #[derive(Debug)]
 pub struct Cache {
     url: String,
-    platform: PlatformType,
+    platform: PlatformStrategy,
 }
 
 #[derive(Debug)]
@@ -64,7 +64,7 @@ pub enum CacheFreshness {
 }
 
 impl Cache {
-    pub fn new<S>(url: S, platform: PlatformType) -> Self
+    pub fn new<S>(url: S, platform: PlatformStrategy) -> Self
     where
         S: Into<String>,
     {
@@ -196,7 +196,7 @@ impl Cache {
 
     /// Return the platform directory.
     fn get_platform_dir(&self) -> &'static str {
-        match self.platform {
+        match self.platform.platform_type {
             PlatformType::Linux { .. } => "linux",
             PlatformType::OsX { .. } => "osx",
             PlatformType::SunOs { .. } => "sunos",
@@ -305,7 +305,7 @@ impl Cache {
         let mut pages = WalkDir::new(platforms_dir)
             .min_depth(1) // Skip root directory
             .into_iter()
-            .filter_entry(|e| self.platform.is_all() || should_walk(e)) // Filter out pages for other architectures
+            .filter_entry(|e| self.platform.list_all || should_walk(e)) // Filter out pages for other architectures
             .filter_map(Result::ok) // Convert results to options, filter out errors
             .filter_map(|e| {
                 let path = e.path();

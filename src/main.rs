@@ -40,7 +40,7 @@ use crate::{
     error::TealdeerError::ConfigError,
     extensions::Dedup,
     output::print_page,
-    types::{ColorOptions, PlatformType},
+    types::{ColorOptions, PlatformStrategy, PlatformType},
     utils::{print_error, print_warning},
 };
 
@@ -89,7 +89,7 @@ struct Args {
         hide_possible_values = true,
         hide_default_value = true,
     )]
-    platform: PlatformType,
+    platform: PlatformStrategy,
 
     /// Deprecated alias of `platform`
     #[clap(
@@ -101,7 +101,7 @@ struct Args {
         hide_possible_values = true,
         hide_default_value = true,
     )]
-    os: PlatformType,
+    os: PlatformStrategy,
 
     /// Override the language
     #[clap(short = 'L', long = "language")]
@@ -406,8 +406,8 @@ fn main() {
             "The -m / --markdown flag is deprecated, use -r / --raw instead",
         );
     }
-    let default_platform = PlatformType::current(false);
-    if args.os != default_platform {
+    let default_platform = PlatformType::current();
+    if args.os.platform_type != default_platform || args.os.list_all {
         print_warning(
             enable_styles,
             "The -o / --os flag is deprecated, use -p / --platform instead",
