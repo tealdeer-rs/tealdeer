@@ -690,3 +690,22 @@ fn test_pager_warning() {
         .success()
         .stderr(contains("pager flag not available on Windows"));
 }
+
+/// Ensure that page lookup is case insensitive, so a page lookup for `eyed3`
+/// and `eyeD3` should return the same page.
+#[test]
+fn test_lowercased_page_lookup() {
+    let testenv = TestEnv::new();
+
+    // Lookup `eyed3`, initially fails
+    testenv.command().args(["eyed3"]).assert().failure();
+
+    // Add entry
+    testenv.add_entry("eyed3", "contents");
+
+    // Lookup `eyed3` again
+    testenv.command().args(["eyed3"]).assert().success();
+
+    // Lookup `eyeD3`, should succeed as well
+    testenv.command().args(["eyeD3"]).assert().success();
+}

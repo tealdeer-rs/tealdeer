@@ -493,7 +493,10 @@ fn main() {
 
     // Show command from cache
     if !args.command.is_empty() {
-        let command = args.command.join("-");
+        // Note: According to the TLDR client spec, page names must be transparently
+        // lowercased before lookup:
+        // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#page-names
+        let command = args.command.join("-").to_lowercase();
 
         let languages = args
             .language
