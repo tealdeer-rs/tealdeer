@@ -291,13 +291,17 @@ impl Config {
         // Load raw config
         let raw_config: RawConfig = if config_file_path.exists() && config_file_path.is_file() {
             let mut config_file =
-                fs::File::open(config_file_path).map_err(map_io_err_to_config_err)?;
+                fs::File::open(&config_file_path).map_err(map_io_err_to_config_err)?;
             let mut contents = String::new();
             let _ = config_file
                 .read_to_string(&mut contents)
                 .map_err(map_io_err_to_config_err)?;
-            toml::from_str(&contents)
-                .map_err(|err| ConfigError(format!("Failed to parse config file: {}", err)))?
+            toml::from_str(&contents).map_err(|err| {
+                ConfigError(format!(
+                    "Failed to parse config file at {:?}:\n{}",
+                    config_file_path, err
+                ))
+            })?
         } else {
             RawConfig::new()
         };
