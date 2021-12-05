@@ -182,12 +182,14 @@ ARGS:
 OPTIONS:
     -l, --list                   List all commands in the cache
     -f, --render &lt;FILE&gt;          Render a specific markdown file
-    -o, --os &lt;OS&gt;                Override the operating system [possible values: linux, osx, sunos,
+    -p, --platform &lt;PLATFORM&gt;    Override the operating system [possible values: linux, osx, sunos,
+                                 windows]
+    -o, --os &lt;OS&gt;                Deprecated alias of `platform` [possible values: linux, osx, sunos,
                                  windows]
     -L, --language &lt;LANGUAGE&gt;    Override the language
     -u, --update                 Update the local cache
     -c, --clear-cache            Clear the local cache
-    -p, --pager                  Use a pager to page output
+        --pager                  Use a pager to page output
     -r, --raw                    Display the raw markdown instead of rendering it
     -q, --quiet                  Suppress informational messages
         --show-paths             Show file and directory paths used by tealdeer
