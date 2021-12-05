@@ -160,7 +160,7 @@ fn configure_pager(_: bool) {
 
 #[cfg(target_os = "windows")]
 fn configure_pager(enable_styles: bool) {
-    print_warning(enable_styles, "-p / --pager flag not available on Windows!");
+    print_warning(enable_styles, "--pager flag not available on Windows!");
 }
 
 /// The cache should get updated if this was requested by the user, or if auto
