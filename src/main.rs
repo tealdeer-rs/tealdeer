@@ -57,6 +57,7 @@ const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
 #[clap(about = "A fast TLDR client", author, version)]
 #[clap(setting = AppSettings::ArgRequiredElseHelp)]
 #[clap(setting = AppSettings::DeriveDisplayOrder)]
+#[clap(setting = AppSettings::DisableColoredHelp)]
 #[clap(
     after_help = "To view the user documentation, please visit https://dbrgn.github.io/tealdeer/."
 )]
