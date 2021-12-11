@@ -92,7 +92,7 @@ struct Args {
         short = 'o',
         long = "os",
         possible_values = ["linux", "macos", "windows", "sunos", "osx"],
-        hide_possible_values = true,
+        hide = true
     )]
     os: Option<PlatformType>,
 
