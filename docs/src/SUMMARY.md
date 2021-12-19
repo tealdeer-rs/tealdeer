@@ -8,3 +8,4 @@
   - [Section: \[display\]](./config_display.md)
   - [Section: \[style\]](./config_style.md)
   - [Section: \[updates\]](./config_updates.md)
+  - [Section: \[directories\]](./config_directories.md)
