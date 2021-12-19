@@ -1,4 +1,4 @@
-# display
+# Section: \[display\]
 
 In the `display` section you can configure the output format.
 
