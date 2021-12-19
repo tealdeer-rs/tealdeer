@@ -173,7 +173,10 @@ impl Default for RawDirectoriesConfig {
     fn default() -> Self {
         Self {
             custom_pages_dir: get_app_root(AppDataType::UserData, &crate::APP_INFO)
-                .map(|path| path.join("pages"))
+                .map(|path| {
+                    // Note: The `join("")` call ensures that there's a trailing slash
+                    path.join("pages").join("")
+                })
                 .ok(),
         }
     }
