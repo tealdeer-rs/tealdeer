@@ -257,7 +257,7 @@ fn show_config_path(enable_styles: bool) {
 }
 
 /// Show file paths
-fn show_paths() {
+fn show_paths(config: &Config) {
     let config_dir = get_config_dir().map_or_else(
         |e| format!("[Error: {}]", e),
         |(mut path, source)| {
@@ -289,13 +289,21 @@ fn show_paths() {
             path.push(""); // Trailing path separator
             path.into_os_string()
                 .into_string()
-                .unwrap_or_else(|_| String::from("[Invalid]"))
+                .unwrap_or_else(|_| "[Invalid]".to_string())
         },
     );
-    println!("Config dir:  {}", config_dir);
-    println!("Config path: {}", config_path);
-    println!("Cache dir:   {}", cache_dir);
-    println!("Pages dir:   {}", pages_dir);
+    let custom_pages_dir = config.directories.custom_pages_dir.as_deref().map_or_else(
+        || "[None]".to_string(),
+        |path| {
+            path.to_str()
+                .map_or_else(|| "[Invalid]".to_string(), ToString::to_string)
+        },
+    );
+    println!("Config dir:       {}", config_dir);
+    println!("Config path:      {}", config_path);
+    println!("Cache dir:        {}", cache_dir);
+    println!("Pages dir:        {}", pages_dir);
+    println!("Custom pages dir: {}", custom_pages_dir);
 }
 
 /// Create seed config file and exit
@@ -416,14 +424,6 @@ fn main() {
         );
         show_config_path(enable_styles);
     }
-    if args.show_paths {
-        show_paths();
-    }
-
-    // Create a basic config and exit
-    if args.seed_config {
-        create_config_and_exit(enable_styles);
-    }
 
     // Look up config file, if none is found fall back to default config.
     let config = match Config::load(enable_styles) {
@@ -438,8 +438,19 @@ fn main() {
         }
     };
 
+    // Set up pager
     if args.pager || config.display.use_pager {
         configure_pager(enable_styles);
+    }
+
+    // Show various paths
+    if args.show_paths {
+        show_paths(&config);
+    }
+
+    // Create a basic config and exit
+    if args.seed_config {
+        create_config_and_exit(enable_styles);
     }
 
     // Specify target OS

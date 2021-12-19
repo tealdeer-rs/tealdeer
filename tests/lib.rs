@@ -284,17 +284,18 @@ fn test_setup_seed_config() {
 fn test_show_paths() {
     let testenv = TestEnv::new();
 
+    // Show general commands
     testenv
         .command()
         .args(["--show-paths"])
         .assert()
         .success()
         .stdout(contains(format!(
-            "Config dir:  {}",
+            "Config dir:       {}",
             testenv.config_dir.path().to_str().unwrap(),
         )))
         .stdout(contains(format!(
-            "Config path: {}",
+            "Config path:      {}",
             testenv
                 .config_dir
                 .path()
@@ -303,17 +304,34 @@ fn test_show_paths() {
                 .unwrap(),
         )))
         .stdout(contains(format!(
-            "Cache dir:   {}",
+            "Cache dir:        {}",
             testenv.cache_dir.path().to_str().unwrap(),
         )))
         .stdout(contains(format!(
-            "Pages dir:   {}",
+            "Pages dir:        {}",
             testenv
                 .cache_dir
                 .path()
                 .join(TLDR_PAGES_DIR)
                 .to_str()
                 .unwrap(),
+        )));
+
+    // Set custom pages directory
+    testenv.write_config(format!(
+        "[directories]\ncustom_pages_dir = '{}'",
+        testenv.custom_pages_dir.path().to_str().unwrap()
+    ));
+
+    // Now ensure that this path is contained in the output
+    testenv
+        .command()
+        .args(["--show-paths"])
+        .assert()
+        .success()
+        .stdout(contains(format!(
+            "Custom pages dir: {}",
+            testenv.custom_pages_dir.path().to_str().unwrap(),
         )));
 }
 
