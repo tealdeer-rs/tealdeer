@@ -4,7 +4,9 @@
 
 - [Installing](./installing.md)
 - [Usage](./usage.md)
+  - [Custom Pages](./usage_custom_pages.md)
 - [Configuration](./config.md)
-  - [display](./config_display.md)
-  - [style](./config_style.md)
-  - [updates](./config_updates.md)
+  - [Section: \[display\]](./config_display.md)
+  - [Section: \[style\]](./config_style.md)
+  - [Section: \[updates\]](./config_updates.md)
+  - [Section: \[directories\]](./config_directories.md)

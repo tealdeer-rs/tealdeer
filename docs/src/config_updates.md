@@ -1,4 +1,4 @@
-# updates
+# Section: \[updates\]
 
 ## Automatic updates
 

@@ -1,4 +1,4 @@
-# style
+# Section: \[style\]
 
 Using the config file, the style (e.g. colors or underlines) can be customized.
 
