@@ -4,7 +4,7 @@ Tealdeer allows creating new custom pages, overriding existing pages as well as
 extending existing pages.
 
 The directory, where these custom pages and patches can be placed, follows OS
-conventions. On Linux, for example, the default location is
+conventions. On Linux for instance, the default location is
 `~/.local/share/tealdeer/pages/`. To print the path used on your system, simply
 run `tldr --show-paths`.
 
@@ -32,6 +32,9 @@ Sometimes you don't want to fully replace an existing upstream page, but just
 want to extend it with your own examples that you frequently need. In this
 case, use a file called `<command>.patch`, it will be appended to existing
 pages.
+
+> **Note:** Because the patch file will be concatenated directly to the page
+> file, it needs to start with an empty line.
 
 Path:
 
