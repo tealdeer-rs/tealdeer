@@ -387,4 +387,55 @@ impl Cache {
 /// Unit Tests for cache module
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    use std::{
+        fs::File,
+        io::{Read, Write},
+    };
+
+    #[test]
+    fn test_reader_with_patch() {
+        // Write test files
+        let dir = tempfile::tempdir().unwrap();
+        let page_path = dir.path().join("test.page");
+        let patch_path = dir.path().join("test.patch");
+        {
+            let mut f1 = File::create(&page_path).unwrap();
+            f1.write_all(b"Hello\n").unwrap();
+            let mut f2 = File::create(&patch_path).unwrap();
+            f2.write_all(b"World").unwrap();
+        }
+
+        // Create chained reader from lookup result
+        let lr = PageLookupResult::with_page(page_path).with_optional_patch(Some(patch_path));
+        let mut reader = lr.reader().unwrap();
+
+        // Read into a Vec
+        let mut buf = Vec::new();
+        reader.read_to_end(&mut buf).unwrap();
+
+        assert_eq!(&buf, b"Hello\nWorld");
+    }
+
+    #[test]
+    fn test_reader_without_patch() {
+        // Write test file
+        let dir = tempfile::tempdir().unwrap();
+        let page_path = dir.path().join("test.page");
+        {
+            let mut f = File::create(&page_path).unwrap();
+            f.write_all(b"Hello").unwrap();
+        }
+
+        // Create chained reader from lookup result
+        let lr = PageLookupResult::with_page(page_path);
+        let mut reader = lr.reader().unwrap();
+
+        // Read into a Vec
+        let mut buf = Vec::new();
+        reader.read_to_end(&mut buf).unwrap();
+
+        assert_eq!(&buf, b"Hello");
+    }
 }
