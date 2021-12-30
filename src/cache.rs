@@ -1,9 +1,8 @@
 use std::{
     env,
     ffi::OsStr,
-    fs,
-    io::{Cursor, Read, Seek},
-    iter,
+    fs::{self, File},
+    io::{BufReader, Cursor, Read, Seek},
     path::{Path, PathBuf},
 };
 
@@ -32,8 +31,8 @@ pub struct Cache {
 
 #[derive(Debug)]
 pub struct PageLookupResult {
-    page_path: PathBuf,
-    patch_path: Option<PathBuf>,
+    pub page_path: PathBuf,
+    pub patch_path: Option<PathBuf>,
 }
 
 impl PageLookupResult {
@@ -49,8 +48,36 @@ impl PageLookupResult {
         self
     }
 
-    pub fn paths(&self) -> impl Iterator<Item = &Path> {
-        iter::once(self.page_path.as_path()).chain(self.patch_path.as_deref())
+    /// Create a buffered reader that sequentially reads from the page and the
+    /// patch, as if they were concatenated.
+    ///
+    /// This will return an error if either the page file or the patch file
+    /// cannot be opened.
+    pub fn reader(&self) -> Result<BufReader<Box<dyn Read>>, String> {
+        // Open page file
+        let page_file = File::open(&self.page_path)
+            .map_err(|msg| format!("Could not open page file at {:?}: {}", self.page_path, msg))?;
+
+        // Open patch file
+        let patch_file_opt = match &self.patch_path {
+            Some(path) => Some(
+                File::open(path)
+                    .map_err(|msg| format!("Could not open patch file at {:?}: {}", path, msg))?,
+            ),
+            None => None,
+        };
+
+        // Create chained reader from file(s)
+        //
+        // Note: It might be worthwhile to create our own struct that accepts
+        // the page and patch files and that will read them sequentially,
+        // because it avoids the boxing below. However, the performance impact
+        // would first need to be shown to be significant using a benchmark.
+        Ok(BufReader::new(if let Some(patch_file) = patch_file_opt {
+            Box::new(page_file.chain(&b"\n"[..]).chain(patch_file)) as Box<dyn Read>
+        } else {
+            Box::new(page_file) as Box<dyn Read>
+        }))
     }
 }
 
@@ -362,21 +389,53 @@ impl Cache {
 mod tests {
     use super::*;
 
+    use std::{
+        fs::File,
+        io::{Read, Write},
+    };
+
     #[test]
-    fn test_page_lookup_result_iter_with_patch() {
-        let lookup = PageLookupResult::with_page(PathBuf::from("test.page"))
-            .with_optional_patch(Some(PathBuf::from("test.patch")));
-        let mut iter = lookup.paths();
-        assert_eq!(iter.next(), Some(Path::new("test.page")));
-        assert_eq!(iter.next(), Some(Path::new("test.patch")));
-        assert_eq!(iter.next(), None);
+    fn test_reader_with_patch() {
+        // Write test files
+        let dir = tempfile::tempdir().unwrap();
+        let page_path = dir.path().join("test.page");
+        let patch_path = dir.path().join("test.patch");
+        {
+            let mut f1 = File::create(&page_path).unwrap();
+            f1.write_all(b"Hello\n").unwrap();
+            let mut f2 = File::create(&patch_path).unwrap();
+            f2.write_all(b"World").unwrap();
+        }
+
+        // Create chained reader from lookup result
+        let lr = PageLookupResult::with_page(page_path).with_optional_patch(Some(patch_path));
+        let mut reader = lr.reader().unwrap();
+
+        // Read into a Vec
+        let mut buf = Vec::new();
+        reader.read_to_end(&mut buf).unwrap();
+
+        assert_eq!(&buf, b"Hello\n\nWorld");
     }
 
     #[test]
-    fn test_page_lookup_result_iter_no_patch() {
-        let lookup = PageLookupResult::with_page(PathBuf::from("test.page"));
-        let mut iter = lookup.paths();
-        assert_eq!(iter.next(), Some(Path::new("test.page")));
-        assert_eq!(iter.next(), None);
+    fn test_reader_without_patch() {
+        // Write test file
+        let dir = tempfile::tempdir().unwrap();
+        let page_path = dir.path().join("test.page");
+        {
+            let mut f = File::create(&page_path).unwrap();
+            f.write_all(b"Hello\n").unwrap();
+        }
+
+        // Create chained reader from lookup result
+        let lr = PageLookupResult::with_page(page_path);
+        let mut reader = lr.reader().unwrap();
+
+        // Read into a Vec
+        let mut buf = Vec::new();
+        reader.read_to_end(&mut buf).unwrap();
+
+        assert_eq!(&buf, b"Hello\n");
     }
 }

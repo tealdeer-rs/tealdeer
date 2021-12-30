@@ -514,17 +514,18 @@ fn main() {
         // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#page-names
         let command = args.command.join("-").to_lowercase();
 
+        // Collect languages
         let languages = args
             .language
             .map_or_else(get_languages_from_env, |lang| vec![lang]);
 
         // Search for command in cache
-        if let Some(page) = cache.find_page(
+        if let Some(lookup_result) = cache.find_page(
             &command,
             &languages,
             config.directories.custom_pages_dir.as_deref(),
         ) {
-            if let Err(msg) = print_page(&page, args.raw, &config) {
+            if let Err(msg) = print_page(&lookup_result, args.raw, &config) {
                 print_error(enable_styles, &msg);
                 process::exit(1);
             }
