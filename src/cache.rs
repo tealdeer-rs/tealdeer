@@ -74,7 +74,7 @@ impl PageLookupResult {
         // because it avoids the boxing below. However, the performance impact
         // would first need to be shown to be significant using a benchmark.
         Ok(BufReader::new(if let Some(patch_file) = patch_file_opt {
-            Box::new(page_file.chain(patch_file)) as Box<dyn Read>
+            Box::new(page_file.chain(&b"\n"[..]).chain(patch_file)) as Box<dyn Read>
         } else {
             Box::new(page_file) as Box<dyn Read>
         }))
@@ -415,7 +415,7 @@ mod tests {
         let mut buf = Vec::new();
         reader.read_to_end(&mut buf).unwrap();
 
-        assert_eq!(&buf, b"Hello\nWorld");
+        assert_eq!(&buf, b"Hello\n\nWorld");
     }
 
     #[test]
@@ -425,7 +425,7 @@ mod tests {
         let page_path = dir.path().join("test.page");
         {
             let mut f = File::create(&page_path).unwrap();
-            f.write_all(b"Hello").unwrap();
+            f.write_all(b"Hello\n").unwrap();
         }
 
         // Create chained reader from lookup result
@@ -436,6 +436,6 @@ mod tests {
         let mut buf = Vec::new();
         reader.read_to_end(&mut buf).unwrap();
 
-        assert_eq!(&buf, b"Hello");
+        assert_eq!(&buf, b"Hello\n");
     }
 }
