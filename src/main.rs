@@ -340,7 +340,7 @@ fn init_log() {}
 
 fn get_languages(env_lang: Option<&str>, env_language: Option<&str>) -> Vec<String> {
     // Language list according to
-    // https://github.com/tldr-pages/tldr/blob/master/CLIENT-SPECIFICATION.md#language
+    // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#language
 
     if env_lang.is_none() {
         return vec!["en".to_string()];

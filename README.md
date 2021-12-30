@@ -120,13 +120,13 @@ Thanks to @severen for coming up with the name "tealdeer"!
 [outfieldr-gh]: https://gitlab.com/ve-nt/outfieldr
 [python-gh]: https://github.com/tldr-pages/tldr-python-client
 
-[benchmark-dockerfile]: https://github.com/dbrgn/tealdeer/blob/master/benchmarks/Dockerfile
+[benchmark-dockerfile]: https://github.com/dbrgn/tealdeer/blob/main/benchmarks/Dockerfile
 [client-spec]: https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md
 [hyperfine-gh]: https://github.com/sharkdp/hyperfine
 [outfieldr-comment-tls]: https://github.com/dbrgn/tealdeer/issues/129#issuecomment-833596765
 
 <!-- Badges -->
-[github-actions]: https://github.com/dbrgn/tealdeer/actions?query=branch%3Amaster
+[github-actions]: https://github.com/dbrgn/tealdeer/actions?query=branch%3Amain
 [github-actions-badge]: https://github.com/dbrgn/tealdeer/workflows/CI/badge.svg
 [crates-io]: https://crates.io/crates/tealdeer
 [crates-io-badge]: https://img.shields.io/crates/v/tealdeer.svg
