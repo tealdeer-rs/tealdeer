@@ -1,0 +1,147 @@
+on:
+  push:
+    tags:
+      - "v*" # push events to matching v*, i.e. v1.0, v20.15.10
+
+jobs:
+  create-release:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Create release for tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          source ./scripts/upload-asset.sh
+          # Create:      <token>                     <repo>                   <tag>
+          create_release ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} ${GITHUB_REF#refs/*/} "Tealdeer version ${GITHUB_REF#refs/*/v}.\n\nFor the full changelog, see https://github.com/dbrgn/tealdeer/blob/main/CHANGELOG.md.\n\nBinaries were generated automatically in CI, and are therefore unsigned. For a fully trusted release, please build from source."
+
+  upload-completions:
+    needs:
+      - create-release
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        target: ["bash", "fish", "zsh"]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Upload completion
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          source ./scripts/upload-asset.sh
+          # Upload:           <token>                     <repo>                   <tag>                 <file>                        <name>
+          upload_release_file ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} ${GITHUB_REF#refs/*/} ${{ matrix.target }}_tealdeer completions_${{ matrix.target }}
+
+  upload-license:
+    needs:
+      - create-release
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        target: ["MIT", "APACHE"]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Upload license
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          source ./scripts/upload-asset.sh
+          # Upload:           <token>                     <repo>                   <tag>                 <file>                       <name>
+          upload_release_file ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} ${GITHUB_REF#refs/*/} LICENSE-${{ matrix.target }} LICENSE-${{ matrix.target }}.txt
+
+  build-linux:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        include:
+          - arch: "x86_64"
+            libc: "musl"
+          - arch: "i686"
+            libc: "musl"
+          - arch: "armv7"
+            libc: "musleabihf"
+          - arch: "arm"
+            libc: "musleabi"
+          - arch: "arm"
+            libc: "musleabihf"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Pull Docker image
+        run: docker pull messense/rust-musl-cross:${{ matrix.arch }}-${{ matrix.libc }}
+      - name: Build in Docker
+        run: docker run --rm -i -v "$(pwd)":/home/rust/src messense/rust-musl-cross:${{ matrix.arch }}-${{ matrix.libc }} cargo build --release
+      - name: Strip binary
+        run: docker run --rm -i -v "$(pwd)":/home/rust/src messense/rust-musl-cross:${{ matrix.arch }}-${{ matrix.libc }} musl-strip -s /home/rust/src/target/${{ matrix.arch }}-unknown-linux-${{ matrix.libc }}/release/tldr
+      - uses: actions/upload-artifact@v2
+        with:
+          name: "tealdeer-linux-${{ matrix.arch }}-${{ matrix.libc }}"
+          path: "target/${{ matrix.arch }}-unknown-linux-${{ matrix.libc }}/release/tldr"
+
+  build-macos:
+    runs-on: macos-11
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target x86_64-apple-darwin
+      - uses: actions/upload-artifact@v2
+        with:
+          name: "tealdeer-macos-x86_64"
+          path: "target/x86_64-apple-darwin/release/tldr"
+
+  build-windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target x86_64-pc-windows-msvc
+      - uses: actions/upload-artifact@v2
+        with:
+          name: "tealdeer-windows-x86_64-msvc"
+          path: "target/x86_64-pc-windows-msvc/release/tldr.exe"
+
+  upload-release:
+    needs:
+      - create-release
+      - build-linux
+      - build-macos
+      - build-windows
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        target:
+          - linux-x86_64-musl
+          - linux-i686-musl
+          - linux-armv7-musleabihf
+          - linux-arm-musleabi
+          - linux-arm-musleabihf
+          - macos-x86_64
+          - windows-x86_64-msvc
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+      - name: Upload binary
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          source ./scripts/upload-asset.sh
+
+          # Move/rename file
+          mkdir out && cd out
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            src="../tealdeer-${{ matrix.target }}/tldr.exe"
+            filename="tealdeer-${{ matrix.target }}.exe"
+          else
+            src="../tealdeer-${{ matrix.target }}/tldr"
+            filename="tealdeer-${{ matrix.target }}"
+          fi
+          cp $src $filename
+
+          # Create checksum
+          sha256sum "$filename" > "$filename.sha256"
+
+          # Upload:           <token>                     <repo>                   <tag>                 <file>           <name>
+          upload_release_file ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} ${GITHUB_REF#refs/*/} $filename        $filename
+          upload_release_file ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} ${GITHUB_REF#refs/*/} $filename.sha256 $filename.sha256
