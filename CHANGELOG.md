@@ -10,6 +10,95 @@ Possible log types:
 - `[removed]` for deprecated features removed in this release.
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
+- `[docs]` for documentation changes.
+- `[chore]` for maintenance work.
+
+
+### [v1.5.0][v1.5.0] (2021-12-31)
+
+This is quite a big release with many new features. In the 15 months since the
+last release, 59 pull requests from 16 different contributors were merged!
+
+The highlights:
+
+- **Custom pages and patches**: You can now create your own local-only tldr
+  pages. But not just that, you can also extend existing upstream pages with
+  your own examples. For more details, see
+  [the docs](https://dbrgn.github.io/tealdeer/usage_custom_pages.html).
+- **Change argument parsing from docopt to clap**: We replaced docopt.rs as
+  argument parsing library with clap v3, resulting in almost 1 MiB smaller
+  binaries and a 22% speed increase when rendering a tldr page.
+- **Multi-language support**: You can now override the language with `-L/--language`.
+- **A new `--show-paths` command**: By running `tldr --show-paths`, you can list
+  the currently used config dir, cache dir, upstream pages dir and custom pages dir.
+- **Compliance with the tldr client spec v1.5**: We renamed `-o/--os` to
+  `-p/--platform` and implemented transparent lowercasing of the page names.
+- **Docs**: The README based documentation has reached its limits. There are
+  now new mdbook based docs over at
+  [dbrgn.github.io/tealdeer/](https://dbrgn.github.io/tealdeer/), we hope these
+  make using tealdeer easier. Of course, documentation improvements are
+  welcome! Also, if you're confused about how to use a certain feature, feel
+  free to open an issue, this way we can improve the docs.
+
+Note that the MSRV (Minimal Supported Rust Version) of the project
+[changed][i190]:
+
+> When publishing a Tealdeer release, the Rust version required to build it
+> should be stable for at least a month.
+
+Changes:
+
+- [added] Support custom pages and patches ([#142][i142])
+- [added] Multi-language support ([#125][i125], [#161][i161])
+- [added] Add support for ANSI code and RGB colors ([#148][i148])
+- [added] Implement new `--show-paths` command ([#162][i162])
+- [added] Support for italic text styling ([#197][i197])
+- [added] Allow SunOS platform override ([#176][i176])
+- [added] Automatically lowercase page names before lookup ([#227][i227])
+- [added] Add "macos" alias for "osx" ([#215][i215])
+- [fixed] Consider only standalone command names for styling ([#157][i157])
+- [fixed] Fixed and improved zsh completions ([#168][i168])
+- [fixed] Create cache directory path if it does not exist ([#174][i174])
+- [fixed] Use default style if user-defined style is missing ([#210][i210])
+- [changed] Switch from docopt to clap for argument parsing ([#108][i108])
+- [changed] Performance improvements ([#187][i187])
+- [changed] Send all progress logging messages to stderr ([#171][i171])
+- [changed] Rename `-o/--os` to `-p/--platform` ([#217][i217])
+- [changed] Rename `-m/--markdown` to `-r/--raw` ([#108][i108])
+- [deprecated] The `--config-path` command is deprecated, use `--show-paths` instead ([#162][i162])
+- [deprecated] The `-o/--os` command is deprecated, use `-p/--platform` instead ([#217][i217])
+- [deprecated] The `-m/--markdown` command is deprecated, use `-r/--raw` instead ([#108][i108])
+- [docs] New docs at [dbrgn.github.io/tealdeer/](https://dbrgn.github.io/tealdeer/)
+- [docs] Add comparative benchmarks with hyperfine ([#163][i163], [README](https://github.com/dbrgn/tealdeer#goals))
+- [chore] Download tldr pages archive from their website, not from GitHub ([#213][i213])
+- [chore] Bump MSRV to 1.54 and change MSRV policy ([#190][i190])
+- [chore] The `master` branch was renamed to `main`
+- [chore] All release binaries are now generated in CI. Binaries for macOS and Windows are also provided. ([#240][i240])
+- [chore] Update all dependencies
+
+Contributors to this version:
+
+- [@bl-ue][@bl-ue]
+- [Cameron Tod][@cam8001]
+- [Dalton][@dmaahs2017]
+- [Danilo Bargen][@dbrgn]
+- [Danny Mösch][@SimplyDanny]
+- [Marcin Puc][@tranzystorek-io]
+- [Michael Cho][@cho-m]
+- [MS_Y][@black7375]
+- [Niklas Mohrin][@niklasmohrin]
+- [Rithvik Vibhu][@rithvikvibhu]
+- [rnd][@0ndorio]
+- [Sondre Nilsen][@sondr3]
+- [Tomás Farías Santana][@tomasfarias]
+- [Tsvetomir Bonev][@invakid404]
+- [@tveness][@tveness]
+- [ギャラ][@laxect]
+
+Thanks!
+
+Last but not least, [Niklas Mohrin][@niklasmohrin] has joined the project as
+co-maintainer. Thank you for your help!
 
 
 ### [v1.4.1][v1.4.1] (2020-09-04)
@@ -18,8 +107,9 @@ Possible log types:
 
 Contributors to this version:
 
-- [Francesco][@BachoSeven]
+- [Danilo Bargen][@dbrgn]
 - [Bruno A. Muciño][@mucinoab]
+- [Francesco][@BachoSeven]
 
 Thanks!
 
@@ -35,6 +125,7 @@ Thanks!
 Contributors to this version:
 
 - [Atul Bhosale][@Atul9]
+- [Danilo Bargen][@dbrgn]
 - [Danny Mösch][@SimplyDanny]
 - [Ilaï Deutel][@ilai-deutel]
 - [Kornel][@kornelski]
@@ -59,13 +150,14 @@ Thanks!
 
 Contributors to this version:
 
-- [@Calinou][@Calinou]
-- [@Delapouite][@Delapouite]
-- [@james2doyle][@james2doyle]
-- [@jesdazrez][@jesdazrez]
+- [Bruno Heridet][@Delapouite]
+- [Danilo Bargen][@dbrgn]
+- [Hugo Locurcio][@Calinou]
+- [Isak Johansson][@Plommonsorbet]
+- [James Doyle][@james2doyle]
+- [Jesús Trinidad Díaz Ramírez][@jesdazrez]
 - [@korrat][@korrat]
-- [@ma-renaud][@ma-renaud]
-- [@Plommonsorbet][@Plommonsorbet]
+- [Marc-André Renaud][@ma-renaud]
 
 Thanks!
 
@@ -84,14 +176,15 @@ Thanks!
 
 Contributors to this version:
 
-- [@aldanor][@aldanor]
-- [@Bassets][@Bassets]
-- [@das-g][@das-g]
-- [@jcgruenhage][@jcgruenhage]
-- [@jdvr][@jdvr]
-- [@jedahan][@jedahan]
-- [@mystal][@mystal]
-- [@natpen][@natpen]
+- [Bar Hatsor][@Bassets]
+- [Danilo Bargen][@dbrgn]
+- [Gabriel Martinez][@mystal]
+- [Ivan Smirnov][@aldanor]
+- [Jan Christian Grünhage][@jcgruenhage]
+- [Jonathan Dahan][@jedahan]
+- [Juan D. Vega][@jdvr]
+- [Natalie Pendragon][@natpen]
+- [Raphael Das Gupta][@das-g]
 
 Thanks!
 
@@ -106,6 +199,7 @@ Thanks!
 
 Contributors to this version:
 
+- [Danilo Bargen][@dbrgn]
 - [@equal-l2][@equal-l2]
 - [Jonathan Dahan][@jedahan]
 - [Lukas Bergdoll][@Voultapher]
@@ -137,15 +231,23 @@ Thanks!
 - First crates.io release
 
 
+[@0ndorio]: https://github.com/0ndorio
 [@aldanor]: https://github.com/aldanor
 [@Atul9]: https://github.com/Atul9
 [@BachoSeven]: https://github.com/BachoSeven
 [@Bassets]: https://github.com/Bassets
+[@black7375]: https://github.com/black7375
+[@bl-ue]: https://github.com/bl-ue
 [@Calinou]: https://github.com/Calinou
+[@cam8001]: https://github.com/cam8001
+[@cho-m]: https://github.com/cho-m
 [@das-g]: https://github.com/das-g
+[@dbrgn]: https://github.com/dbrgn
 [@Delapouite]: https://github.com/Delapouite
+[@dmaahs2017]: https://github.com/dmaahs2017
 [@equal-l2]: https://github.com/equal-l2
 [@ilai-deutel]: https://github.com/ilai-deutel
+[@invakid404]: https://github.com/invakid404
 [@james2doyle]: https://github.com/james2doyle
 [@jcgruenhage]: https://github.com/jcgruenhage
 [@jdvr]: https://github.com/jdvr
@@ -153,6 +255,7 @@ Thanks!
 [@jesdazrez]: https://github.com/jesdazrez
 [@kornelski]: https://github.com/kornelski
 [@korrat]: https://github.com/korrat
+[@laxect]: https://github.com/laxect
 [@LovecraftianHorror]: https://github.com/LovecraftianHorror
 [@ma-renaud]: https://github.com/ma-renaud
 [@michaeldel]: https://github.com/michaeldel
@@ -161,7 +264,12 @@ Thanks!
 [@natpen]: https://github.com/natpen
 [@niklasmohrin]: https://github.com/niklasmohrin
 [@Plommonsorbet]: https://github.com/Plommonsorbet
+[@rithvikvibhu]: https://github.com/rithvikvibhu
 [@SimplyDanny]: https://github.com/SimplyDanny
+[@sondr3]: https://github.com/sondr3
+[@tomasfarias]: https://github.com/tomasfarias
+[@tranzystorek-io]: https://github.com/tranzystorek-io
+[@tveness]: https://github.com/tveness
 [@Voultapher]: https://github.com/Voultapher
 
 [v1.0.0]: https://github.com/dbrgn/tealdeer/compare/v0.4.0...v1.0.0
@@ -170,6 +278,7 @@ Thanks!
 [v1.3.0]: https://github.com/dbrgn/tealdeer/compare/v1.2.0...v1.3.0
 [v1.4.0]: https://github.com/dbrgn/tealdeer/compare/v1.3.0...v1.4.0
 [v1.4.1]: https://github.com/dbrgn/tealdeer/compare/v1.4.0...v1.4.1
+[v1.5.0]: https://github.com/dbrgn/tealdeer/compare/v1.4.1...v1.5.0
 
 [i34]: https://github.com/dbrgn/tealdeer/issues/34
 [i43]: https://github.com/dbrgn/tealdeer/issues/43
@@ -191,8 +300,29 @@ Thanks!
 [i95]: https://github.com/dbrgn/tealdeer/issues/95
 [i97]: https://github.com/dbrgn/tealdeer/issues/97
 [i99]: https://github.com/dbrgn/tealdeer/issues/99
+[i108]: https://github.com/dbrgn/tealdeer/pull/108
 [i111]: https://github.com/dbrgn/tealdeer/issues/111
 [i112]: https://github.com/dbrgn/tealdeer/issues/112
 [i113]: https://github.com/dbrgn/tealdeer/issues/113
 [i115]: https://github.com/dbrgn/tealdeer/issues/115
+[i125]: https://github.com/dbrgn/tealdeer/pull/125
 [i138]: https://github.com/dbrgn/tealdeer/issues/138
+[i142]: https://github.com/dbrgn/tealdeer/pull/142
+[i148]: https://github.com/dbrgn/tealdeer/pull/148
+[i157]: https://github.com/dbrgn/tealdeer/pull/157
+[i161]: https://github.com/dbrgn/tealdeer/pull/161
+[i162]: https://github.com/dbrgn/tealdeer/pull/162
+[i163]: https://github.com/dbrgn/tealdeer/pull/163
+[i168]: https://github.com/dbrgn/tealdeer/pull/168
+[i171]: https://github.com/dbrgn/tealdeer/pull/171
+[i174]: https://github.com/dbrgn/tealdeer/pull/174
+[i176]: https://github.com/dbrgn/tealdeer/pull/176
+[i187]: https://github.com/dbrgn/tealdeer/pull/187
+[i190]: https://github.com/dbrgn/tealdeer/issues/190
+[i197]: https://github.com/dbrgn/tealdeer/pull/197
+[i210]: https://github.com/dbrgn/tealdeer/pull/210
+[i213]: https://github.com/dbrgn/tealdeer/pull/213
+[i215]: https://github.com/dbrgn/tealdeer/pull/215
+[i217]: https://github.com/dbrgn/tealdeer/pull/217
+[i227]: https://github.com/dbrgn/tealdeer/pull/227
+[i240]: https://github.com/dbrgn/tealdeer/pull/240

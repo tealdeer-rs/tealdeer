@@ -14,6 +14,10 @@ Update version numbers:
     $ vim Cargo.toml
     $ cargo update -p tealdeer
 
+Update docs:
+
+    $ cargo run -- --help > docs/src/usage.txt
+
 Update changelog:
 
     $ vim CHANGELOG.md
@@ -28,6 +32,4 @@ Publish:
     $ cargo publish
     $ git push && git push --tags
 
-Create release binaries:
-
-    $ ./release-build.sh
+Then publish the release on GitHub.
