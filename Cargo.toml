@@ -22,7 +22,7 @@ path = "src/main.rs"
 ansi_term = "0.12.0"
 app_dirs = { version = "2", package = "app_dirs2" }
 atty = "0.2"
-clap = { version = "3.0.0-rc.4", features = ["std", "derive", "suggestions", "color"], default-features = false }
+clap = { version = "=3.0.0-rc.11", features = ["std", "derive", "suggestions", "color"], default-features = false }
 env_logger = { version = "0.9", optional = true }
 log = "0.4"
 reqwest = { version = "0.11.3", features = ["blocking", "rustls-tls", "rustls-tls-native-roots"], default-features = false }
