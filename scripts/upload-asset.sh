@@ -29,7 +29,7 @@ create_release() {
             --header "Authorization: Bearer $token" \
             --header "Content-Type:application/json" \
             "https://api.github.com/repos/$repo/releases" \
-            -d '{"tag_name":"'"$tag"'","name":"'"${tag/v/Release }"'","draft":true,"body":"'"${description/\"/\\\"}"'"}'
+            -d '{"tag_name":"'"$tag"'","name":"'"${tag/v/Version }"'","draft":true,"body":"'"${description/\"/\\\"}"'"}'
     )
     if [ "$http_code" == "201" ]; then
         echo "Release for tag $tag created."
