@@ -37,11 +37,10 @@ mod utils;
 use crate::{
     cache::{Cache, CacheFreshness, PageLookupResult, TLDR_PAGES_DIR},
     config::{get_config_dir, get_config_path, make_default_config, Config},
-    error::TealdeerError::ConfigError,
     extensions::Dedup,
     output::print_page,
     types::{ColorOptions, PlatformType},
-    utils::{print_error, print_warning},
+    utils::{print_anyhow_error, print_error, print_warning},
 };
 
 const NAME: &str = "tealdeer";
@@ -242,15 +241,8 @@ fn show_config_path(enable_styles: bool) {
         Ok((config_file_path, _)) => {
             println!("Config path is: {}", config_file_path.to_str().unwrap());
         }
-        Err(ConfigError(msg)) => {
-            print_error(
-                enable_styles,
-                &format!("Could not look up config_path: {}", msg),
-            );
-            process::exit(1);
-        }
-        Err(_) => {
-            print_error(enable_styles, "Unknown error");
+        Err(e) => {
+            print_anyhow_error(enable_styles, &e.context("Could not look up config path"));
             process::exit(1);
         }
     }
@@ -316,15 +308,8 @@ fn create_config_and_exit(enable_styles: bool) {
             );
             process::exit(0);
         }
-        Err(ConfigError(msg)) => {
-            print_error(
-                enable_styles,
-                &format!("Could not create seed config: {}", msg),
-            );
-            process::exit(1);
-        }
-        Err(_) => {
-            print_error(enable_styles, "Unknown error");
+        Err(e) => {
+            print_anyhow_error(enable_styles, &e);
             process::exit(1);
         }
     }
@@ -428,12 +413,8 @@ fn main() {
     // Look up config file, if none is found fall back to default config.
     let config = match Config::load(enable_styles) {
         Ok(config) => config,
-        Err(ConfigError(msg)) => {
-            print_error(enable_styles, &format!("Could not load config: {}", msg));
-            process::exit(1);
-        }
         Err(e) => {
-            print_error(enable_styles, &format!("Could not load config: {}", e));
+            print_anyhow_error(enable_styles, &e.context("Could not load config"));
             process::exit(1);
         }
     };
