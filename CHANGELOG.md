@@ -61,6 +61,7 @@ Changes:
 - [fixed] Create cache directory path if it does not exist ([#174][i174])
 - [fixed] Use default style if user-defined style is missing ([#210][i210])
 - [changed] Switch from docopt to clap for argument parsing ([#108][i108])
+- [changed] Switch from OpenSSL to Rustls ([#187][i187])
 - [changed] Performance improvements ([#187][i187])
 - [changed] Send all progress logging messages to stderr ([#171][i171])
 - [changed] Rename `-o/--os` to `-p/--platform` ([#217][i217])
