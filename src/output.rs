@@ -2,10 +2,11 @@
 
 use std::io::{self, BufRead, Write};
 
+use anyhow::{Context, Result};
+
 use crate::{
     cache::PageLookupResult,
     config::{Config, StyleConfig},
-    error::TealdeerError::WriteError,
     formatter::{highlight_lines, PageSnippet},
     line_iterator::LineIterator,
 };
@@ -15,7 +16,7 @@ pub fn print_page(
     lookup_result: &PageLookupResult,
     enable_markdown: bool,
     config: &Config,
-) -> Result<(), String> {
+) -> Result<()> {
     // Create reader from file(s)
     let reader = lookup_result.reader()?;
 
@@ -26,8 +27,8 @@ pub fn print_page(
     if enable_markdown {
         // Print the raw markdown of the file.
         for line in reader.lines() {
-            writeln!(handle, "{}", line.unwrap())
-                .map_err(|_| "Could not write to stdout".to_string())?;
+            let line = line.context("Error while reading from a page")?;
+            writeln!(handle, "{}", line).context("Could not write to stdout")?;
         }
     } else {
         // Closure that processes a page snippet and writes it to stdout
@@ -35,8 +36,7 @@ pub fn print_page(
             if snip.is_empty() {
                 Ok(())
             } else {
-                print_snippet(&mut handle, snip, &config.style)
-                    .map_err(|e| WriteError(e.to_string()))
+                print_snippet(&mut handle, snip, &config.style).context("Failed to print snippet")
             }
         };
 
@@ -46,13 +46,11 @@ pub fn print_page(
             &mut process_snippet,
             !config.display.compact,
         )
-        .map_err(|e| format!("Could not write to stdout: {}", e.message()))?;
+        .context("Could not write to stdout")?;
     };
 
     // We're done outputting data, flush stdout now!
-    handle
-        .flush()
-        .map_err(|_| "Could not flush stdout".to_string())?;
+    handle.flush().context("Could not flush stdout")?;
 
     Ok(())
 }
@@ -61,7 +59,7 @@ fn print_snippet(
     writer: &mut impl Write,
     snip: PageSnippet<'_>,
     style: &StyleConfig,
-) -> Result<(), io::Error> {
+) -> io::Result<()> {
     use PageSnippet::*;
 
     match snip {

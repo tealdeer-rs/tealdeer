@@ -40,7 +40,7 @@ use crate::{
     extensions::Dedup,
     output::print_page,
     types::{ColorOptions, PlatformType},
-    utils::{print_anyhow_error, print_error, print_warning},
+    utils::{print_error, print_warning},
 };
 
 const NAME: &str = "tealdeer";
@@ -210,10 +210,7 @@ fn check_cache(args: &Args, enable_styles: bool) -> CheckCacheResult {
 /// Clear the cache
 fn clear_cache(quietly: bool, enable_styles: bool) {
     Cache::clear().unwrap_or_else(|e| {
-        print_error(
-            enable_styles,
-            &format!("Could not delete cache: {}", e.message()),
-        );
+        print_error(enable_styles, &e.context("Could not clear cache"));
         process::exit(1);
     });
     if !quietly {
@@ -224,10 +221,7 @@ fn clear_cache(quietly: bool, enable_styles: bool) {
 /// Update the cache
 fn update_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
     cache.update().unwrap_or_else(|e| {
-        print_error(
-            enable_styles,
-            &format!("Could not update cache: {}", e.message()),
-        );
+        print_error(enable_styles, &e.context("Could not update cache"));
         process::exit(1);
     });
     if !quietly {
@@ -242,7 +236,7 @@ fn show_config_path(enable_styles: bool) {
             println!("Config path is: {}", config_file_path.to_str().unwrap());
         }
         Err(e) => {
-            print_anyhow_error(enable_styles, &e.context("Could not look up config path"));
+            print_error(enable_styles, &e.context("Could not look up config path"));
             process::exit(1);
         }
     }
@@ -309,7 +303,7 @@ fn create_config_and_exit(enable_styles: bool) {
             process::exit(0);
         }
         Err(e) => {
-            print_anyhow_error(enable_styles, &e);
+            print_error(enable_styles, &e);
             process::exit(1);
         }
     }
@@ -414,7 +408,7 @@ fn main() {
     let config = match Config::load(enable_styles) {
         Ok(config) => config,
         Err(e) => {
-            print_anyhow_error(enable_styles, &e.context("Could not load config"));
+            print_error(enable_styles, &e.context("Could not load config"));
             process::exit(1);
         }
     };
@@ -440,8 +434,8 @@ fn main() {
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
         let path = PageLookupResult::with_page(file);
-        if let Err(msg) = print_page(&path, args.raw, &config) {
-            print_error(enable_styles, &msg);
+        if let Err(ref e) = print_page(&path, args.raw, &config) {
+            print_error(enable_styles, e);
             process::exit(1);
         } else {
             process::exit(0);
@@ -476,10 +470,7 @@ fn main() {
     if args.list {
         // Get list of pages
         let pages = cache.list_pages().unwrap_or_else(|e| {
-            print_error(
-                enable_styles,
-                &format!("Could not get list of pages: {}", e.message()),
-            );
+            print_error(enable_styles, &e.context("Could not get list of pages"));
             process::exit(1);
         });
 
@@ -506,8 +497,8 @@ fn main() {
             &languages,
             config.directories.custom_pages_dir.as_deref(),
         ) {
-            if let Err(msg) = print_page(&lookup_result, args.raw, &config) {
-                print_error(enable_styles, &msg);
+            if let Err(ref e) = print_page(&lookup_result, args.raw, &config) {
+                print_error(enable_styles, e);
                 process::exit(1);
             }
             process::exit(0);
