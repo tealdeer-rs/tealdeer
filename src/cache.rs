@@ -153,7 +153,9 @@ impl Cache {
                 builder = builder.proxy(proxy);
             }
         }
-        let client = builder.build().unwrap_or_else(|_| Client::new());
+        let client = builder.build().map_err(|e| {
+            TealdeerError::UpdateError(format!("Could not instantiate HTTP client: {}", e))
+        })?;
         let mut resp = client.get(&self.url).send()?;
         let mut buf: Vec<u8> = vec![];
         let bytes_downloaded = resp.copy_to(&mut buf)?;
