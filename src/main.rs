@@ -26,7 +26,6 @@ use pager::Pager;
 
 mod cache;
 mod config;
-mod error;
 pub mod extensions;
 mod formatter;
 mod line_iterator;
@@ -303,7 +302,7 @@ fn create_config_and_exit(enable_styles: bool) {
             process::exit(0);
         }
         Err(e) => {
-            print_error(enable_styles, &e);
+            print_error(enable_styles, &e.context("Could not create seed config"));
             process::exit(1);
         }
     }

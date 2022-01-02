@@ -1,8 +1,8 @@
 //! Functions related to formatting and printing lines from a `Tokenizer`.
 
-use crate::{extensions::FindFrom, types::LineType};
-
 use log::debug;
+
+use crate::{extensions::FindFrom, types::LineType};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Represents a snippet from a page of a specific highlighting class.
