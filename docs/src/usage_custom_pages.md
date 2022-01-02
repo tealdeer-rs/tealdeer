@@ -33,9 +33,6 @@ want to extend it with your own examples that you frequently need. In this
 case, use a file called `<command>.patch`, it will be appended to existing
 pages.
 
-> **Note:** Because the patch file will be concatenated directly to the page
-> file, it needs to start with an empty line.
-
 Path:
 
     $CUSTOM_PAGES_DIR/<command>.patch
