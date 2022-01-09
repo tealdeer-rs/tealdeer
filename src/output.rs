@@ -11,10 +11,14 @@ use crate::{
     line_iterator::LineIterator,
 };
 
-// Set up display pager
+/// Set up display pager
+///
+/// SAFETY: this function may be called multiple times
 #[cfg(not(target_os = "windows"))]
 fn configure_pager(_: bool) {
-    pager::Pager::with_default_pager("less -R").setup();
+    use std::sync::Once;
+    static INIT: Once = Once::new();
+    INIT.call_once(|| pager::Pager::with_default_pager("less -R").setup());
 }
 
 #[cfg(target_os = "windows")]
