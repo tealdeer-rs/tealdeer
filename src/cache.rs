@@ -150,7 +150,11 @@ impl Cache {
         let client = builder
             .build()
             .context("Could not instantiate HTTP client")?;
-        let mut resp = client.get(&self.url).send()?;
+        let mut resp = client
+            .get(&self.url)
+            .send()?
+            .error_for_status()
+            .with_context(|| format!("Could not download tldr pages from {}", &self.url))?;
         let mut buf: Vec<u8> = vec![];
         let bytes_downloaded = resp.copy_to(&mut buf)?;
         debug!("{} bytes downloaded", bytes_downloaded);
