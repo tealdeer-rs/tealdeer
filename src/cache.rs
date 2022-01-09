@@ -4,19 +4,17 @@ use std::{
     fs::{self, File},
     io::{BufReader, Cursor, Read, Seek},
     path::{Path, PathBuf},
+    time::{Duration, SystemTime},
 };
 
+use anyhow::{ensure, Context, Result};
 use app_dirs::{get_app_root, AppDataType};
 use log::debug;
 use reqwest::{blocking::Client, Proxy};
-use std::time::{Duration, SystemTime};
 use walkdir::{DirEntry, WalkDir};
 use zip::ZipArchive;
 
-use crate::{
-    error::TealdeerError::{self, CacheError, UpdateError},
-    types::{PathSource, PlatformType},
-};
+use crate::types::{PathSource, PlatformType};
 
 static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
 
@@ -53,16 +51,16 @@ impl PageLookupResult {
     ///
     /// This will return an error if either the page file or the patch file
     /// cannot be opened.
-    pub fn reader(&self) -> Result<BufReader<Box<dyn Read>>, String> {
+    pub fn reader(&self) -> Result<BufReader<Box<dyn Read>>> {
         // Open page file
         let page_file = File::open(&self.page_path)
-            .map_err(|msg| format!("Could not open page file at {:?}: {}", self.page_path, msg))?;
+            .with_context(|| format!("Could not open page file at {:?}", self.page_path))?;
 
         // Open patch file
         let patch_file_opt = match &self.patch_path {
             Some(path) => Some(
                 File::open(path)
-                    .map_err(|msg| format!("Could not open patch file at {:?}: {}", path, msg))?,
+                    .with_context(|| format!("Could not open patch file at {:?}", path))?,
             ),
             None => None,
         };
@@ -102,26 +100,25 @@ impl Cache {
     }
 
     /// Return the path to the cache directory.
-    pub fn get_cache_dir() -> Result<(PathBuf, PathSource), TealdeerError> {
+    pub fn get_cache_dir() -> Result<(PathBuf, PathSource)> {
         // Allow overriding the cache directory by setting the env variable.
         if let Ok(value) = env::var(CACHE_DIR_ENV_VAR) {
             let path = PathBuf::from(value);
             let (path_exists, path_is_dir) = path
                 .metadata()
                 .map_or((false, false), |md| (true, md.is_dir()));
-            if path_exists && !path_is_dir {
-                return Err(CacheError(format!(
-                    "Path specified by ${} is not a directory.",
-                    CACHE_DIR_ENV_VAR
-                )));
-            }
+            ensure!(
+                !path_exists || path_is_dir,
+                "Path specified by ${} is not a directory",
+                CACHE_DIR_ENV_VAR
+            );
             if !path_exists {
                 // Try to create the complete directory path.
-                fs::create_dir_all(&path).map_err(|_| {
-                    CacheError(format!(
-                        "Directory path specified by ${} cannot be created.",
+                fs::create_dir_all(&path).with_context(|| {
+                    format!(
+                        "Directory path specified by ${} cannot be created",
                         CACHE_DIR_ENV_VAR
-                    ))
+                    )
                 })?;
                 eprintln!(
                     "Successfully created cache directory path `{}`.",
@@ -132,16 +129,13 @@ impl Cache {
         };
 
         // Otherwise, fall back to user cache directory.
-        match get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
-            Ok(dirs) => Ok((dirs, PathSource::OsConvention)),
-            Err(_) => Err(CacheError(
-                "Could not determine user cache directory.".into(),
-            )),
-        }
+        let dirs = get_app_root(AppDataType::UserCache, &crate::APP_INFO)
+            .context("Could not determine user cache directory")?;
+        Ok((dirs, PathSource::OsConvention))
     }
 
     /// Download the archive
-    fn download(&self) -> Result<Vec<u8>, TealdeerError> {
+    fn download(&self) -> Result<Vec<u8>> {
         let mut builder = Client::builder();
         if let Ok(ref host) = env::var("HTTP_PROXY") {
             if let Ok(proxy) = Proxy::http(host) {
@@ -153,9 +147,9 @@ impl Cache {
                 builder = builder.proxy(proxy);
             }
         }
-        let client = builder.build().map_err(|e| {
-            TealdeerError::UpdateError(format!("Could not instantiate HTTP client: {}", e))
-        })?;
+        let client = builder
+            .build()
+            .context("Could not instantiate HTTP client")?;
         let mut resp = client.get(&self.url).send()?;
         let mut buf: Vec<u8> = vec![];
         let bytes_downloaded = resp.copy_to(&mut buf)?;
@@ -169,7 +163,7 @@ impl Cache {
     }
 
     /// Update the pages cache.
-    pub fn update(&self) -> Result<(), TealdeerError> {
+    pub fn update(&self) -> Result<()> {
         // First, download the compressed data
         let bytes: Vec<u8> = self.download()?;
 
@@ -182,8 +176,7 @@ impl Cache {
 
         // Make sure that cache directory exists
         debug!("Ensure cache directory {:?} exists", &cache_dir);
-        fs::create_dir_all(&cache_dir)
-            .map_err(|e| UpdateError(format!("Could not create cache directory: {}", e)))?;
+        fs::create_dir_all(&cache_dir).context("Could not create cache directory")?;
 
         // Clear cache directory
         // Note: This is not the best solution. Ideally we would download the
@@ -191,12 +184,12 @@ impl Cache {
         // But renaming a directory doesn't work across filesystems and Rust
         // does not yet offer a recursive directory copying function. So for
         // now, we'll use this approach.
-        Self::clear()?;
+        Self::clear().context("Could not clear the cache directory")?;
 
         // Extract archive
         archive
             .extract(&pages_dir)
-            .map_err(|e| UpdateError(format!("Could not unpack compressed data: {}", e)))?;
+            .context("Could not unpack compressed data")?;
 
         Ok(())
     }
@@ -308,7 +301,7 @@ impl Cache {
     }
 
     /// Return the available pages.
-    pub fn list_pages(&self) -> Result<Vec<String>, TealdeerError> {
+    pub fn list_pages(&self) -> Result<Vec<String>> {
         // Determine platforms directory and platform
         let (cache_dir, _) = Self::get_cache_dir()?;
         let platforms_dir = cache_dir.join(TLDR_PAGES_DIR).join("pages");
@@ -353,35 +346,36 @@ impl Cache {
     }
 
     /// Delete the cache directory.
-    pub fn clear() -> Result<(), TealdeerError> {
+    pub fn clear() -> Result<()> {
         let (path, _) = Self::get_cache_dir()?;
-        if path.exists() && path.is_dir() {
-            // Delete old tldr-pages cache location as well if present
-            // TODO: To be removed in the future
-            for pages_dir_name in [TLDR_PAGES_DIR, TLDR_OLD_PAGES_DIR] {
-                let pages_dir = path.join(pages_dir_name);
 
-                if pages_dir.exists() {
-                    fs::remove_dir_all(&pages_dir).map_err(|e| {
-                        CacheError(format!(
-                            "Could not remove cache directory ({}): {}",
-                            pages_dir.display(),
-                            e
-                        ))
-                    })?;
-                }
+        // Check preconditions
+        ensure!(
+            path.exists(),
+            "Cache path ({}) does not exist.",
+            path.display(),
+        );
+        ensure!(
+            path.is_dir(),
+            "Cache path ({}) is not a directory.",
+            path.display()
+        );
+
+        // Delete old tldr-pages cache location as well if present
+        // TODO: To be removed in the future
+        for pages_dir_name in [TLDR_PAGES_DIR, TLDR_OLD_PAGES_DIR] {
+            let pages_dir = path.join(pages_dir_name);
+
+            if pages_dir.exists() {
+                fs::remove_dir_all(&pages_dir).with_context(|| {
+                    format!(
+                        "Could not remove the cache directory at {}",
+                        pages_dir.display()
+                    )
+                })?;
             }
-        } else if path.exists() {
-            return Err(CacheError(format!(
-                "Cache path ({}) is not a directory.",
-                path.display()
-            )));
-        } else {
-            return Err(CacheError(format!(
-                "Cache path ({}) does not exist.",
-                path.display()
-            )));
-        };
+        }
+
         Ok(())
     }
 }

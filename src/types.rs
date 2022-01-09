@@ -2,6 +2,7 @@
 
 use std::{fmt, str};
 
+use anyhow::{anyhow, Result};
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Serialize, Deserialize)]
@@ -26,7 +27,7 @@ impl fmt::Display for PlatformType {
 }
 
 impl str::FromStr for PlatformType {
-    type Err = String;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -34,7 +35,7 @@ impl str::FromStr for PlatformType {
             "osx" | "macos" => Ok(Self::OsX),
             "sunos" => Ok(Self::SunOs),
             "windows" => Ok(Self::Windows),
-            other => Err(format!(
+            other => Err(anyhow!(
                 "Unknown OS: {}. Possible values: linux, macos, osx, sunos, windows",
                 other
             )),
@@ -87,14 +88,14 @@ pub enum ColorOptions {
 }
 
 impl str::FromStr for ColorOptions {
-    type Err = String;
+    type Err = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         match s {
             "always" => Ok(Self::Always),
             "auto" => Ok(Self::Auto),
             "never" => Ok(Self::Never),
-            other => Err(format!(
+            other => Err(anyhow!(
                 "Unknown color option: {}. Possible values: always, auto, never",
                 other
             )),

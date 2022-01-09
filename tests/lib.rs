@@ -263,7 +263,7 @@ fn test_cache_location_not_a_directory() {
         .assert()
         .failure()
         .stderr(contains(format!(
-            "Path specified by ${} is not a directory.",
+            "Path specified by ${} is not a directory",
             CACHE_DIR_ENV_VAR
         )));
 }

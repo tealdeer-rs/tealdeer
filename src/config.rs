@@ -1,19 +1,17 @@
 use std::{
     env, fs,
-    io::{Error as IoError, Read, Write},
+    io::{Read, Write},
     path::PathBuf,
     time::Duration,
 };
 
 use ansi_term::{Color, Style};
+use anyhow::{ensure, Context, Result};
 use app_dirs::{get_app_root, AppDataType};
 use log::debug;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{
-    error::TealdeerError::{self, ConfigError},
-    types::PathSource,
-};
+use crate::types::PathSource;
 
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
@@ -278,32 +276,24 @@ impl From<RawConfig> for Config {
     }
 }
 
-#[allow(clippy::needless_pass_by_value)]
-fn map_io_err_to_config_err(e: IoError) -> TealdeerError {
-    ConfigError(format!("Io Error: {}", e))
-}
-
 impl Config {
-    pub fn load(enable_styles: bool) -> Result<Self, TealdeerError> {
+    pub fn load(enable_styles: bool) -> Result<Self> {
         debug!("Loading config");
 
         // Determine path
-        let (config_file_path, _) = get_config_path()
-            .map_err(|e| ConfigError(format!("Could not determine config path: {}", e)))?;
+        let (config_file_path, _) = get_config_path().context("Could not determine config path")?;
 
         // Load raw config
         let raw_config: RawConfig = if config_file_path.exists() && config_file_path.is_file() {
-            let mut config_file =
-                fs::File::open(&config_file_path).map_err(map_io_err_to_config_err)?;
+            let mut config_file = fs::File::open(&config_file_path).with_context(|| {
+                format!("Failed to open config file path at {:?}", &config_file_path)
+            })?;
             let mut contents = String::new();
-            let _ = config_file
-                .read_to_string(&mut contents)
-                .map_err(map_io_err_to_config_err)?;
-            toml::from_str(&contents).map_err(|err| {
-                ConfigError(format!(
-                    "Failed to parse config file at {:?}:\n{}",
-                    config_file_path, err
-                ))
+            config_file.read_to_string(&mut contents).with_context(|| {
+                format!("Failed to read from config file at {:?}", &config_file_path)
+            })?;
+            toml::from_str(&contents).with_context(|| {
+                format!("Failed to parse TOML config file at {:?}", config_file_path)
             })?
         } else {
             RawConfig::new()
@@ -334,7 +324,7 @@ impl Config {
 ///
 /// Note that this function does not verify whether the directory at that
 /// location exists, or is a directory.
-pub fn get_config_dir() -> Result<(PathBuf, PathSource), TealdeerError> {
+pub fn get_config_dir() -> Result<(PathBuf, PathSource)> {
     // Allow overriding the config directory by setting the
     // $TEALDEER_CONFIG_DIR env variable.
     if let Ok(value) = env::var("TEALDEER_CONFIG_DIR") {
@@ -342,61 +332,54 @@ pub fn get_config_dir() -> Result<(PathBuf, PathSource), TealdeerError> {
     };
 
     // Otherwise, fall back to the user config directory.
-    match get_app_root(AppDataType::UserConfig, &crate::APP_INFO) {
-        Ok(dirs) => Ok((dirs, PathSource::OsConvention)),
-        Err(_) => Err(ConfigError(
-            "Could not determine the user config directory.".into(),
-        )),
-    }
+    let dirs = get_app_root(AppDataType::UserConfig, &crate::APP_INFO)
+        .context("Failed to determine the user config directory")?;
+    Ok((dirs, PathSource::OsConvention))
 }
 
 /// Return the path to the config file.
 ///
 /// Note that this function does not verify whether the file at that location
 /// exists, or is a file.
-pub fn get_config_path() -> Result<(PathBuf, PathSource), TealdeerError> {
+pub fn get_config_path() -> Result<(PathBuf, PathSource)> {
     let (config_dir, source) = get_config_dir()?;
     let config_file_path = config_dir.join(CONFIG_FILE_NAME);
     Ok((config_file_path, source))
 }
 
 /// Create default config file.
-pub fn make_default_config() -> Result<PathBuf, TealdeerError> {
+pub fn make_default_config() -> Result<PathBuf> {
     let (config_dir, _) = get_config_dir()?;
 
     // Ensure that config directory exists
-    if !config_dir.exists() {
-        if let Err(e) = fs::create_dir_all(&config_dir) {
-            return Err(ConfigError(format!(
-                "Could not create config directory: {}",
-                e
-            )));
-        }
-    } else if !config_dir.is_dir() {
-        return Err(ConfigError(format!(
+    if config_dir.exists() {
+        ensure!(
+            config_dir.is_dir(),
             "Config directory could not be created: {} already exists but is not a directory",
             config_dir.to_string_lossy(),
-        )));
+        );
+    } else {
+        fs::create_dir_all(&config_dir).context("Could not create config directory")?;
     }
 
     // Ensure that a config file doesn't get overwritten
     let config_file_path = config_dir.join(CONFIG_FILE_NAME);
-    if config_file_path.is_file() {
-        return Err(ConfigError(format!(
-            "A configuration file already exists at {}, no action was taken.",
-            config_file_path.to_str().unwrap()
-        )));
-    }
+    ensure!(
+        !config_file_path.is_file(),
+        "A configuration file already exists at {}, no action was taken.",
+        config_file_path.to_str().unwrap()
+    );
 
     // Create default config
-    let serialized_config = toml::to_string(&RawConfig::new())
-        .map_err(|err| ConfigError(format!("Failed to serialize default config: {}", err)))?;
+    let serialized_config =
+        toml::to_string(&RawConfig::new()).context("Failed to serialize default config")?;
 
     // Write default config
-    let mut config_file = fs::File::create(&config_file_path).map_err(map_io_err_to_config_err)?;
+    let mut config_file =
+        fs::File::create(&config_file_path).context("Could not create config file")?;
     let _wc = config_file
         .write(serialized_config.as_bytes())
-        .map_err(map_io_err_to_config_err)?;
+        .context("Could not write to config file")?;
 
     Ok(config_file_path)
 }

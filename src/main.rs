@@ -26,7 +26,6 @@ use pager::Pager;
 
 mod cache;
 mod config;
-mod error;
 pub mod extensions;
 mod formatter;
 mod line_iterator;
@@ -37,7 +36,6 @@ mod utils;
 use crate::{
     cache::{Cache, CacheFreshness, PageLookupResult, TLDR_PAGES_DIR},
     config::{get_config_dir, get_config_path, make_default_config, Config},
-    error::TealdeerError::ConfigError,
     extensions::Dedup,
     output::print_page,
     types::{ColorOptions, PlatformType},
@@ -211,10 +209,7 @@ fn check_cache(args: &Args, enable_styles: bool) -> CheckCacheResult {
 /// Clear the cache
 fn clear_cache(quietly: bool, enable_styles: bool) {
     Cache::clear().unwrap_or_else(|e| {
-        print_error(
-            enable_styles,
-            &format!("Could not delete cache: {}", e.message()),
-        );
+        print_error(enable_styles, &e.context("Could not clear cache"));
         process::exit(1);
     });
     if !quietly {
@@ -225,10 +220,7 @@ fn clear_cache(quietly: bool, enable_styles: bool) {
 /// Update the cache
 fn update_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
     cache.update().unwrap_or_else(|e| {
-        print_error(
-            enable_styles,
-            &format!("Could not update cache: {}", e.message()),
-        );
+        print_error(enable_styles, &e.context("Could not update cache"));
         process::exit(1);
     });
     if !quietly {
@@ -242,15 +234,8 @@ fn show_config_path(enable_styles: bool) {
         Ok((config_file_path, _)) => {
             println!("Config path is: {}", config_file_path.to_str().unwrap());
         }
-        Err(ConfigError(msg)) => {
-            print_error(
-                enable_styles,
-                &format!("Could not look up config_path: {}", msg),
-            );
-            process::exit(1);
-        }
-        Err(_) => {
-            print_error(enable_styles, "Unknown error");
+        Err(e) => {
+            print_error(enable_styles, &e.context("Could not look up config path"));
             process::exit(1);
         }
     }
@@ -316,15 +301,8 @@ fn create_config_and_exit(enable_styles: bool) {
             );
             process::exit(0);
         }
-        Err(ConfigError(msg)) => {
-            print_error(
-                enable_styles,
-                &format!("Could not create seed config: {}", msg),
-            );
-            process::exit(1);
-        }
-        Err(_) => {
-            print_error(enable_styles, "Unknown error");
+        Err(e) => {
+            print_error(enable_styles, &e.context("Could not create seed config"));
             process::exit(1);
         }
     }
@@ -428,12 +406,8 @@ fn main() {
     // Look up config file, if none is found fall back to default config.
     let config = match Config::load(enable_styles) {
         Ok(config) => config,
-        Err(ConfigError(msg)) => {
-            print_error(enable_styles, &format!("Could not load config: {}", msg));
-            process::exit(1);
-        }
         Err(e) => {
-            print_error(enable_styles, &format!("Could not load config: {}", e));
+            print_error(enable_styles, &e.context("Could not load config"));
             process::exit(1);
         }
     };
@@ -459,8 +433,8 @@ fn main() {
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
         let path = PageLookupResult::with_page(file);
-        if let Err(msg) = print_page(&path, args.raw, &config) {
-            print_error(enable_styles, &msg);
+        if let Err(ref e) = print_page(&path, args.raw, &config) {
+            print_error(enable_styles, e);
             process::exit(1);
         } else {
             process::exit(0);
@@ -495,10 +469,7 @@ fn main() {
     if args.list {
         // Get list of pages
         let pages = cache.list_pages().unwrap_or_else(|e| {
-            print_error(
-                enable_styles,
-                &format!("Could not get list of pages: {}", e.message()),
-            );
+            print_error(enable_styles, &e.context("Could not get list of pages"));
             process::exit(1);
         });
 
@@ -525,8 +496,8 @@ fn main() {
             &languages,
             config.directories.custom_pages_dir.as_deref(),
         ) {
-            if let Err(msg) = print_page(&lookup_result, args.raw, &config) {
-                print_error(enable_styles, &msg);
+            if let Err(ref e) = print_page(&lookup_result, args.raw, &config) {
+                print_error(enable_styles, e);
                 process::exit(1);
             }
             process::exit(0);
