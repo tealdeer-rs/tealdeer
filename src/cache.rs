@@ -2,7 +2,7 @@ use std::{
     env,
     ffi::OsStr,
     fs::{self, File},
-    io::{BufReader, Cursor, Read, Seek},
+    io::{BufReader, Cursor, Read},
     path::{Path, PathBuf},
     time::{Duration, SystemTime},
 };
@@ -157,18 +157,14 @@ impl Cache {
         Ok(buf)
     }
 
-    /// Decompress and open the archive
-    fn decompress<R: Read + Seek>(reader: R) -> ZipArchive<R> {
-        ZipArchive::new(reader).unwrap()
-    }
-
     /// Update the pages cache.
     pub fn update(&self) -> Result<()> {
         // First, download the compressed data
         let bytes: Vec<u8> = self.download()?;
 
         // Decompress the response body into an `Archive`
-        let mut archive = Self::decompress(Cursor::new(bytes));
+        let mut archive = ZipArchive::new(Cursor::new(bytes))
+            .context("Could not decompress downloaded ZIP archive")?;
 
         // Determine paths
         let (cache_dir, _) = Self::get_cache_dir()?;
