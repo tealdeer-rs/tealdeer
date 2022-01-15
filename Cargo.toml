@@ -43,6 +43,13 @@ predicates = "2.0.2"
 tempfile = "3.1.0"
 filetime = "0.2.10"
 
+[build-dependencies]
+anyhow = "1"
+clap = { version = "3", features = ["std", "derive", "suggestions", "color"], default-features = false }
+clap_complete = "3.0.3"
+serde = "1.0.21"
+serde_derive = "1.0.21"
+
 [features]
 logging = ["env_logger"]
 

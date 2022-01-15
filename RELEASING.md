@@ -32,4 +32,8 @@ Publish:
     $ cargo publish
     $ git push && git push --tags
 
+Generate shell completion scripts:
+
+    $ cargo build --release
+
 Then publish the release on GitHub.
