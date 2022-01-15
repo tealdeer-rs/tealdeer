@@ -16,13 +16,14 @@
 #![allow(clippy::struct_excessive_bools)]
 #![allow(clippy::too_many_lines)]
 
-use std::{env, path::PathBuf, process};
+use std::{env, process};
 
 use app_dirs::AppInfo;
 use atty::Stream;
-use clap::{AppSettings, ArgGroup, Parser};
+use clap::Parser;
 
 mod cache;
+mod cli;
 mod config;
 pub mod extensions;
 mod formatter;
@@ -33,6 +34,7 @@ mod utils;
 
 use crate::{
     cache::{Cache, CacheFreshness, PageLookupResult, TLDR_PAGES_DIR},
+    cli::Args,
     config::{get_config_dir, get_config_path, make_default_config, Config},
     extensions::Dedup,
     output::print_page,
@@ -46,112 +48,6 @@ const APP_INFO: AppInfo = AppInfo {
     author: NAME,
 };
 const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
-
-// Note: flag names are specified explicitly in clap attributes
-// to improve readability and allow contributors to grep names like "clear-cache"
-#[derive(Parser, Debug)]
-#[clap(about = "A fast TLDR client", author, version)]
-#[clap(setting = AppSettings::ArgRequiredElseHelp)]
-#[clap(setting = AppSettings::DeriveDisplayOrder)]
-#[clap(setting = AppSettings::DisableColoredHelp)]
-#[clap(
-    after_help = "To view the user documentation, please visit https://dbrgn.github.io/tealdeer/."
-)]
-#[clap(group = ArgGroup::new("command_or_file").args(&["command", "render"]))]
-struct Args {
-    /// The command to show (e.g. `tar` or `git log`)
-    #[clap(min_values = 1)]
-    command: Vec<String>,
-
-    /// List all commands in the cache
-    #[clap(short = 'l', long = "list")]
-    list: bool,
-
-    /// Render a specific markdown file
-    #[clap(
-        short = 'f',
-        long = "render",
-        value_name = "FILE",
-        conflicts_with = "command"
-    )]
-    render: Option<PathBuf>,
-
-    /// Override the operating system
-    #[clap(
-        short = 'p',
-        long = "platform",
-        possible_values = ["linux", "macos", "windows", "sunos", "osx"],
-    )]
-    platform: Option<PlatformType>,
-
-    /// Deprecated alias of `platform`
-    #[clap(
-        short = 'o',
-        long = "os",
-        possible_values = ["linux", "macos", "windows", "sunos", "osx"],
-        hide = true
-    )]
-    os: Option<PlatformType>,
-
-    /// Override the language
-    #[clap(short = 'L', long = "language")]
-    language: Option<String>,
-
-    /// Update the local cache
-    #[clap(short = 'u', long = "update")]
-    update: bool,
-
-    /// Clear the local cache
-    #[clap(short = 'c', long = "clear-cache")]
-    clear_cache: bool,
-
-    /// Use a pager to page output
-    #[clap(long = "pager", requires = "command_or_file")]
-    pager: bool,
-
-    /// Display the raw markdown instead of rendering it
-    #[clap(short = 'r', long = "--raw", requires = "command_or_file")]
-    raw: bool,
-
-    /// Deprecated alias of `raw`
-    #[clap(
-        long = "markdown",
-        short = 'm',
-        requires = "command_or_file",
-        hide = true
-    )]
-    markdown: bool,
-
-    /// Suppress informational messages
-    #[clap(short = 'q', long = "quiet")]
-    quiet: bool,
-
-    /// Show file and directory paths used by tealdeer
-    #[clap(long = "show-paths")]
-    show_paths: bool,
-
-    /// Show config file path
-    #[clap(long = "config-path")]
-    config_path: bool,
-
-    /// Create a basic config
-    #[clap(long = "seed-config")]
-    seed_config: bool,
-
-    /// Control whether to use color
-    #[clap(
-        long = "color",
-        value_name = "WHEN",
-        possible_values = ["always", "auto", "never"]
-    )]
-    color: Option<ColorOptions>,
-
-    /// Print the version
-    // Note: We override the version flag because clap uses `-V` by default,
-    // while TLDR specification requires `-v` to be used.
-    #[clap(short = 'v', long = "version")]
-    version: bool,
-}
 
 /// The cache should get updated if this was requested by the user, or if auto
 /// updates are enabled and the cache age is longer than the auto update interval.
