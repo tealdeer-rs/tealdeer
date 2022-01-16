@@ -50,10 +50,12 @@ const APP_INFO: AppInfo = AppInfo {
 const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
 
 /// The cache should get updated if this was requested by the user, or if auto
-/// updates are enabled and the cache age is longer than the auto update interval.
+/// updates are enabled and the cache age is longer than the auto update interval,
+/// unless it is explicitly disabled by the user.
 fn should_update_cache(args: &Args, config: &Config) -> bool {
     args.update
-        || (config.updates.auto_update
+        || (!args.no_auto_update
+            && config.updates.auto_update
             && Cache::last_update().map_or(true, |ago| ago >= config.updates.auto_update_interval))
 }
 
