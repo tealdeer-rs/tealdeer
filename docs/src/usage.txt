@@ -15,6 +15,7 @@ OPTIONS:
                                  windows, sunos, osx]
     -L, --language <LANGUAGE>    Override the language
     -u, --update                 Update the local cache
+        --no-auto-update         Disable auto-update, override config file
     -c, --clear-cache            Clear the local cache
         --pager                  Use a pager to page output
     -r, --raw                    Display the raw markdown instead of rendering it
