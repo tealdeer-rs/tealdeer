@@ -209,10 +209,12 @@ package is called <code>libssl-dev</code> on Ubuntu.)</em></p>
 <pre><code>$ export RUST_LOG=tldr=debug
 </code></pre>
 <h2><a class="header" href="#autocompletion" id="autocompletion">Autocompletion</a></h2>
+<p>Shell completion scripts are located in the folder <code>completion</code>. 
+Just copy them to their designated location:</p>
 <ul>
-<li><em>Bash</em>: copy <code>bash_tealdeer</code> to <code>/usr/share/bash-completion/completions/tldr</code></li>
-<li><em>Fish</em>: copy <code>fish_tealdeer</code> to <code>~/.config/fish/completions/tldr.fish</code></li>
-<li><em>Zsh</em>: copy <code>zsh_tealdeer</code> to <code>/usr/share/zsh/site-functions/_tldr</code></li>
+<li><em>Bash</em>: <code>cp completion/bash_tealdeer /usr/share/bash-completion/completions/tldr</code></li>
+<li><em>Fish</em>: <code>cp completion/fish_tealdeer ~/.config/fish/completions/tldr.fish</code></li>
+<li><em>Zsh</em>: <code>cp completion/zsh_tealdeer /usr/share/zsh/site-functions/_tldr</code></li>
 </ul>
 
                     </main>
