@@ -60,7 +60,7 @@ pub(crate) struct Args {
     #[clap(short = 'u', long = "update")]
     pub update: bool,
 
-    /// Disable auto-update, override config file
+    /// If auto update is configured, disable it for this run
     #[clap(long = "no-auto-update", requires = "command_or_file")]
     pub no_auto_update: bool,
 
