@@ -57,6 +57,9 @@ To enable the log output, set the `RUST_LOG` env variable:
 
 ## Autocompletion
 
-- *Bash*: copy `bash_tealdeer` to `/usr/share/bash-completion/completions/tldr`
-- *Fish*: copy `fish_tealdeer` to `~/.config/fish/completions/tldr.fish`
-- *Zsh*: copy `zsh_tealdeer` to `/usr/share/zsh/site-functions/_tldr`
+Shell completion scripts are located in the folder `completion`. 
+Just copy them to their designated location:
+
+- *Bash*: `cp completion/bash_tealdeer /usr/share/bash-completion/completions/tldr`
+- *Fish*: `cp completion/fish_tealdeer ~/.config/fish/completions/tldr.fish`
+- *Zsh*: `cp completion/zsh_tealdeer /usr/share/zsh/site-functions/_tldr`
