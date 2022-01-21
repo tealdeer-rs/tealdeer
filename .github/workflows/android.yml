@@ -1,0 +1,27 @@
+name: cross compile with android-ndk
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  cross-compile-for-android:
+    strategy:
+      fail-fast: false
+      matrix:
+        target-abi: [armeabi-v7a, arm64-v8a, x86, x86_64]
+
+    runs-on: macos-10.15
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - run:  brew install tree file
+
+      - run:  patch -p1 < android.patch
+
+      - run:  ./cargo-ndk.sh --help
+
+      - run:  ./cargo-ndk.sh ${{ matrix.target-abi }} 21 -vv
