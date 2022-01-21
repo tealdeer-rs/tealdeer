@@ -9,7 +9,7 @@ complete -c tldr -s l -l list           -d 'List all commands in the cache.' -f
 complete -c tldr -s f -l render         -d 'Render a specific markdown file.' -r
 complete -c tldr -s p -l platform       -d 'Override the operating system.' -xa 'linux macos sunos windows'
 complete -c tldr -s u -l update         -d 'Update the local cache.' -f
-complete -c tldr      -l no-auto-update -d 'Disable auto-update, override config file' -f
+complete -c tldr      -l no-auto-update -d 'If auto update is configured, disable it for this run.' -f
 complete -c tldr -s c -l clear-cache    -d 'Clear the local cache.' -f
 complete -c tldr      -l pager          -d 'Use a pager to page output.' -f
 complete -c tldr -s r -l raw            -d 'Display the raw markdown instead of rendering it.' -f
