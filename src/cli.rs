@@ -60,6 +60,10 @@ pub(crate) struct Args {
     #[clap(short = 'u', long = "update")]
     pub update: bool,
 
+    /// If auto update is configured, disable it for this run
+    #[clap(long = "no-auto-update", requires = "command_or_file")]
+    pub no_auto_update: bool,
+
     /// Clear the local cache
     #[clap(short = 'c', long = "clear-cache")]
     pub clear_cache: bool,
