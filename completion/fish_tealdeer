@@ -11,7 +11,7 @@ complete -c tldr -s p -l platform       -d 'Override the operating system.' -xa 
 complete -c tldr -s u -l update         -d 'Update the local cache.' -f
 complete -c tldr      -l no-auto-update -d 'Disable auto-update, override config file' -f
 complete -c tldr -s c -l clear-cache    -d 'Clear the local cache.' -f
-complete -c tldr -s p -l pager          -d 'Use a pager to page output.' -f
+complete -c tldr      -l pager          -d 'Use a pager to page output.' -f
 complete -c tldr -s r -l raw            -d 'Display the raw markdown instead of rendering it.' -f
 complete -c tldr -s q -l quiet          -d 'Suppress informational messages.' -f
 complete -c tldr      -l show-paths     -d 'Show file and directory paths used by tealdeer.' -f
