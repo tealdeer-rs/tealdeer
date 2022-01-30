@@ -164,12 +164,17 @@ impl Default for RawUpdatesConfig {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 struct RawDirectoriesConfig {
     #[serde(default)]
+    pub cache_dir: Option<PathBuf>,
+    #[serde(default)]
     pub custom_pages_dir: Option<PathBuf>,
 }
 
 impl Default for RawDirectoriesConfig {
     fn default() -> Self {
         Self {
+            cache_dir: None,
+            // FIXME: should this "business-logic" really be in `*Raw*DirectoriesConfig`?
+            // To me, this seems odd, especially since it can still be `None` afterwards 🤔
             custom_pages_dir: get_app_root(AppDataType::UserData, &crate::APP_INFO)
                 .map(|path| {
                     // Note: The `join("")` call ensures that there's a trailing slash
@@ -238,6 +243,7 @@ pub struct UpdatesConfig {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DirectoriesConfig {
+    pub cache_dir_override: Option<PathBuf>,
     pub custom_pages_dir: Option<PathBuf>,
 }
 
@@ -270,6 +276,7 @@ impl From<RawConfig> for Config {
                 ),
             },
             directories: DirectoriesConfig {
+                cache_dir_override: raw_config.directories.cache_dir,
                 custom_pages_dir: raw_config.directories.custom_pages_dir,
             },
         }

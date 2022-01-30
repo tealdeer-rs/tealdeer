@@ -183,7 +183,6 @@ pub enum PathSource {
     /// Env variable (TEALDEER_*)
     EnvVar,
 
-    #[allow(dead_code)] // Waiting for Pull Request #141
     /// Config file variable
     ConfigVar,
 }

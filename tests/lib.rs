@@ -115,6 +115,8 @@ impl TestEnv {
         }
         let run = build.run().unwrap();
         let mut cmd = run.command();
+        // FIXME: should we mock `$HOME` instead? seems more natural to me, especially since we
+        // want to deprecate the env var here
         cmd.env(CACHE_DIR_ENV_VAR, self.cache_dir.path().to_str().unwrap());
         cmd.env(
             "TEALDEER_CONFIG_DIR",
@@ -266,6 +268,25 @@ fn test_cache_location_not_a_directory() {
             "Path specified by ${} is not a directory",
             CACHE_DIR_ENV_VAR
         )));
+}
+
+#[test]
+fn test_override_cache_location() {
+    let testenv1 = TestEnv::new();
+    let testenv2 = TestEnv::new();
+
+    testenv1.add_entry("foo", "Main cache");
+    testenv2.add_entry("foo", "Secondary cache");
+
+    let mut cmd = testenv1.command();
+    cmd.arg("--raw").arg("foo");
+
+    cmd.assert().success().stdout(contains("Main cache"));
+    testenv1.write_config(format!(
+        "[directories]\ncache_dir = '{}'",
+        testenv2.cache_dir.path().display()
+    ));
+    cmd.assert().success().stdout(contains("Secondary cache"));
 }
 
 #[test]

@@ -14,18 +14,15 @@ use reqwest::{blocking::Client, Proxy};
 use walkdir::{DirEntry, WalkDir};
 use zip::ZipArchive;
 
-use crate::types::{PathSource, PlatformType};
+use crate::{
+    config::Config,
+    types::{PathSource, PlatformType},
+};
 
 static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
-
-#[derive(Debug)]
-pub struct Cache {
-    url: String,
-    platform: PlatformType,
-}
 
 #[derive(Debug)]
 pub struct PageLookupResult {
@@ -88,50 +85,91 @@ pub enum CacheFreshness {
     Missing,
 }
 
+#[derive(Debug)]
+pub struct Cache {
+    // FIXME: the cache shouldn't bother with keeping track of that, it could just get this path as
+    // a parameter in the methods that need it
+    url: String,
+    path: PathBuf,
+    pages_path: PathBuf,
+    platform: PlatformType,
+}
+
 impl Cache {
-    pub fn new<S>(url: S, platform: PlatformType) -> Self
+    pub fn new<S>(url: S, path: impl Into<PathBuf>, platform: PlatformType) -> Self
     where
         S: Into<String>,
     {
+        let path = path.into();
         Self {
             url: url.into(),
+            pages_path: Self::pages_path_for(&path),
+            path,
             platform,
         }
     }
 
-    /// Return the path to the cache directory.
-    pub fn get_cache_dir() -> Result<(PathBuf, PathSource)> {
-        // Allow overriding the cache directory by setting the env variable.
-        if let Ok(value) = env::var(CACHE_DIR_ENV_VAR) {
-            let path = PathBuf::from(value);
-            let (path_exists, path_is_dir) = path
-                .metadata()
-                .map_or((false, false), |md| (true, md.is_dir()));
-            ensure!(
-                !path_exists || path_is_dir,
-                "Path specified by ${} is not a directory",
-                CACHE_DIR_ENV_VAR
-            );
-            if !path_exists {
-                // Try to create the complete directory path.
-                fs::create_dir_all(&path).with_context(|| {
-                    format!(
-                        "Directory path specified by ${} cannot be created",
-                        CACHE_DIR_ENV_VAR
-                    )
-                })?;
-                eprintln!(
-                    "Successfully created cache directory path `{}`.",
-                    path.to_str().unwrap()
-                );
-            }
+    pub(crate) fn pages_path_for(cache_path: &Path) -> PathBuf {
+        cache_path.join(TLDR_PAGES_DIR)
+    }
+
+    /// Returns the base directory for the cache.
+    pub fn try_determine_cache_location(config: &Config) -> Result<(PathBuf, PathSource)> {
+        if let Some(path) = Self::path_from_config(config) {
+            return Ok((path, PathSource::ConfigVar));
+        }
+
+        if let Some(path) = Self::path_from_env()? {
             return Ok((path, PathSource::EnvVar));
+        }
+
+        let path = Self::default_path().context("Couldn't resolve cache path in any way (config file, environment variable, default location)")?;
+        Ok((path, PathSource::OsConvention))
+    }
+
+    pub(crate) fn path_from_config(config: &Config) -> Option<PathBuf> {
+        config.directories.cache_dir_override.clone()
+    }
+
+    pub(crate) fn path_from_env() -> Result<Option<PathBuf>> {
+        let path = match env::var(CACHE_DIR_ENV_VAR) {
+            Err(_) => return Ok(None),
+            Ok(value) => PathBuf::from(value),
         };
 
-        // Otherwise, fall back to user cache directory.
-        let dirs = get_app_root(AppDataType::UserCache, &crate::APP_INFO)
-            .context("Could not determine user cache directory")?;
-        Ok((dirs, PathSource::OsConvention))
+        let (path_exists, path_is_dir) = path
+            .metadata()
+            .map_or((false, false), |md| (true, md.is_dir()));
+
+        ensure!(
+            !path_exists || path_is_dir,
+            "Path specified by ${} is not a directory",
+            CACHE_DIR_ENV_VAR
+        );
+
+        // FIXME: this shouldn't be _here_, but rather be done for all path sources equally, right?
+        // (same with the check above)
+        // The constructor could be a good place
+        if !path_exists {
+            // Try to create the complete directory path.
+            fs::create_dir_all(&path).with_context(|| {
+                format!(
+                    "Directory path specified by ${} cannot be created",
+                    CACHE_DIR_ENV_VAR
+                )
+            })?;
+            eprintln!(
+                "Successfully created cache directory path `{}`.",
+                path.to_str().unwrap()
+            );
+        }
+
+        Ok(Some(path))
+    }
+
+    pub(crate) fn default_path() -> Result<PathBuf> {
+        get_app_root(AppDataType::UserCache, &crate::APP_INFO)
+            .context("Could not determine user cache directory")
     }
 
     /// Download the archive
@@ -170,13 +208,9 @@ impl Cache {
         let mut archive = ZipArchive::new(Cursor::new(bytes))
             .context("Could not decompress downloaded ZIP archive")?;
 
-        // Determine paths
-        let (cache_dir, _) = Self::get_cache_dir()?;
-        let pages_dir = cache_dir.join(TLDR_PAGES_DIR);
-
         // Make sure that cache directory exists
-        debug!("Ensure cache directory {:?} exists", &cache_dir);
-        fs::create_dir_all(&cache_dir).context("Could not create cache directory")?;
+        debug!("Ensure cache directory {:?} exists", &self.path);
+        fs::create_dir_all(&self.path).context("Could not create cache directory")?;
 
         // Clear cache directory
         // Note: This is not the best solution. Ideally we would download the
@@ -184,32 +218,31 @@ impl Cache {
         // But renaming a directory doesn't work across filesystems and Rust
         // does not yet offer a recursive directory copying function. So for
         // now, we'll use this approach.
-        Self::clear().context("Could not clear the cache directory")?;
+        self.clear()
+            .context("Could not clear the cache directory")?;
 
         // Extract archive
         archive
-            .extract(&pages_dir)
+            .extract(&self.pages_path)
             .context("Could not unpack compressed data")?;
 
         Ok(())
     }
 
     /// Return the duration since the cache directory was last modified.
-    pub fn last_update() -> Option<Duration> {
-        if let Ok((cache_dir, _)) = Self::get_cache_dir() {
-            if let Ok(metadata) = fs::metadata(cache_dir.join(TLDR_PAGES_DIR)) {
-                if let Ok(mtime) = metadata.modified() {
-                    let now = SystemTime::now();
-                    return now.duration_since(mtime).ok();
-                };
+    pub fn last_update(&self) -> Option<Duration> {
+        if let Ok(metadata) = fs::metadata(&self.pages_path) {
+            if let Ok(mtime) = metadata.modified() {
+                let now = SystemTime::now();
+                return now.duration_since(mtime).ok();
             };
         };
         None
     }
 
     /// Return the freshness of the cache (fresh, stale or missing).
-    pub fn freshness() -> CacheFreshness {
-        match Cache::last_update() {
+    pub fn freshness(&self) -> CacheFreshness {
+        match self.last_update() {
             Some(ago) if ago > crate::config::MAX_CACHE_AGE => CacheFreshness::Stale(ago),
             Some(_) => CacheFreshness::Fresh,
             None => CacheFreshness::Missing,
@@ -217,7 +250,7 @@ impl Cache {
     }
 
     /// Return the platform directory.
-    fn get_platform_dir(&self) -> &'static str {
+    fn platform_directory_name(&self) -> &'static str {
         match self.platform {
             PlatformType::Linux => "linux",
             PlatformType::OsX => "osx",
@@ -257,15 +290,6 @@ impl Cache {
         let patch_filename = format!("{}.patch", name);
         let custom_filename = format!("{}.page", name);
 
-        // Get cache dir
-        let cache_dir = match Self::get_cache_dir() {
-            Ok((cache_dir, _)) => cache_dir.join(TLDR_PAGES_DIR),
-            Err(e) => {
-                log::error!("Could not get cache directory: {}", e);
-                return None;
-            }
-        };
-
         let lang_dirs: Vec<String> = languages
             .iter()
             .map(|lang| {
@@ -288,24 +312,23 @@ impl Cache {
         let patch_path = Self::find_patch(&patch_filename, custom_pages_dir);
 
         // Try to find a platform specific path next, append custom patch to it.
-        let platform_dir = self.get_platform_dir();
+        let platform_dir = self.platform_directory_name();
         if let Some(page) =
-            Self::find_page_for_platform(&page_filename, &cache_dir, platform_dir, &lang_dirs)
+            Self::find_page_for_platform(&page_filename, &self.pages_path, platform_dir, &lang_dirs)
         {
             return Some(PageLookupResult::with_page(page).with_optional_patch(patch_path));
         }
 
         // Did not find platform specific results, fall back to "common"
-        Self::find_page_for_platform(&page_filename, &cache_dir, "common", &lang_dirs)
+        Self::find_page_for_platform(&page_filename, &self.pages_path, "common", &lang_dirs)
             .map(|page| PageLookupResult::with_page(page).with_optional_patch(patch_path))
     }
 
     /// Return the available pages.
     pub fn list_pages(&self) -> Result<Vec<String>> {
-        // Determine platforms directory and platform
-        let (cache_dir, _) = Self::get_cache_dir()?;
-        let platforms_dir = cache_dir.join(TLDR_PAGES_DIR).join("pages");
-        let platform_dir = self.get_platform_dir();
+        // FIXME: wait, this doesn't respect language settings?
+        let english_pages = self.pages_path.join("pages");
+        let platform_dir = self.platform_directory_name();
 
         // Closure that allows the WalkDir instance to traverse platform
         // specific and common page directories, but not others.
@@ -324,7 +347,7 @@ impl Cache {
         };
 
         // Recursively walk through common and (if applicable) platform specific directory
-        let mut pages = WalkDir::new(platforms_dir)
+        let mut pages = WalkDir::new(english_pages)
             .min_depth(1) // Skip root directory
             .into_iter()
             .filter_entry(|e| should_walk(e)) // Filter out pages for other architectures
@@ -346,8 +369,8 @@ impl Cache {
     }
 
     /// Delete the cache directory.
-    pub fn clear() -> Result<()> {
-        let (path, _) = Self::get_cache_dir()?;
+    pub fn clear(&self) -> Result<()> {
+        let path = &self.path;
 
         // Check preconditions
         ensure!(
