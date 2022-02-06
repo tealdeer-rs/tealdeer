@@ -81,10 +81,20 @@ fn check_cache(args: &Args, enable_styles: bool) -> CheckCacheResult {
             CheckCacheResult::CacheFound
         }
         CacheFreshness::Missing => {
-            print_warning(
+            print_error(
                 enable_styles,
-                "Cache not found. Please run `tldr --update`.",
+                &anyhow::anyhow!(
+                    "Page cache not found. Please run `tldr --update` to download the cache."
+                ),
             );
+            println!("\nNote: You can optionally enable automatic cache updates by adding the");
+            println!("following config to your config file:\n");
+            println!("  [updates]");
+            println!("  auto_update = true\n");
+            println!("The path to your config file can be looked up with `tldr --show-paths`.");
+            println!("To create an initial config file, use `tldr --seed-config`.\n");
+            println!("You can find more tips and tricks in our docs:\n");
+            println!("  https://dbrgn.github.io/tealdeer/config_updates.html");
             CheckCacheResult::CacheMissing
         }
     }

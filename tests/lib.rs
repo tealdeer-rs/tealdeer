@@ -131,7 +131,7 @@ fn test_missing_cache() {
         .args(["sl"])
         .assert()
         .failure()
-        .stderr(contains("Cache not found. Please run `tldr --update`."));
+        .stderr(contains("Page cache not found. Please run `tldr --update`"));
 }
 
 #[test]
@@ -143,7 +143,7 @@ fn test_update_cache() {
         .args(["sl"])
         .assert()
         .failure()
-        .stderr(contains("Cache not found. Please run `tldr --update`."));
+        .stderr(contains("Page cache not found. Please run `tldr --update`"));
 
     testenv
         .command()
@@ -518,7 +518,7 @@ fn test_list_flag_rendering() {
         .args(["--list"])
         .assert()
         .failure()
-        .stderr(contains("Cache not found. Please run `tldr --update`."));
+        .stderr(contains("Page cache not found. Please run `tldr --update`"));
 
     testenv.add_entry("foo", "");
 
@@ -551,7 +551,7 @@ fn test_autoupdate_cache() {
         .args(["--list"])
         .assert()
         .failure()
-        .stderr(contains("Cache not found. Please run `tldr --update`."));
+        .stderr(contains("Page cache not found. Please run `tldr --update`"));
 
     let config_file_path = testenv.config_dir.path().join("config.toml");
     let cache_file_path = testenv.cache_dir.path().join(TLDR_PAGES_DIR);
