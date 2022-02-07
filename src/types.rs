@@ -44,7 +44,7 @@ impl str::FromStr for PlatformType {
 }
 
 impl PlatformType {
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "android"))]
     pub fn current() -> Self {
         Self::Linux
     }
@@ -67,6 +67,7 @@ impl PlatformType {
 
     #[cfg(not(any(
         target_os = "linux",
+        target_os = "android",
         target_os = "macos",
         target_os = "freebsd",
         target_os = "netbsd",
