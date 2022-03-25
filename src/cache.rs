@@ -19,7 +19,7 @@ use crate::{
     types::{PathSource, PlatformType},
 };
 
-static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
+pub(crate) static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 static TLDR_OLD_PAGES_DIR: &str = "tldr-master";

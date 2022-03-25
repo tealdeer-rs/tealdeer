@@ -20,7 +20,9 @@ use std::{env, process};
 
 use app_dirs::AppInfo;
 use atty::Stream;
+use cache::CACHE_DIR_ENV_VAR;
 use clap::Parser;
+use types::PathSource;
 
 mod cache;
 mod cli;
@@ -330,10 +332,15 @@ fn main() {
         };
     }
 
-    let (cache_dir, _) = Cache::try_determine_cache_location(&config).unwrap_or_else(|err| {
-        print_error(enable_styles, &err);
-        process::exit(1);
-    });
+    let (cache_dir, cache_dir_source) = Cache::try_determine_cache_location(&config)
+        .unwrap_or_else(|err| {
+            print_error(enable_styles, &err);
+            process::exit(1);
+        });
+    if cache_dir_source == PathSource::EnvVar {
+        print_warning(enable_styles, &format!("You are specifying the location of the pages cache using the DEPRECATED environment variable (${}). Please specify the `cache_dir` in the configuration file instead.", CACHE_DIR_ENV_VAR));
+    }
+
     let cache = Cache::new(ARCHIVE_URL, cache_dir, platform);
 
     // Clear cache, pass through
