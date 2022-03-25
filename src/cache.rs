@@ -87,25 +87,18 @@ pub enum CacheFreshness {
 
 #[derive(Debug)]
 pub struct Cache {
-    // FIXME: the cache shouldn't bother with keeping track of that, it could just get this path as
-    // a parameter in the methods that need it
-    url: String,
+    /// The base directory of the cache.
     path: PathBuf,
+    /// Cached `PathBuf` to the directory containing extracted pages.
     pages_path: PathBuf,
-    platform: PlatformType,
 }
 
 impl Cache {
-    pub fn new<S>(url: S, path: impl Into<PathBuf>, platform: PlatformType) -> Self
-    where
-        S: Into<String>,
-    {
+    pub fn new(path: impl Into<PathBuf>) -> Self {
         let path = path.into();
         Self {
-            url: url.into(),
             pages_path: Self::pages_path_for(&path),
             path,
-            platform,
         }
     }
 
@@ -173,7 +166,7 @@ impl Cache {
     }
 
     /// Download the archive
-    fn download(&self) -> Result<Vec<u8>> {
+    fn download(&self, archive_url: &str) -> Result<Vec<u8>> {
         let mut builder = Client::builder();
         if let Ok(ref host) = env::var("HTTP_PROXY") {
             if let Ok(proxy) = Proxy::http(host) {
@@ -189,10 +182,10 @@ impl Cache {
             .build()
             .context("Could not instantiate HTTP client")?;
         let mut resp = client
-            .get(&self.url)
+            .get(archive_url)
             .send()?
             .error_for_status()
-            .with_context(|| format!("Could not download tldr pages from {}", &self.url))?;
+            .with_context(|| format!("Could not download tldr pages from {}", archive_url))?;
         let mut buf: Vec<u8> = vec![];
         let bytes_downloaded = resp.copy_to(&mut buf)?;
         debug!("{} bytes downloaded", bytes_downloaded);
@@ -200,9 +193,9 @@ impl Cache {
     }
 
     /// Update the pages cache.
-    pub fn update(&self) -> Result<()> {
+    pub fn update(&self, archive_url: &str) -> Result<()> {
         // First, download the compressed data
-        let bytes: Vec<u8> = self.download()?;
+        let bytes: Vec<u8> = self.download(archive_url)?;
 
         // Decompress the response body into an `Archive`
         let mut archive = ZipArchive::new(Cursor::new(bytes))
@@ -250,8 +243,8 @@ impl Cache {
     }
 
     /// Return the platform directory.
-    fn platform_directory_name(&self) -> &'static str {
-        match self.platform {
+    fn platform_directory_name(platform: PlatformType) -> &'static str {
+        match platform {
             PlatformType::Linux => "linux",
             PlatformType::OsX => "osx",
             PlatformType::SunOs => "sunos",
@@ -283,6 +276,7 @@ impl Cache {
     pub fn find_page(
         &self,
         name: &str,
+        platform: PlatformType,
         languages: &[String],
         custom_pages_dir: Option<&Path>,
     ) -> Option<PageLookupResult> {
@@ -312,7 +306,7 @@ impl Cache {
         let patch_path = Self::find_patch(&patch_filename, custom_pages_dir);
 
         // Try to find a platform specific path next, append custom patch to it.
-        let platform_dir = self.platform_directory_name();
+        let platform_dir = Self::platform_directory_name(platform);
         if let Some(page) =
             Self::find_page_for_platform(&page_filename, &self.pages_path, platform_dir, &lang_dirs)
         {
@@ -325,10 +319,10 @@ impl Cache {
     }
 
     /// Return the available pages.
-    pub fn list_pages(&self) -> Result<Vec<String>> {
+    pub fn list_pages(&self, platform: PlatformType) -> Result<Vec<String>> {
         // FIXME: wait, this doesn't respect language settings?
         let english_pages = self.pages_path.join("pages");
-        let platform_dir = self.platform_directory_name();
+        let platform_dir = Self::platform_directory_name(platform);
 
         // Closure that allows the WalkDir instance to traverse platform
         // specific and common page directories, but not others.

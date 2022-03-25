@@ -117,7 +117,7 @@ fn clear_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
 
 /// Update the cache
 fn update_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
-    cache.update().unwrap_or_else(|e| {
+    cache.update(ARCHIVE_URL).unwrap_or_else(|e| {
         print_error(enable_styles, &e.context("Could not update cache"));
         process::exit(1);
     });
@@ -341,7 +341,7 @@ fn main() {
         print_warning(enable_styles, &format!("You are specifying the location of the pages cache using the DEPRECATED environment variable (${}). Please specify the `cache_dir` in the configuration file instead.", CACHE_DIR_ENV_VAR));
     }
 
-    let cache = Cache::new(ARCHIVE_URL, cache_dir, platform);
+    let cache = Cache::new(cache_dir);
 
     // Clear cache, pass through
     if args.clear_cache {
@@ -367,7 +367,7 @@ fn main() {
     // List cached commands and exit
     if args.list {
         // Get list of pages
-        let pages = cache.list_pages().unwrap_or_else(|e| {
+        let pages = cache.list_pages(platform).unwrap_or_else(|e| {
             print_error(enable_styles, &e.context("Could not get list of pages"));
             process::exit(1);
         });
@@ -392,6 +392,7 @@ fn main() {
         // Search for command in cache
         if let Some(lookup_result) = cache.find_page(
             &command,
+            platform,
             &languages,
             config.directories.custom_pages_dir.as_deref(),
         ) {
