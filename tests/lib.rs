@@ -95,7 +95,6 @@ impl TestEnv {
     }
 
     /// Add the specified feature.
-    #[allow(dead_code)] // Might be useful in the future
     fn with_feature<S: Into<String>>(mut self, feature: S) -> Self {
         self.features.push(feature.into());
         self
@@ -111,7 +110,7 @@ impl TestEnv {
             build = build.arg("--no-default-features");
         }
         if !self.features.is_empty() {
-            build = build.arg(&format!("--feature {}", self.features.join(",")));
+            build = build.arg("--features").arg(self.features.join(","));
         }
         let run = build.run().unwrap();
         let mut cmd = run.command();
@@ -228,11 +227,12 @@ fn test_quiet_old_cache() {
 
 #[test]
 fn test_create_cache_directory_path() {
-    let testenv = TestEnv::new();
+    let testenv = TestEnv::new().with_feature("logging");
     let cache_dir = testenv.cache_dir.path();
     let internal_cache_dir = cache_dir.join("internal");
 
     let mut command = testenv.command();
+    command.env("RUST_LOG", "tldr=info");
     command.env(CACHE_DIR_ENV_VAR, internal_cache_dir.to_str().unwrap());
 
     assert!(!internal_cache_dir.exists());
@@ -242,7 +242,7 @@ fn test_create_cache_directory_path() {
         .assert()
         .success()
         .stderr(contains(format!(
-            "Successfully created cache directory path `{}`.",
+            "Successfully created cache directory at `{}`.",
             internal_cache_dir.to_str().unwrap()
         )))
         .stderr(contains("Successfully updated cache."));
@@ -264,10 +264,7 @@ fn test_cache_location_not_a_directory() {
         .arg("-u")
         .assert()
         .failure()
-        .stderr(contains(format!(
-            "Path specified by ${} is not a directory",
-            CACHE_DIR_ENV_VAR
-        )));
+        .stderr(contains("exists, but is not a directory"));
 }
 
 #[test]
