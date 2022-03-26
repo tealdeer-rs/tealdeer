@@ -9,7 +9,7 @@ use std::{
 
 use anyhow::{ensure, Context, Result};
 use app_dirs::{get_app_root, AppDataType};
-use log::debug;
+use log::{debug, info};
 use reqwest::{blocking::Client, Proxy};
 use walkdir::{DirEntry, WalkDir};
 use zip::ZipArchive;
@@ -88,7 +88,7 @@ pub enum CacheFreshness {
 #[derive(Debug)]
 pub struct Cache {
     /// The base directory of the cache.
-    path: PathBuf,
+    base_path: PathBuf,
     /// Cached `PathBuf` to the directory containing extracted pages.
     pages_path: PathBuf,
 }
@@ -98,8 +98,36 @@ impl Cache {
         let path = path.into();
         Self {
             pages_path: Self::pages_path_for(&path),
-            path,
+            base_path: path,
         }
+    }
+
+    fn ensure_paths_exist(&self) -> Result<()> {
+        let (exists, is_dir) = self
+            .base_path
+            .metadata()
+            .map_or((false, false), |md| (true, md.is_dir()));
+
+        ensure!(
+            !exists || is_dir,
+            "Cache path ({}) exists, but is not a directory!",
+            self.base_path.display(),
+        );
+
+        if !exists {
+            fs::create_dir_all(&self.base_path).with_context(|| {
+                format!(
+                    "Cache path ({}) cannot be created!",
+                    self.base_path.display(),
+                )
+            })?;
+            info!(
+                "Successfully created cache directory at `{}`.",
+                self.base_path.display(),
+            );
+        }
+
+        Ok(())
     }
 
     pub(crate) fn pages_path_for(cache_path: &Path) -> PathBuf {
@@ -112,7 +140,7 @@ impl Cache {
             return Ok((path, PathSource::ConfigVar));
         }
 
-        if let Some(path) = Self::path_from_env()? {
+        if let Some(path) = Self::path_from_env() {
             return Ok((path, PathSource::EnvVar));
         }
 
@@ -124,40 +152,8 @@ impl Cache {
         config.directories.cache_dir_override.clone()
     }
 
-    pub(crate) fn path_from_env() -> Result<Option<PathBuf>> {
-        let path = match env::var(CACHE_DIR_ENV_VAR) {
-            Err(_) => return Ok(None),
-            Ok(value) => PathBuf::from(value),
-        };
-
-        let (path_exists, path_is_dir) = path
-            .metadata()
-            .map_or((false, false), |md| (true, md.is_dir()));
-
-        ensure!(
-            !path_exists || path_is_dir,
-            "Path specified by ${} is not a directory",
-            CACHE_DIR_ENV_VAR
-        );
-
-        // FIXME: this shouldn't be _here_, but rather be done for all path sources equally, right?
-        // (same with the check above)
-        // The constructor could be a good place
-        if !path_exists {
-            // Try to create the complete directory path.
-            fs::create_dir_all(&path).with_context(|| {
-                format!(
-                    "Directory path specified by ${} cannot be created",
-                    CACHE_DIR_ENV_VAR
-                )
-            })?;
-            eprintln!(
-                "Successfully created cache directory path `{}`.",
-                path.to_str().unwrap()
-            );
-        }
-
-        Ok(Some(path))
+    pub(crate) fn path_from_env() -> Option<PathBuf> {
+        env::var(CACHE_DIR_ENV_VAR).ok().map(PathBuf::from)
     }
 
     pub(crate) fn default_path() -> Result<PathBuf> {
@@ -201,9 +197,7 @@ impl Cache {
         let mut archive = ZipArchive::new(Cursor::new(bytes))
             .context("Could not decompress downloaded ZIP archive")?;
 
-        // Make sure that cache directory exists
-        debug!("Ensure cache directory {:?} exists", &self.path);
-        fs::create_dir_all(&self.path).context("Could not create cache directory")?;
+        self.ensure_paths_exist()?;
 
         // Clear cache directory
         // Note: This is not the best solution. Ideally we would download the
@@ -364,7 +358,7 @@ impl Cache {
 
     /// Delete the cache directory.
     pub fn clear(&self) -> Result<()> {
-        let path = &self.path;
+        let path = &self.base_path;
 
         // Check preconditions
         ensure!(
