@@ -366,14 +366,7 @@ fn main() {
 
     // List cached commands and exit
     if args.list {
-        // Get list of pages
-        let pages = cache.list_pages(platform).unwrap_or_else(|e| {
-            print_error(enable_styles, &e.context("Could not get list of pages"));
-            process::exit(1);
-        });
-
-        // Print pages
-        println!("{}", pages.join("\n"));
+        println!("{}", cache.list_pages(platform).join("\n"));
         process::exit(0);
     }
 

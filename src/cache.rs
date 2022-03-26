@@ -162,7 +162,7 @@ impl Cache {
     }
 
     /// Download the archive
-    fn download(&self, archive_url: &str) -> Result<Vec<u8>> {
+    fn download(archive_url: &str) -> Result<Vec<u8>> {
         let mut builder = Client::builder();
         if let Ok(ref host) = env::var("HTTP_PROXY") {
             if let Ok(proxy) = Proxy::http(host) {
@@ -191,7 +191,7 @@ impl Cache {
     /// Update the pages cache.
     pub fn update(&self, archive_url: &str) -> Result<()> {
         // First, download the compressed data
-        let bytes: Vec<u8> = self.download(archive_url)?;
+        let bytes: Vec<u8> = Self::download(archive_url)?;
 
         // Decompress the response body into an `Archive`
         let mut archive = ZipArchive::new(Cursor::new(bytes))
@@ -313,7 +313,7 @@ impl Cache {
     }
 
     /// Return the available pages.
-    pub fn list_pages(&self, platform: PlatformType) -> Result<Vec<String>> {
+    pub fn list_pages(&self, platform: PlatformType) -> Vec<String> {
         // FIXME: wait, this doesn't respect language settings?
         let english_pages = self.pages_path.join("pages");
         let platform_dir = Self::platform_directory_name(platform);
@@ -353,7 +353,7 @@ impl Cache {
             .collect::<Vec<String>>();
         pages.sort();
         pages.dedup();
-        Ok(pages)
+        pages
     }
 
     /// Delete the cache directory.
