@@ -19,6 +19,7 @@ Tealdeer has been added to a few package managers:
 - FreeBSD: [`sysutils/tealdeer`](https://www.freshports.org/sysutils/tealdeer/)
 - Funtoo: [`app-misc/tealdeer`](https://github.com/funtoo/core-kit/tree/1.4-release/app-misc/tealdeer)
 - Homebrew: [`tealdeer`](https://formulae.brew.sh/formula/tealdeer)
+- MacPorts: [`tealdeer`](https://ports.macports.org/port/tealdeer/)
 - NetBSD: [`sysutils/tealdeer`](https://pkgsrc.se/sysutils/tealdeer)
 - Nix: [`tealdeer`](https://nixos.org/nixos/packages.html#tealdeer)
 - openSUSE: [`tealdeer`](https://software.opensuse.org/package/tealdeer?search_term=tealdeer)
