@@ -83,7 +83,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --target x86_64-apple-darwin
+          args: --release --target x86_64-apple-darwin --no-default-features --features webpki-roots
       - uses: actions/upload-artifact@v2
         with:
           name: "tealdeer-macos-x86_64"

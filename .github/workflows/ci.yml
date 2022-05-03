@@ -27,16 +27,15 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-      - name: Build with all features
+      - name: Build with logging and webpki roots
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --all-features
+          args: --features logging,webpki-roots --no-default-features
       - name: Run tests
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-features
 
   clippy:
     name: run clippy lints
@@ -51,7 +50,7 @@ jobs:
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features
+          args: --features logging
 
   fmt:
     name: run rustfmt
