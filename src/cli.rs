@@ -10,12 +10,12 @@ use crate::types::{ColorOptions, PlatformType};
 // to improve readability and allow contributors to grep names like "clear-cache"
 #[derive(Parser, Debug)]
 #[clap(about = "A fast TLDR client", author, version)]
-#[clap(setting = AppSettings::ArgRequiredElseHelp)]
-#[clap(setting = AppSettings::DeriveDisplayOrder)]
-#[clap(setting = AppSettings::DisableColoredHelp)]
 #[clap(
     after_help = "To view the user documentation, please visit https://dbrgn.github.io/tealdeer/."
 )]
+#[clap(setting = AppSettings::DeriveDisplayOrder)]
+#[clap(arg_required_else_help(true))]
+#[clap(disable_colored_help(true))]
 #[clap(group = ArgGroup::new("command_or_file").args(&["command", "render"]))]
 pub(crate) struct Args {
     /// The command to show (e.g. `tar` or `git log`)
