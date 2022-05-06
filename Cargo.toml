@@ -26,7 +26,7 @@ atty = "0.2"
 clap = { version = "3", features = ["std", "derive", "suggestions", "color"], default-features = false }
 env_logger = { version = "0.9", optional = true }
 log = "0.4"
-reqwest = { version = "0.11.3", features = ["blocking", "rustls-tls", "rustls-tls-native-roots"], default-features = false }
+reqwest = { version = "0.11.3", features = ["blocking"], default-features = false }
 serde = "1.0.21"
 serde_derive = "1.0.21"
 toml = "0.5.1"
@@ -44,6 +44,9 @@ tempfile = "3.1.0"
 filetime = "0.2.10"
 
 [features]
+default = ["native-roots"]
+native-roots = ["reqwest/rustls-tls-native-roots"]
+webpki-roots = ["reqwest/rustls-tls-webpki-roots"]
 logging = ["env_logger"]
 
 [profile.release]

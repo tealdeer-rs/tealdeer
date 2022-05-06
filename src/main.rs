@@ -16,6 +16,14 @@
 #![allow(clippy::struct_excessive_bools)]
 #![allow(clippy::too_many_lines)]
 
+#[cfg(any(
+    all(feature = "native-roots", feature = "webpki-roots"),
+    not(any(feature = "native-roots", feature = "webpki-roots")),
+))]
+compile_error!(
+    "exactly one of feature \"native-roots\" and feature \"webpki-roots\" must be enabled"
+);
+
 use std::{env, process};
 
 use app_dirs::AppInfo;
