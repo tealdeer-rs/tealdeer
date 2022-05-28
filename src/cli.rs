@@ -3,6 +3,7 @@
 use std::path::PathBuf;
 
 use clap::{AppSettings, ArgGroup, Parser};
+use clap_complete::Shell;
 
 use crate::types::{ColorOptions, PlatformType};
 
@@ -108,6 +109,14 @@ pub(crate) struct Args {
         possible_values = ["always", "auto", "never"]
     )]
     pub color: Option<ColorOptions>,
+
+    /// Generate a shell completion script to stdout
+    #[clap(
+        long="gen-completion",
+        value_name = "SHELL_TYPE",
+        possible_values = ["bash", "fish", "powershell", "zsh"]
+    )]
+    pub gen_completion: Option<Shell>,
 
     /// Print the version
     // Note: We override the version flag because clap uses `-V` by default,

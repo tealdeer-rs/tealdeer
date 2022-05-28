@@ -28,7 +28,7 @@ use std::{env, process};
 
 use app_dirs::AppInfo;
 use atty::Stream;
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 
 mod cache;
 mod cli;
@@ -260,6 +260,17 @@ fn main() {
 
     // Parse arguments
     let mut args = Args::parse();
+
+    // Generate shell completion
+    if let Some(shell_type) = args.gen_completion {
+        clap_complete::generate(
+            shell_type,
+            &mut Args::command(),
+            "tldr",
+            &mut std::io::stdout(),
+        );
+        process::exit(0);
+    }
 
     // Determine the usage of styles
     #[cfg(target_os = "windows")]
