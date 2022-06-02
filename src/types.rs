@@ -13,6 +13,7 @@ pub enum PlatformType {
     OsX,
     SunOs,
     Windows,
+    Android,
 }
 
 impl fmt::Display for PlatformType {
@@ -22,6 +23,7 @@ impl fmt::Display for PlatformType {
             Self::OsX => write!(f, "macOS / BSD"),
             Self::SunOs => write!(f, "SunOS"),
             Self::Windows => write!(f, "Windows"),
+            Self::Android => write!(f, "Android"),
         }
     }
 }
@@ -35,8 +37,9 @@ impl str::FromStr for PlatformType {
             "osx" | "macos" => Ok(Self::OsX),
             "sunos" => Ok(Self::SunOs),
             "windows" => Ok(Self::Windows),
+            "android" => Ok(Self::Android),
             other => Err(anyhow!(
-                "Unknown OS: {}. Possible values: linux, macos, osx, sunos, windows",
+                "Unknown OS: {}. Possible values: linux, macos, osx, sunos, windows, android",
                 other
             )),
         }

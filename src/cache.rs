@@ -223,6 +223,7 @@ impl Cache {
             PlatformType::OsX => "osx",
             PlatformType::SunOs => "sunos",
             PlatformType::Windows => "windows",
+            PlatformType::Android => "android",
         }
     }
 
