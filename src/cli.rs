@@ -39,7 +39,7 @@ pub(crate) struct Args {
     #[clap(
         short = 'p',
         long = "platform",
-        possible_values = ["linux", "macos", "windows", "sunos", "osx"],
+        possible_values = ["linux", "macos", "windows", "sunos", "osx", "android"],
     )]
     pub platform: Option<PlatformType>,
 

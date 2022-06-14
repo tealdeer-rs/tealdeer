@@ -19,6 +19,7 @@ _tealdeer() {
             macos
             sunos
             windows
+            android
         ))'
         "($I -L --language)"{-L,--language}"[Override the language settings]:lang"
         "($I -u --update)"{-u,--update}"[Update the local cache]"
