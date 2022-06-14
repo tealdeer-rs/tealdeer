@@ -68,6 +68,11 @@ impl PlatformType {
         Self::Windows
     }
 
+    #[cfg(target_os = "android")]
+    pub fn current() -> Self {
+        Self::Android
+    }
+
     #[cfg(not(any(
         target_os = "linux",
         target_os = "macos",
@@ -75,7 +80,8 @@ impl PlatformType {
         target_os = "netbsd",
         target_os = "openbsd",
         target_os = "dragonfly",
-        target_os = "windows"
+        target_os = "windows",
+        target_os = "android",
     )))]
     pub fn current() -> Self {
         Self::Other
