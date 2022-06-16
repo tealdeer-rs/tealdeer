@@ -59,11 +59,13 @@ const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
 
 /// The cache should be updated if it was explicitly requested,
 /// or if an automatic update is due and allowed.
-fn should_update_cache(args: &Args, config: &Config) -> bool {
+fn should_update_cache(cache: &Cache, args: &Args, config: &Config) -> bool {
     args.update
         || (!args.no_auto_update
             && config.updates.auto_update
-            && Cache::last_update().map_or(true, |ago| ago >= config.updates.auto_update_interval))
+            && cache
+                .last_update()
+                .map_or(true, |ago| ago >= config.updates.auto_update_interval))
 }
 
 #[derive(PartialEq)]
@@ -73,8 +75,8 @@ enum CheckCacheResult {
 }
 
 /// Check the cache for freshness. If it's stale or missing, show a warning.
-fn check_cache(args: &Args, enable_styles: bool) -> CheckCacheResult {
-    match Cache::freshness() {
+fn check_cache(cache: &Cache, args: &Args, enable_styles: bool) -> CheckCacheResult {
+    match cache.freshness() {
         CacheFreshness::Fresh => CheckCacheResult::CacheFound,
         CacheFreshness::Stale(_) if args.quiet => CheckCacheResult::CacheFound,
         CacheFreshness::Stale(age) => {
@@ -109,8 +111,8 @@ fn check_cache(args: &Args, enable_styles: bool) -> CheckCacheResult {
 }
 
 /// Clear the cache
-fn clear_cache(quietly: bool, enable_styles: bool) {
-    Cache::clear().unwrap_or_else(|e| {
+fn clear_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
+    cache.clear().unwrap_or_else(|e| {
         print_error(enable_styles, &e.context("Could not clear cache"));
         process::exit(1);
     });
@@ -157,28 +159,15 @@ fn show_paths(config: &Config) {
     );
     let config_path = get_config_path().map_or_else(
         |e| format!("[Error: {}]", e),
-        |(path, _)| path.to_str().unwrap_or("[Invalid]").to_string(),
+        |(path, _)| path.display().to_string(),
     );
-    let cache_dir = Cache::get_cache_dir().map_or_else(
-        |e| format!("[Error: {}]", e),
-        |(mut path, source)| {
-            path.push(""); // Trailing path separator
-            match path.to_str() {
-                Some(path) => format!("{} ({})", path, source),
-                None => "[Invalid]".to_string(),
-            }
-        },
-    );
-    let pages_dir = Cache::get_cache_dir().map_or_else(
-        |e| format!("[Error: {}]", e),
-        |(mut path, _)| {
-            path.push(TLDR_PAGES_DIR);
-            path.push(""); // Trailing path separator
-            path.into_os_string()
-                .into_string()
-                .unwrap_or_else(|_| "[Invalid]".to_string())
-        },
-    );
+    let cache_dir = config.directories.cache_dir.display();
+    let pages_dir = {
+        let mut path = config.directories.cache_dir.clone();
+        path.push(TLDR_PAGES_DIR);
+        path.push(""); // Trailing path separator
+        path.display().to_string()
+    };
     let custom_pages_dir = config.directories.custom_pages_dir.as_deref().map_or_else(
         || "[None]".to_string(),
         |path| {
@@ -339,15 +328,19 @@ fn main() {
     }
 
     // Initialize cache
-    let cache = Cache::new(ARCHIVE_URL, platform);
+    let cache =
+        Cache::new(ARCHIVE_URL, platform, &config.directories.cache_dir).unwrap_or_else(|e| {
+            print_error(enable_styles, &e.context("Could not initialize cache"));
+            process::exit(1);
+        });
 
     // Clear cache, pass through
     if args.clear_cache {
-        clear_cache(args.quiet, enable_styles);
+        clear_cache(&cache, args.quiet, enable_styles);
     }
 
     // Cache update, pass through
-    let cache_updated = if should_update_cache(&args, &config) {
+    let cache_updated = if should_update_cache(&cache, &args, &config) {
         update_cache(&cache, args.quiet, enable_styles);
         true
     } else {
@@ -357,23 +350,19 @@ fn main() {
     // Check cache presence and freshness
     if !cache_updated
         && (args.list || !args.command.is_empty())
-        && check_cache(&args, enable_styles) == CheckCacheResult::CacheMissing
+        && check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing
     {
         process::exit(1);
     }
 
     // List cached commands and exit
     if args.list {
-        // Get list of pages
-        let pages = cache
-            .list_pages(config.directories.custom_pages_dir.as_deref())
-            .unwrap_or_else(|e| {
-                print_error(enable_styles, &e.context("Could not get list of pages"));
-                process::exit(1);
-            });
-
-        // Print pages
-        println!("{}", pages.join("\n"));
+        println!(
+            "{}",
+            cache
+                .list_pages(config.directories.custom_pages_dir.as_deref())
+                .join("\n")
+        );
         process::exit(0);
     }
 

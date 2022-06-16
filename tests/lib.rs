@@ -263,9 +263,12 @@ fn test_cache_location_not_a_directory() {
         .assert()
         .failure()
         .stderr(contains(format!(
-            "Path specified by ${} is not a directory",
-            CACHE_DIR_ENV_VAR
-        )));
+            "Cache directory path `{}` is not a directory",
+            internal_file.display(),
+        )))
+        .stderr(contains(
+            "Warning: The $TEALDEER_CACHE_DIR env variable is deprecated",
+        ));
 }
 
 #[test]
