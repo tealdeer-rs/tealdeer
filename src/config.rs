@@ -1,7 +1,7 @@
 use std::{
-    env, fs,
+    env, fmt, fs,
     io::{Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     time::Duration,
 };
 
@@ -162,26 +162,12 @@ impl Default for RawUpdatesConfig {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawDirectoriesConfig {
     #[serde(default)]
     pub cache_dir: Option<PathBuf>,
     #[serde(default)]
     pub custom_pages_dir: Option<PathBuf>,
-}
-
-impl Default for RawDirectoriesConfig {
-    fn default() -> Self {
-        Self {
-            cache_dir: None,
-            custom_pages_dir: get_app_root(AppDataType::UserData, &crate::APP_INFO)
-                .map(|path| {
-                    // Note: The `join("")` call ensures that there's a trailing slash
-                    path.join("pages").join("")
-                })
-                .ok(),
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -246,10 +232,22 @@ pub struct PathWithSource {
     pub source: PathSource,
 }
 
+impl PathWithSource {
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
+impl fmt::Display for PathWithSource {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} ({})", self.path.display(), self.source)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DirectoriesConfig {
     pub cache_dir: PathWithSource,
-    pub custom_pages_dir: Option<PathBuf>,
+    pub custom_pages_dir: Option<PathWithSource>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -316,9 +314,27 @@ impl Config {
             // If everything fails, give up
             bail!("Could not determine user cache directory");
         };
+        let custom_pages_dir = raw_config
+            .directories
+            .custom_pages_dir
+            .map(|path| PathWithSource {
+                path,
+                source: PathSource::OsConvention,
+            })
+            .or_else(|| {
+                get_app_root(AppDataType::UserData, &crate::APP_INFO)
+                    .map(|path| {
+                        // Note: The `join("")` call ensures that there's a trailing slash
+                        PathWithSource {
+                            path: path.join("pages").join(""),
+                            source: PathSource::ConfigFile,
+                        }
+                    })
+                    .ok()
+            });
         let directories = DirectoriesConfig {
             cache_dir,
-            custom_pages_dir: raw_config.directories.custom_pages_dir,
+            custom_pages_dir,
         };
 
         Ok(Self {
