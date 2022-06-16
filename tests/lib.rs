@@ -10,9 +10,9 @@ use std::{
 use assert_cmd::prelude::*;
 use predicates::{
     boolean::PredicateBooleanExt,
-    prelude::predicate::str::{contains, diff, is_empty},
+    prelude::predicate::str::{contains, diff, is_empty, is_match},
 };
-use tempfile::{Builder, TempDir};
+use tempfile::{Builder as TempfileBuilder, TempDir};
 
 // TODO: Should be 'cache::CACHE_DIR_ENV_VAR'. This requires to have a library crate for the logic.
 static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
@@ -31,13 +31,22 @@ struct TestEnv {
 impl TestEnv {
     fn new() -> Self {
         TestEnv {
-            cache_dir: Builder::new().prefix(".tldr.test.cache").tempdir().unwrap(),
-            config_dir: Builder::new().prefix(".tldr.test.conf").tempdir().unwrap(),
-            custom_pages_dir: Builder::new()
+            cache_dir: TempfileBuilder::new()
+                .prefix(".tldr.test.cache")
+                .tempdir()
+                .unwrap(),
+            config_dir: TempfileBuilder::new()
+                .prefix(".tldr.test.conf")
+                .tempdir()
+                .unwrap(),
+            custom_pages_dir: TempfileBuilder::new()
                 .prefix(".tldr.test.custom-pages")
                 .tempdir()
                 .unwrap(),
-            input_dir: Builder::new().prefix(".tldr.test.input").tempdir().unwrap(),
+            input_dir: TempfileBuilder::new()
+                .prefix(".tldr.test.input")
+                .tempdir()
+                .unwrap(),
             default_features: true,
             features: vec![],
         }
@@ -269,6 +278,47 @@ fn test_cache_location_not_a_directory() {
         .stderr(contains(
             "Warning: The $TEALDEER_CACHE_DIR env variable is deprecated",
         ));
+}
+
+#[test]
+fn test_cache_location_source() {
+    let testenv = TestEnv::new();
+    let default_cache_dir = testenv.cache_dir.path();
+    let tmp_cache_dir = TempfileBuilder::new()
+        .prefix(".tldr.test.cache_dir")
+        .tempdir()
+        .unwrap();
+
+    // Source: Default (OS convention)
+    let mut command = testenv.command();
+    command.env_remove(CACHE_DIR_ENV_VAR);
+    command
+        .arg("--show-paths")
+        .assert()
+        .success()
+        .stdout(is_match("\nCache dir:        [^(]* \\(OS convention\\)\n").unwrap());
+
+    // Source: Config variable
+    let mut command = testenv.command();
+    command.env_remove(CACHE_DIR_ENV_VAR);
+    testenv.write_config(format!(
+        "[directories]\ncache_dir = '{}'",
+        tmp_cache_dir.path().to_str().unwrap(),
+    ));
+    command
+        .arg("--show-paths")
+        .assert()
+        .success()
+        .stdout(is_match("\nCache dir:        [^(]* \\(config file\\)\n").unwrap());
+
+    // Source: Env var
+    let mut command = testenv.command();
+    command.env(CACHE_DIR_ENV_VAR, default_cache_dir.to_str().unwrap());
+    command
+        .arg("--show-paths")
+        .assert()
+        .success()
+        .stdout(is_match("\nCache dir:        [^(]* \\(env variable\\)\n").unwrap());
 }
 
 #[test]
