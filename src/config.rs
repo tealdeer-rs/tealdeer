@@ -241,8 +241,14 @@ pub struct UpdatesConfig {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PathWithSource {
+    pub path: PathBuf,
+    pub source: PathSource,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DirectoriesConfig {
-    pub cache_dir: PathBuf,
+    pub cache_dir: PathWithSource,
     pub custom_pages_dir: Option<PathBuf>,
 }
 
@@ -290,13 +296,22 @@ impl Config {
             // overridden using an env variable. This is deprecated and will be
             // phased out in the future.
             eprintln!("Warning: The ${} env variable is deprecated, use the `cache_dir` option in the config file instead.", cache_dir_env_var);
-            PathBuf::from(env_var)
+            PathWithSource {
+                path: PathBuf::from(env_var),
+                source: PathSource::EnvVar,
+            }
         } else if let Some(config_value) = raw_config.directories.cache_dir {
             // If the user explicitly configured a cache directory, use that.
-            config_value
+            PathWithSource {
+                path: config_value,
+                source: PathSource::ConfigFile,
+            }
         } else if let Ok(default_dir) = get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
             // Otherwise, fall back to the default user cache directory.
-            default_dir
+            PathWithSource {
+                path: default_dir,
+                source: PathSource::OsConvention,
+            }
         } else {
             // If everything fails, give up
             bail!("Could not determine user cache directory");

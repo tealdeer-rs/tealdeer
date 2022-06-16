@@ -161,9 +161,13 @@ fn show_paths(config: &Config) {
         |e| format!("[Error: {}]", e),
         |(path, _)| path.display().to_string(),
     );
-    let cache_dir = config.directories.cache_dir.display();
+    let cache_dir = format!(
+        "{} ({})",
+        config.directories.cache_dir.path.display(),
+        config.directories.cache_dir.source
+    );
     let pages_dir = {
-        let mut path = config.directories.cache_dir.clone();
+        let mut path = config.directories.cache_dir.path.clone();
         path.push(TLDR_PAGES_DIR);
         path.push(""); // Trailing path separator
         path.display().to_string()
@@ -328,8 +332,8 @@ fn main() {
     }
 
     // Initialize cache
-    let cache =
-        Cache::new(ARCHIVE_URL, platform, &config.directories.cache_dir).unwrap_or_else(|e| {
+    let cache = Cache::new(ARCHIVE_URL, platform, &config.directories.cache_dir.path)
+        .unwrap_or_else(|e| {
             print_error(enable_styles, &e.context("Could not initialize cache"));
             process::exit(1);
         });
