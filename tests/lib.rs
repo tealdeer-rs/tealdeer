@@ -624,7 +624,7 @@ fn test_custom_page_overwrites() {
         .stdout(diff(expected));
 }
 
-/// End-End test to ensure that .patch files are appened to pages in the cache_dir
+/// End-End test to ensure that .patch files are appended to pages in the cache_dir
 #[test]
 fn test_custom_patch_appends_to_common() {
     let testenv = TestEnv::new();

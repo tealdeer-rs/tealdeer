@@ -83,7 +83,7 @@ fn highlight_code<'a, E>(
     Ok(())
 }
 
-/// Yields `NormalCode` and `CommandName` in alternating order according to the occurences of
+/// Yields `NormalCode` and `CommandName` in alternating order according to the occurrences of
 /// `command_name` in `segment`. Variables are not detected here, see `highlight_code`
 /// instead.
 fn highlight_code_segment<'a, E>(
@@ -113,15 +113,15 @@ fn highlight_code_segment<'a, E>(
 }
 
 /// Checks whether the characters right before and after the substring (given by half-open index interval) are whitespace (if they exist).
-fn is_freestanding_substring(surrouding: &str, substring: (usize, usize)) -> bool {
+fn is_freestanding_substring(surrounding: &str, substring: (usize, usize)) -> bool {
     let (start, end) = substring;
     // "okay" meaning <exists and is whitespace> or <doesn't exist>
-    let char_before_is_okay = surrouding[..start]
+    let char_before_is_okay = surrounding[..start]
         .chars()
         .last()
         .filter(|prev_char| !prev_char.is_whitespace())
         .is_none();
-    let char_after_is_okay = surrouding[end..]
+    let char_after_is_okay = surrounding[end..]
         .chars()
         .next()
         .filter(|next_char| !next_char.is_whitespace())
