@@ -813,6 +813,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "priority-queue"
+version = "1.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de9cde7493f5f5d2d163b174be9f9a72d756b79b0f6ed85654128d238c347c1e"
+dependencies = [
+ "autocfg",
+ "indexmap",
+]
+
+[[package]]
 name = "proc-macro-error"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1158,6 +1168,7 @@ dependencies = [
  "log",
  "pager",
  "predicates",
+ "priority-queue",
  "reqwest",
  "serde",
  "serde_derive",

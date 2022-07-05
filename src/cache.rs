@@ -13,6 +13,7 @@ use log::debug;
 use reqwest::{blocking::Client, Proxy};
 use walkdir::{DirEntry, WalkDir};
 use zip::ZipArchive;
+use priority_queue::PriorityQueue;
 
 use crate::types::{PathSource, PlatformType};
 
@@ -290,15 +291,27 @@ impl Cache {
 
         // Try to find a platform specific path next, append custom patch to it.
         let platform_dir = self.get_platform_dir();
-        if let Some(page) =
-            Self::find_page_for_platform(&page_filename, &cache_dir, platform_dir, &lang_dirs)
-        {
-            return Some(PageLookupResult::with_page(page).with_optional_patch(patch_path));
-        }
 
-        // Did not find platform specific results, fall back to "common"
-        Self::find_page_for_platform(&page_filename, &cache_dir, "common", &lang_dirs)
-            .map(|page| PageLookupResult::with_page(page).with_optional_patch(patch_path))
+        let mut platforms = PriorityQueue::new();
+        platforms.extend(vec![
+            ("linux", 0),
+            ("osx", 0),
+            ("sunos", 0),
+            ("windows", 0),
+            ("android", 0),
+            ("common", 1)].clone());
+        // update the priority of the current platform to 2
+        platforms.push(platform_dir, 2);
+        
+        // Cycle through all platforms in this order: current_platform - common - all other platforms
+        for platform in platforms.into_sorted_iter() {
+            if let Some(page) =
+                Self::find_page_for_platform(&page_filename, &cache_dir, platform.0, &lang_dirs)
+                {
+                    return Some(PageLookupResult::with_page(page).with_optional_patch(patch_path));
+                }
+        }
+        return None;
     }
 
     /// Return the available pages.
