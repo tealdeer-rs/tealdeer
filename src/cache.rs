@@ -13,7 +13,6 @@ use log::debug;
 use reqwest::{blocking::Client, Proxy};
 use walkdir::{DirEntry, WalkDir};
 use zip::ZipArchive;
-use priority_queue::PriorityQueue;
 
 use crate::types::{PathSource, PlatformType};
 
@@ -290,23 +289,20 @@ impl Cache {
         let patch_path = Self::find_patch(&patch_filename, custom_pages_dir);
 
         // Try to find a platform specific path next, append custom patch to it.
-        let platform_dir = self.get_platform_dir();
+        let current_platform = self.get_platform_dir();
 
-        let mut platforms = PriorityQueue::new();
-        platforms.extend(vec![
-            ("linux", 0),
-            ("osx", 0),
-            ("sunos", 0),
-            ("windows", 0),
-            ("android", 0),
-            ("common", 1)].clone());
-        // update the priority of the current platform to 2
-        platforms.push(platform_dir, 2);
-        
-        // Cycle through all platforms in this order: current_platform - common - all other platforms
-        for platform in platforms.into_sorted_iter() {
+        let mut platforms = PlatformType::get_platforms();
+        platforms.push("common");
+
+        // remove the current platform from the vector and re-add it to the end
+        let index = platforms.iter().position(|&p| p == current_platform).unwrap();
+        platforms.remove(index);
+        platforms.push(current_platform);
+
+        // Cycle through all platforms in reverse order (current_platform - common - all other platforms)
+        for platform in platforms.iter().rev() {
             if let Some(page) =
-                Self::find_page_for_platform(&page_filename, &cache_dir, platform.0, &lang_dirs)
+                Self::find_page_for_platform(&page_filename, &cache_dir, platform, &lang_dirs)
                 {
                     return Some(PageLookupResult::with_page(page).with_optional_patch(patch_path));
                 }
