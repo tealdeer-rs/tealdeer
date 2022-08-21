@@ -224,19 +224,19 @@ pub struct StyleConfig {
     pub example_variable: Style,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct DisplayConfig {
     pub compact: bool,
     pub use_pager: bool,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct UpdatesConfig {
     pub auto_update: bool,
     pub auto_update_interval: Duration,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DirectoriesConfig {
     pub custom_pages_dir: Option<PathBuf>,
 }

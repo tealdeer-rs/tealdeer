@@ -185,7 +185,7 @@ impl LineType {
 }
 
 /// The reason why a certain path (e.g. config path or cache dir) was chosen.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum PathSource {
     /// OS convention (e.g. XDG on Linux)
     OsConvention,
