@@ -45,7 +45,7 @@ use crate::{
     cli::Args,
     config::{get_config_dir, get_config_path, make_default_config, Config},
     extensions::Dedup,
-    output::print_page,
+    output::{open_browser, print_page},
     types::{ColorOptions, PlatformType},
     utils::{print_error, print_warning},
 };
@@ -393,6 +393,14 @@ fn main() {
             &languages,
             config.directories.custom_pages_dir.as_deref(),
         ) {
+            if args.edit {
+                let full_path = lookup_result.page_path.to_string_lossy();
+                if let Err(ref e) = open_browser(&full_path) {
+                    print_error(enable_styles, e);
+                    process::exit(1);
+                }
+                process::exit(0);
+            }
             if let Err(ref e) =
                 print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)
             {

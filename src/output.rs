@@ -5,7 +5,7 @@ use std::io::{self, BufRead, Write};
 use anyhow::{Context, Result};
 
 use crate::{
-    cache::PageLookupResult,
+    cache::{PageLookupResult, TLDR_PAGES_DIR},
     config::{Config, StyleConfig},
     formatter::{highlight_lines, PageSnippet},
     line_iterator::LineIterator,
@@ -25,6 +25,29 @@ fn configure_pager(_: bool) {
 fn configure_pager(enable_styles: bool) {
     use crate::utils::print_warning;
     print_warning(enable_styles, "--pager flag not available on Windows!");
+}
+
+/// Opens the browser
+pub fn open_browser(full_path: &str) -> Result<()> {
+    let index = full_path.find(TLDR_PAGES_DIR).context("Cannot edit a page that doesn't belong to 'tldr-pages'")?;
+    let path = &full_path[(index + TLDR_PAGES_DIR.len() + 1)..];
+    let page = format!("https://github.com/tldr-pages/tldr/blob/main/{}", path);
+
+    let program = match std::env::var("BROWSER") {
+        Ok(var) => var,
+        _ => return bail_out_browser_opening(&page)
+    };
+    let status = std::process::Command::new(&program)
+        .arg(&page)
+        .status();
+    match status {
+        Ok(status) if status.success() => Ok(()),
+        _ => bail_out_browser_opening(&page)
+    }
+}
+
+fn bail_out_browser_opening(page: &str) -> Result<()> {
+    writeln!(io::stdout(), "Open {} to edit this page", &page).context("Could not write to stdout")
 }
 
 /// Print page by path

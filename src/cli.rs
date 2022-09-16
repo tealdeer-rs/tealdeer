@@ -85,6 +85,15 @@ pub(crate) struct Args {
     )]
     pub markdown: bool,
 
+    /// Open file on Github for editing
+    #[clap(
+        long = "edit",
+        short = 'e',
+        requires = "command",
+        conflicts_with = "raw"
+    )]
+    pub edit: bool,
+
     /// Suppress informational messages
     #[clap(short = 'q', long = "quiet")]
     pub quiet: bool,
