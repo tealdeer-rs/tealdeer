@@ -122,6 +122,10 @@ impl Cache {
         })
     }
 
+    fn pages_dir(&self) -> PathBuf {
+        self.cache_dir.join(TLDR_PAGES_DIR)
+    }
+
     /// Download the archive from the specified URL.
     fn download(archive_url: &str) -> Result<Vec<u8>> {
         let mut builder = Client::builder();
@@ -158,9 +162,6 @@ impl Cache {
         let mut archive = ZipArchive::new(Cursor::new(bytes))
             .context("Could not decompress downloaded ZIP archive")?;
 
-        // Determine paths
-        let pages_dir = self.cache_dir.join(TLDR_PAGES_DIR);
-
         // Clear cache directory
         // Note: This is not the best solution. Ideally we would download the
         // archive to a temporary directory and then swap the two directories.
@@ -170,9 +171,9 @@ impl Cache {
         self.clear()
             .context("Could not clear the cache directory")?;
 
-        // Extract archive
+        // Extract archive into pages dir
         archive
-            .extract(&pages_dir)
+            .extract(&self.pages_dir())
             .context("Could not unpack compressed data")?;
 
         Ok(())
@@ -180,7 +181,7 @@ impl Cache {
 
     /// Return the duration since the cache directory was last modified.
     pub fn last_update(&self) -> Option<Duration> {
-        if let Ok(metadata) = fs::metadata(self.cache_dir.join(TLDR_PAGES_DIR)) {
+        if let Ok(metadata) = fs::metadata(self.pages_dir()) {
             if let Ok(mtime) = metadata.modified() {
                 let now = SystemTime::now();
                 return now.duration_since(mtime).ok();
@@ -212,13 +213,13 @@ impl Cache {
     /// Check for pages for a given platform in one of the given languages.
     fn find_page_for_platform(
         page_name: &str,
-        cache_dir: &Path,
+        pages_dir: &Path,
         platform: &str,
         language_dirs: &[String],
     ) -> Option<PathBuf> {
         language_dirs
             .iter()
-            .map(|lang_dir| cache_dir.join(lang_dir).join(platform).join(page_name))
+            .map(|lang_dir| pages_dir.join(lang_dir).join(platform).join(page_name))
             .find(|path| path.exists() && path.is_file())
     }
 
@@ -240,8 +241,8 @@ impl Cache {
         let patch_filename = format!("{}.patch", name);
         let custom_filename = format!("{}.page", name);
 
-        // Determine directories
-        let cache_dir = self.cache_dir.join(TLDR_PAGES_DIR);
+        // Determine directory paths
+        let pages_dir = self.pages_dir();
         let lang_dirs: Vec<String> = languages
             .iter()
             .map(|lang| {
@@ -266,20 +267,20 @@ impl Cache {
         // Try to find a platform specific path next, append custom patch to it.
         let platform_dir = self.get_platform_dir();
         if let Some(page) =
-            Self::find_page_for_platform(&page_filename, &cache_dir, platform_dir, &lang_dirs)
+            Self::find_page_for_platform(&page_filename, &pages_dir, platform_dir, &lang_dirs)
         {
             return Some(PageLookupResult::with_page(page).with_optional_patch(patch_path));
         }
 
         // Did not find platform specific results, fall back to "common"
-        Self::find_page_for_platform(&page_filename, &cache_dir, "common", &lang_dirs)
+        Self::find_page_for_platform(&page_filename, &pages_dir, "common", &lang_dirs)
             .map(|page| PageLookupResult::with_page(page).with_optional_patch(patch_path))
     }
 
     /// Return the available pages.
     pub fn list_pages(&self, custom_pages_dir: Option<&Path>) -> Vec<String> {
         // Determine platforms directory and platform
-        let platforms_dir = self.cache_dir.join(TLDR_PAGES_DIR).join("pages");
+        let platforms_dir = self.pages_dir().join("pages");
         let platform_dir = self.get_platform_dir();
 
         // Closure that allows the WalkDir instance to traverse platform
