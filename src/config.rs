@@ -129,12 +129,33 @@ struct RawStyleConfig {
     pub example_variable: RawStyle,
 }
 
+impl From<RawStyleConfig> for StyleConfig {
+    fn from(raw_style_config: RawStyleConfig) -> Self {
+        Self {
+            command_name: raw_style_config.command_name.into(),
+            description: raw_style_config.description.into(),
+            example_text: raw_style_config.example_text.into(),
+            example_code: raw_style_config.example_code.into(),
+            example_variable: raw_style_config.example_variable.into(),
+        }
+    }
+}
+
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawDisplayConfig {
     #[serde(default)]
     pub compact: bool,
     #[serde(default)]
     pub use_pager: bool,
+}
+
+impl From<RawDisplayConfig> for DisplayConfig {
+    fn from(raw_display_config: RawDisplayConfig) -> Self {
+        Self {
+            compact: raw_display_config.compact,
+            use_pager: raw_display_config.use_pager,
+        }
+    }
 }
 
 /// Serde doesn't support default values yet (tracking issue:
@@ -158,6 +179,17 @@ impl Default for RawUpdatesConfig {
         Self {
             auto_update: false,
             auto_update_interval_hours: DEFAULT_UPDATE_INTERVAL_HOURS,
+        }
+    }
+}
+
+impl From<RawUpdatesConfig> for UpdatesConfig {
+    fn from(raw_updates_config: RawUpdatesConfig) -> Self {
+        Self {
+            auto_update: raw_updates_config.auto_update,
+            auto_update_interval: Duration::from_secs(
+                raw_updates_config.auto_update_interval_hours * 3600,
+            ),
         }
     }
 }
@@ -264,30 +296,13 @@ impl Config {
     /// For this, some values need to be converted to other types and some
     /// defaults need to be set (sometimes based on env variables).
     fn from_raw(raw_config: RawConfig) -> Result<Self> {
-        // Style config
-        let style = StyleConfig {
-            command_name: raw_config.style.command_name.into(),
-            description: raw_config.style.description.into(),
-            example_text: raw_config.style.example_text.into(),
-            example_code: raw_config.style.example_code.into(),
-            example_variable: raw_config.style.example_variable.into(),
-        };
+        let style = raw_config.style.into();
+        let display = raw_config.display.into();
+        let updates = raw_config.updates.into();
 
-        // Display config
-        let display = DisplayConfig {
-            compact: raw_config.display.compact,
-            use_pager: raw_config.display.use_pager,
-        };
-
-        // Updates config
-        let updates = UpdatesConfig {
-            auto_update: raw_config.updates.auto_update,
-            auto_update_interval: Duration::from_secs(
-                raw_config.updates.auto_update_interval_hours * 3600,
-            ),
-        };
-
-        // Directories config
+        // Determine directories config. For this, we need to take some
+        // additional factory into account, like env variables, or the
+        // user config.
         let cache_dir_env_var = "TEALDEER_CACHE_DIR";
         let cache_dir = if let Ok(env_var) = env::var(cache_dir_env_var) {
             // For backwards compatibility reasons, the cache directory can be
