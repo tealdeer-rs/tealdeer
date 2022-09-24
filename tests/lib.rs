@@ -513,6 +513,12 @@ fn test_pager_flag_enable() {
 fn test_list_flag_rendering() {
     let testenv = TestEnv::new();
 
+    // set custom pages directory
+    testenv.write_config(format!(
+        "[directories]\ncustom_pages_dir = '{}'",
+        testenv.custom_pages_dir.path().to_str().unwrap()
+    ));
+
     testenv
         .command()
         .args(["--list"])
@@ -532,13 +538,17 @@ fn test_list_flag_rendering() {
     testenv.add_entry("bar", "");
     testenv.add_entry("baz", "");
     testenv.add_entry("qux", "");
+    testenv.add_page_entry("faz", "");
+    testenv.add_page_entry("bar", "");
+    testenv.add_page_entry("fiz", "");
+    testenv.add_patch_entry("buz", "");
 
     testenv
         .command()
         .args(["--list"])
         .assert()
         .success()
-        .stdout("bar\nbaz\nfoo\nqux\n");
+        .stdout("bar\nbaz\nfaz\nfiz\nfoo\nqux\n");
 }
 
 #[test]

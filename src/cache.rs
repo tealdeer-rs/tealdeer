@@ -302,7 +302,7 @@ impl Cache {
     }
 
     /// Return the available pages.
-    pub fn list_pages(&self) -> Result<Vec<String>> {
+    pub fn list_pages(&self, custom_pages_dir: Option<&Path>) -> Result<Vec<String>> {
         // Determine platforms directory and platform
         let (cache_dir, _) = Self::get_cache_dir()?;
         let platforms_dir = cache_dir.join(TLDR_PAGES_DIR).join("pages");
@@ -324,23 +324,47 @@ impl Cache {
             false
         };
 
+        let to_stem = |entry: DirEntry| -> Option<String> {
+            entry
+                .path()
+                .file_stem()
+                .and_then(OsStr::to_str)
+                .map(str::to_string)
+        };
+
         // Recursively walk through common and (if applicable) platform specific directory
         let mut pages = WalkDir::new(platforms_dir)
             .min_depth(1) // Skip root directory
             .into_iter()
-            .filter_entry(|e| should_walk(e)) // Filter out pages for other architectures
+            .filter_entry(should_walk) // Filter out pages for other architectures
             .filter_map(Result::ok) // Convert results to options, filter out errors
             .filter_map(|e| {
-                let path = e.path();
-                let extension = &path.extension().and_then(OsStr::to_str).unwrap_or("");
-                if e.file_type().is_file() && extension == &"md" {
-                    path.file_stem()
-                        .and_then(|stem| stem.to_str().map(Into::into))
+                let extension = e.path().extension().unwrap_or_default();
+                if e.file_type().is_file() && extension == "md" {
+                    to_stem(e)
                 } else {
                     None
                 }
             })
             .collect::<Vec<String>>();
+
+        if let Some(custom_pages_dir) = custom_pages_dir {
+            let is_page = |entry: &DirEntry| -> bool {
+                let extension = entry.path().extension().unwrap_or_default();
+                entry.file_type().is_file() && extension == "page"
+            };
+
+            let custom_pages = WalkDir::new(custom_pages_dir)
+                .min_depth(1)
+                .max_depth(1)
+                .into_iter()
+                .filter_entry(is_page)
+                .filter_map(Result::ok)
+                .filter_map(to_stem);
+
+            pages.extend(custom_pages);
+        }
+
         pages.sort();
         pages.dedup();
         Ok(pages)
