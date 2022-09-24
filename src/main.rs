@@ -123,7 +123,7 @@ fn clear_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
 
 /// Update the cache
 fn update_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
-    cache.update().unwrap_or_else(|e| {
+    cache.update(ARCHIVE_URL).unwrap_or_else(|e| {
         print_error(enable_styles, &e.context("Could not update cache"));
         process::exit(1);
     });
@@ -325,11 +325,10 @@ fn main() {
     }
 
     // Initialize cache
-    let cache = Cache::new(ARCHIVE_URL, platform, &config.directories.cache_dir.path)
-        .unwrap_or_else(|e| {
-            print_error(enable_styles, &e.context("Could not initialize cache"));
-            process::exit(1);
-        });
+    let cache = Cache::new(platform, &config.directories.cache_dir.path).unwrap_or_else(|e| {
+        print_error(enable_styles, &e.context("Could not initialize cache"));
+        process::exit(1);
+    });
 
     // Clear cache, pass through
     if args.clear_cache {

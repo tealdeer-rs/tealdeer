@@ -20,7 +20,6 @@ static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 
 #[derive(Debug)]
 pub struct Cache {
-    url: String,
     platform: PlatformType,
     cache_dir: PathBuf,
 }
@@ -87,9 +86,8 @@ pub enum CacheFreshness {
 }
 
 impl Cache {
-    pub fn new<S, P>(url: S, platform: PlatformType, cache_dir: P) -> Result<Self>
+    pub fn new<P>(platform: PlatformType, cache_dir: P) -> Result<Self>
     where
-        S: Into<String>,
         P: Into<PathBuf>,
     {
         // Check whether `cache_dir` exists and is a directory
@@ -119,14 +117,13 @@ impl Cache {
         }
 
         Ok(Self {
-            url: url.into(),
             platform,
             cache_dir,
         })
     }
 
-    /// Download the archive
-    fn download(&self) -> Result<Vec<u8>> {
+    /// Download the archive from the specified URL.
+    fn download(archive_url: &str) -> Result<Vec<u8>> {
         let mut builder = Client::builder();
         if let Ok(ref host) = env::var("HTTP_PROXY") {
             if let Ok(proxy) = Proxy::http(host) {
@@ -142,20 +139,20 @@ impl Cache {
             .build()
             .context("Could not instantiate HTTP client")?;
         let mut resp = client
-            .get(&self.url)
+            .get(archive_url)
             .send()?
             .error_for_status()
-            .with_context(|| format!("Could not download tldr pages from {}", &self.url))?;
+            .with_context(|| format!("Could not download tldr pages from {}", archive_url))?;
         let mut buf: Vec<u8> = vec![];
         let bytes_downloaded = resp.copy_to(&mut buf)?;
         debug!("{} bytes downloaded", bytes_downloaded);
         Ok(buf)
     }
 
-    /// Update the pages cache.
-    pub fn update(&self) -> Result<()> {
+    /// Update the pages cache from the specified URL.
+    pub fn update(&self, archive_url: &str) -> Result<()> {
         // First, download the compressed data
-        let bytes: Vec<u8> = self.download()?;
+        let bytes: Vec<u8> = Self::download(archive_url)?;
 
         // Decompress the response body into an `Archive`
         let mut archive = ZipArchive::new(Cursor::new(bytes))
