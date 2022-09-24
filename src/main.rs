@@ -263,7 +263,7 @@ fn main() {
 
     // Determine the usage of styles
     #[cfg(target_os = "windows")]
-    let ansi_support = ansi_term::enable_ansi_support().is_ok();
+    let ansi_support = yansi::Paint::enable_windows_ascii();
     #[cfg(not(target_os = "windows"))]
     let ansi_support = true;
     let enable_styles = match args.color.unwrap_or_default() {

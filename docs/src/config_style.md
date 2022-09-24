@@ -22,7 +22,7 @@ Using the config file, the style (e.g. colors or underlines) can be customized.
 
 Colors can be specified in one of three ways:
 
-- Color string (`black`, `red`, `green`, `yellow`, `blue`, `purple`, `cyan`, `white`):
+- Color string (`black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`):
 
   Example:
 
