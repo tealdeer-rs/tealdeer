@@ -5,11 +5,11 @@ use std::{
     time::Duration,
 };
 
-use ansi_term::{Color, Style};
 use anyhow::{ensure, Context, Result};
 use app_dirs::{get_app_root, AppDataType};
 use log::debug;
 use serde_derive::{Deserialize, Serialize};
+use yansi::{Color, Style};
 
 use crate::types::PathSource;
 
@@ -37,7 +37,8 @@ pub enum RawColor {
     Green,
     Yellow,
     Blue,
-    Purple,
+    Magenta,
+    Purple, // Backwards compatibility with ansi_term (until tealdeer 1.5.0)
     Cyan,
     White,
     Ansi(u8),
@@ -52,7 +53,7 @@ impl From<RawColor> for Color {
             RawColor::Green => Self::Green,
             RawColor::Yellow => Self::Yellow,
             RawColor::Blue => Self::Blue,
-            RawColor::Purple => Self::Purple,
+            RawColor::Magenta | RawColor::Purple => Self::Magenta,
             RawColor::Cyan => Self::Cyan,
             RawColor::White => Self::White,
             RawColor::Ansi(num) => Self::Fixed(num),
@@ -95,7 +96,7 @@ impl From<RawStyle> for Style {
         }
 
         if let Some(background) = raw_style.background {
-            style = style.on(Color::from(background));
+            style = style.bg(Color::from(background));
         }
 
         if raw_style.underline {
@@ -215,7 +216,7 @@ impl Default for RawConfig {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct StyleConfig {
     pub description: Style,
     pub command_name: Style,
@@ -241,7 +242,7 @@ pub struct DirectoriesConfig {
     pub custom_pages_dir: Option<PathBuf>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Config {
     pub style: StyleConfig,
     pub display: DisplayConfig,
