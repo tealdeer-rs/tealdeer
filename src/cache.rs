@@ -86,40 +86,49 @@ pub enum CacheFreshness {
 }
 
 impl Cache {
-    pub fn new<P>(platform: PlatformType, cache_dir: P) -> Result<Self>
+    pub fn new<P>(platform: PlatformType, cache_dir: P) -> Self
     where
         P: Into<PathBuf>,
     {
+        Self {
+            platform,
+            cache_dir: cache_dir.into(),
+        }
+    }
+
+    pub fn cache_dir(&self) -> &Path {
+        &self.cache_dir
+    }
+
+    /// Make sure that the cache directory exists and is a directory.
+    /// If necessary, create the directory.
+    fn ensure_cache_dir_exists(&self) -> Result<()> {
         // Check whether `cache_dir` exists and is a directory
-        let cache_dir = cache_dir.into();
-        let (cache_dir_exists, cache_dir_is_dir) = cache_dir
+        let (cache_dir_exists, cache_dir_is_dir) = self
+            .cache_dir
             .metadata()
             .map_or((false, false), |md| (true, md.is_dir()));
         ensure!(
             !cache_dir_exists || cache_dir_is_dir,
             "Cache directory path `{}` is not a directory",
-            cache_dir.display(),
+            self.cache_dir.display(),
         );
 
-        // If necessary, create cache directory
         if !cache_dir_exists {
-            // Try to create the complete directory path
-            fs::create_dir_all(&cache_dir).with_context(|| {
+            // If missing, try to create the complete directory path
+            fs::create_dir_all(&self.cache_dir).with_context(|| {
                 format!(
                     "Cache directory path `{}` cannot be created",
-                    cache_dir.display(),
+                    self.cache_dir.display(),
                 )
             })?;
             eprintln!(
                 "Successfully created cache directory path `{}`.",
-                cache_dir.display(),
+                self.cache_dir.display(),
             );
         }
 
-        Ok(Self {
-            platform,
-            cache_dir,
-        })
+        Ok(())
     }
 
     fn pages_dir(&self) -> PathBuf {
@@ -155,6 +164,8 @@ impl Cache {
 
     /// Update the pages cache from the specified URL.
     pub fn update(&self, archive_url: &str) -> Result<()> {
+        self.ensure_cache_dir_exists()?;
+
         // First, download the compressed data
         let bytes: Vec<u8> = Self::download(archive_url)?;
 
@@ -345,14 +356,14 @@ impl Cache {
         pages
     }
 
-    /// Delete the cache directory.
-    pub fn clear(&self) -> Result<()> {
-        // Check preconditions
-        ensure!(
-            self.cache_dir.exists(),
-            "Cache path ({}) does not exist.",
-            self.cache_dir.display(),
-        );
+    /// Delete the cache directory
+    ///
+    /// Returns true if the cache was deleted and false if the cache dir did
+    /// not exist.
+    pub fn clear(&self) -> Result<bool> {
+        if !self.cache_dir.exists() {
+            return Ok(false);
+        }
         ensure!(
             self.cache_dir.is_dir(),
             "Cache path ({}) is not a directory.",
@@ -374,7 +385,7 @@ impl Cache {
             }
         }
 
-        Ok(())
+        Ok(true)
     }
 }
 

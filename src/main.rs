@@ -112,12 +112,20 @@ fn check_cache(cache: &Cache, args: &Args, enable_styles: bool) -> CheckCacheRes
 
 /// Clear the cache
 fn clear_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
-    cache.clear().unwrap_or_else(|e| {
+    let cache_dir_found = cache.clear().unwrap_or_else(|e| {
         print_error(enable_styles, &e.context("Could not clear cache"));
         process::exit(1);
     });
     if !quietly {
-        eprintln!("Successfully deleted cache.");
+        let cache_dir = cache.cache_dir().display();
+        if cache_dir_found {
+            eprintln!("Successfully cleared cache at `{}`.", cache_dir);
+        } else {
+            eprintln!(
+                "Cache directory not found at `{}`, nothing to do.",
+                cache_dir
+            );
+        }
     }
 }
 
@@ -324,11 +332,8 @@ fn main() {
         };
     }
 
-    // Initialize cache
-    let cache = Cache::new(platform, &config.directories.cache_dir.path).unwrap_or_else(|e| {
-        print_error(enable_styles, &e.context("Could not initialize cache"));
-        process::exit(1);
-    });
+    // Instantiate cache. This will not yet create the cache directory!
+    let cache = Cache::new(platform, &config.directories.cache_dir.path);
 
     // Clear cache, pass through
     if args.clear_cache {
