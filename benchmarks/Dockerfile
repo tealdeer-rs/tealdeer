@@ -12,6 +12,9 @@
 # you want to test with hot caches or don't want to use this flag, you will have
 # to remove the `--prepare` line from the `hyperfine` command at the end of this
 # file and rebuild the image.
+#
+# Note: While it may be tempting to use `DOCKER_BUILDKIT=1` to build the stages
+# in parallel, I found that doing so makes `outfieldr` segfault.
 
 ################################################################################
 
@@ -40,21 +43,34 @@ RUN git clone https://github.com/tldr-pages/tldr-c-client.git \
 
 ################################################################################
 
-FROM haskell AS haskell-builder
+FROM ubuntu:latest AS haskell-builder
+
+RUN apt-get update && apt-get install -y git curl
+RUN curl -sSL https://get.haskellstack.org/ | sh
+
+################################################################################
+
+FROM haskell-builder AS tldr-hs-builder
 
 WORKDIR /build
-
 RUN git clone https://github.com/psibi/tldr-hs.git \
         && cd tldr-hs \
-        && stack build --install-ghc
+        && stack build
 
+RUN mkdir /build-outputs
+RUN find tldr-hs/.stack-work/dist -type f -iname tldr -exec mv '{}' /build-outputs/tldr-hs \;
+
+################################################################################
+
+FROM haskell-builder as fast-tldr-builder
+
+WORKDIR /build
 RUN git clone https://github.com/gutjuri/fast-tldr \
         && cd fast-tldr \
-        && stack build --install-ghc
+        && stack build
 
-RUN mkdir /build-outputs \
-        && find tldr-hs/.stack-work/dist -type f -iname tldr -exec mv '{}' /build-outputs/tldr-hs \; \
-        && find fast-tldr/.stack-work/dist -type f -iname tldr -exec mv '{}' /build-outputs/fast-tldr \;
+RUN mkdir /build-outputs
+RUN find fast-tldr/.stack-work/dist -type f -iname tldr -exec mv '{}' /build-outputs/fast-tldr \;
 
 ################################################################################
 
@@ -68,14 +84,13 @@ RUN npm install tldr \
 
 ################################################################################
 
-FROM euantorano/zig:0.8.0 AS zig-builder
+FROM euantorano/zig:0.9.1 AS zig-builder
 
 WORKDIR /build
 RUN apk add git \
         && git clone https://gitlab.com/ve-nt/outfieldr.git \
         && cd outfieldr \
-        && git submodule init \
-        && git submodule update \
+        && git submodule update --init \
         && zig build -Drelease-safe \
         && mkdir /build-outputs \
         && cp bin/tldr /build-outputs/outfieldr
@@ -87,15 +102,15 @@ FROM ubuntu:latest AS benchmark
 ENV LANG="en_US.UTF-8"
 
 WORKDIR /deps
-RUN apt-get update && apt-get install -y wget unzip python3 python3-venv && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get upgrade -y && apt-get install -y wget unzip python3 python3-venv && rm -rf /var/lib/apt/lists/*
 COPY --from=tldr-c-builder /deps/* ./
 RUN for file in *; do DEBIAN_FRONTEND=noninteractive sh $file; done
 
 WORKDIR /clients
 COPY --from=tealdeer-builder /build-outputs/* ./
 COPY --from=tldr-c-builder /build-outputs/* ./
-COPY --from=haskell-builder /build-outputs/* ./
-RUN wget -qO tldr-bash https://4e4.win/tldr && chmod +x tldr-bash
+COPY --from=fast-tldr-builder /build-outputs/* ./
+COPY --from=tldr-hs-builder /build-outputs/* ./
 COPY --from=node-builder /build-outputs/node /build-outputs/tldr-node ./
 COPY --from=node-builder /build-outputs/node_modules/ ./node_modules/
 COPY --from=zig-builder /build-outputs/* ./
@@ -110,18 +125,17 @@ RUN python3 -m venv tldr-python \
         && chmod +x tldr-python.bash
 
 # Update all the individual caches
-RUN bash -c 'mkdir -p /caches/{tealdeer,tldr-c,tldr-hs,fast-tldr,tldr-bash,tldr-node,tldr-python,outfieldr/.local/share}' \
+RUN bash -c 'mkdir -p /caches/{tealdeer,tldr-c,tldr-hs,fast-tldr,tldr-node,tldr-python,outfieldr/.local/share}' \
         && TEALDEER_CACHE_DIR=/caches/tealdeer ./tealdeer -u \
         && TLDR_CACHE_DIR=/caches/tldr-c ./tldr-c -u \
         && XDG_DATA_HOME=/caches/tldr-hs ./tldr-hs -u \
         && XDG_DATA_HOME=/caches/fast-tldr ./fast-tldr -u \
-        && XDG_DATA_HOME=/caches/tldr-bash ./tldr-bash -u \
         && HOME=/caches/tldr-node ./tldr-node -u \
         && HOME=/caches/tldr-python ./tldr-python.bash -u \
         && HOME=/caches/outfieldr ./outfieldr -u
 
 WORKDIR /tools
-RUN wget -q https://github.com/sharkdp/hyperfine/releases/download/v1.11.0/hyperfine_1.11.0_amd64.deb && dpkg -i hyperfine_1.11.0_amd64.deb
+RUN wget -q https://github.com/sharkdp/hyperfine/releases/download/v1.15.0/hyperfine_1.15.0_amd64.deb && dpkg -i hyperfine_1.15.0_amd64.deb
 
 ENV PAGE="tar"
 WORKDIR /clients
@@ -133,7 +147,6 @@ CMD hyperfine \
         "TLDR_CACHE_DIR=/caches/tldr-c ./tldr-c $PAGE" \
         "XDG_DATA_HOME=/caches/tldr-hs ./tldr-hs $PAGE" \
         "XDG_DATA_HOME=/caches/fast-tldr ./fast-tldr $PAGE" \
-        "XDG_DATA_HOME=/caches/tldr-bash TLDR_LESS=0 ./tldr-bash $PAGE" \
         "HOME=/caches/tldr-python ./tldr-python.bash $PAGE" \
         "HOME=/caches/outfieldr ./outfieldr $PAGE" \
         "HOME=/caches/tldr-node ./tldr-node $PAGE"
