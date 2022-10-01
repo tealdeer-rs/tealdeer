@@ -38,7 +38,7 @@ probably the option to override the cache directory through the config file.
 The `TEALDEER_CACHE_DIR` env variable is now deprecated.
 
 A note to packagers: Shell completions have been moved to the `completion/`
-subdirectory! Packaging scripst might need to be updated.
+subdirectory! Packaging scripts might need to be updated.
 
 Changes:
 
