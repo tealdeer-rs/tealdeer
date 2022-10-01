@@ -140,19 +140,6 @@ fn update_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
     }
 }
 
-/// Show the config path (DEPRECATED)
-fn show_config_path(enable_styles: bool) {
-    match get_config_path() {
-        Ok((config_file_path, _)) => {
-            println!("Config path is: {}", config_file_path.to_str().unwrap());
-        }
-        Err(e) => {
-            print_error(enable_styles, &e.context("Could not look up config path"));
-            process::exit(1);
-        }
-    }
-}
-
 /// Show file paths
 fn show_paths(config: &Config) {
     let config_dir = get_config_dir().map_or_else(
@@ -253,7 +240,7 @@ fn main() {
     init_log();
 
     // Parse arguments
-    let mut args = Args::parse();
+    let args = Args::parse();
 
     // Determine the usage of styles
     #[cfg(target_os = "windows")]
@@ -273,31 +260,6 @@ fn main() {
         // Disable styling
         ColorOptions::Never => false,
     };
-
-    // Handle renamed arguments
-    if args.markdown {
-        args.raw = true;
-        print_warning(
-            enable_styles,
-            "The -m / --markdown flag is deprecated, use -r / --raw instead",
-        );
-    }
-    if args.os.is_some() {
-        print_warning(
-            enable_styles,
-            "The -o / --os flag is deprecated, use -p / --platform instead",
-        );
-    }
-    args.platform = args.platform.or(args.os);
-
-    // Show config file and path, pass through
-    if args.config_path {
-        print_warning(
-            enable_styles,
-            "The --config-path flag is deprecated, use --show-paths instead",
-        );
-        show_config_path(enable_styles);
-    }
 
     // Look up config file, if none is found fall back to default config.
     let config = match Config::load(enable_styles) {

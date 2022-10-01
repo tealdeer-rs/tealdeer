@@ -43,15 +43,6 @@ pub(crate) struct Args {
     )]
     pub platform: Option<PlatformType>,
 
-    /// Deprecated alias of `platform`
-    #[clap(
-        short = 'o',
-        long = "os",
-        possible_values = ["linux", "macos", "windows", "sunos", "osx"],
-        hide = true
-    )]
-    pub os: Option<PlatformType>,
-
     /// Override the language
     #[clap(short = 'L', long = "language")]
     pub language: Option<String>,
@@ -76,15 +67,6 @@ pub(crate) struct Args {
     #[clap(short = 'r', long = "--raw", requires = "command_or_file")]
     pub raw: bool,
 
-    /// Deprecated alias of `raw`
-    #[clap(
-        long = "markdown",
-        short = 'm',
-        requires = "command_or_file",
-        hide = true
-    )]
-    pub markdown: bool,
-
     /// Suppress informational messages
     #[clap(short = 'q', long = "quiet")]
     pub quiet: bool,
@@ -92,10 +74,6 @@ pub(crate) struct Args {
     /// Show file and directory paths used by tealdeer
     #[clap(long = "show-paths")]
     pub show_paths: bool,
-
-    /// Show config file path
-    #[clap(long = "config-path")]
-    pub config_path: bool,
 
     /// Create a basic config
     #[clap(long = "seed-config")]
