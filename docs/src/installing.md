@@ -40,10 +40,6 @@ Build and install the tool via cargo...
 
     $ cargo install tealdeer
 
-*(Note: You might need to install OpenSSL development headers, otherwise you get
-a "failed to run custom build command for openssl-sys" error message. The
-package is called `libssl-dev` on Ubuntu.)*
-
 ## Build From Source
 
 Debug build with logging enabled:
@@ -60,7 +56,7 @@ To enable the log output, set the `RUST_LOG` env variable:
 
 ## Autocompletion
 
-Shell completion scripts are located in the folder `completion`. 
+Shell completion scripts are located in the folder `completion`.
 Just copy them to their designated location:
 
 - *Bash*: `cp completion/bash_tealdeer /usr/share/bash-completion/completions/tldr`
