@@ -14,6 +14,55 @@ Possible log types:
 - `[chore]` for maintenance work.
 
 
+### [v1.6.0][v1.6.0] (2022-10-02)
+
+It's been 9 months since the last release already! This is not a huge update
+feature-wise, but it still contains a few nice new improvements and a few
+bugfixes, contributed by 11 different people. The most important new feature is
+probably the option to override the cache directory through the config file.
+The `TEALDEER_CACHE_DIR` env variable is now deprecated.
+
+A note to packagers: Shell completions have been moved to the `completion/`
+subdirectory! Packaging scripst might need to be updated.
+
+Changes:
+
+- [added] Allow overriding cache directory through config ([#276])
+- [added] Add `--no-auto-update` CLI flag ([#257])
+- [added] Show note about auto-updates when cache is missing ([#254])
+- [added] Add support for android platform ([#274])
+- [added] Add custom pages to list output ([#285])
+- [fixed] Cache: Return error if HTTP client cannot be created ([#247])
+- [fixed] Handle cache download errors ([#253])
+- [fixed] Do not page output of `tldr --update` ([#231])
+- [fixed] Create macOS release builds with bundled root certificates ([#272])
+- [fixed] Clean up and fix shell completions ([#262])
+- [deprecated] The `TEALDEER_CACHE_DIR` env variable is now deprecated ([#276])
+- [removed] The `--config-path` command was removed, use `--show-paths` instead ([#290])
+- [removed] The `-o/--os` command was removed, use `-p/--platform` instead ([#290])
+- [removed] The `-m/--markdown` command was removed, use `-r/--raw` instead ([#290])
+- [chore] Move shell completion scripts to their own directory ([#259])
+- [chore] Update dependencies ([#271], [#287], [#291])
+- [chore] Use anyhow for error handling ([#249])
+- [chore] Switch to Rust 2021 edition ([#284])
+
+Contributors to this version:
+
+- [@bagohart][@bagohart]
+- [@cyqsimon][@cyqsimon]
+- [Danilo Bargen][@dbrgn]
+- [Danny Mösch][@SimplyDanny]
+- [Evan Lloyd New-Schmidt][@newsch]
+- [Hans Gaiser][@hgaiser]
+- [Kian-Meng Ang][@kianmeng]
+- [Marcin Puc][@tranzystorek-io]
+- [Niklas Mohrin][@niklasmohrin]
+- [Olav de Haas][@Olavhaasie]
+- [Simon Perdrisat][@gagarine]
+
+Thanks!
+
+
 ### [v1.5.0][v1.5.0] (2021-12-31)
 
 This is quite a big release with many new features. In the 15 months since the
@@ -236,17 +285,21 @@ Thanks!
 [@aldanor]: https://github.com/aldanor
 [@Atul9]: https://github.com/Atul9
 [@BachoSeven]: https://github.com/BachoSeven
+[@bagohart]: https://github.com/bagohart
 [@Bassets]: https://github.com/Bassets
 [@black7375]: https://github.com/black7375
 [@bl-ue]: https://github.com/bl-ue
 [@Calinou]: https://github.com/Calinou
 [@cam8001]: https://github.com/cam8001
+[@cyqsimon]: https://github.com/cyqsimon
 [@cho-m]: https://github.com/cho-m
 [@das-g]: https://github.com/das-g
 [@dbrgn]: https://github.com/dbrgn
 [@Delapouite]: https://github.com/Delapouite
 [@dmaahs2017]: https://github.com/dmaahs2017
 [@equal-l2]: https://github.com/equal-l2
+[@gagarine]: https://github.com/gagarine
+[@hgaiser]: https://github.com/hgaiser
 [@ilai-deutel]: https://github.com/ilai-deutel
 [@invakid404]: https://github.com/invakid404
 [@james2doyle]: https://github.com/james2doyle
@@ -254,6 +307,7 @@ Thanks!
 [@jdvr]: https://github.com/jdvr
 [@jedahan]: https://github.com/jedahan
 [@jesdazrez]: https://github.com/jesdazrez
+[@kianmeng]: https://github.com/kianmeng
 [@kornelski]: https://github.com/kornelski
 [@korrat]: https://github.com/korrat
 [@laxect]: https://github.com/laxect
@@ -263,7 +317,9 @@ Thanks!
 [@mucinoab]: https://github.com/mucinoab
 [@mystal]: https://github.com/mystal
 [@natpen]: https://github.com/natpen
+[@newsch]: https://github.com/newsch
 [@niklasmohrin]: https://github.com/niklasmohrin
+[@Olavhaasie]: https://github.com/Olavhaasie
 [@Plommonsorbet]: https://github.com/Plommonsorbet
 [@rithvikvibhu]: https://github.com/rithvikvibhu
 [@SimplyDanny]: https://github.com/SimplyDanny
@@ -280,6 +336,7 @@ Thanks!
 [v1.4.0]: https://github.com/dbrgn/tealdeer/compare/v1.3.0...v1.4.0
 [v1.4.1]: https://github.com/dbrgn/tealdeer/compare/v1.4.0...v1.4.1
 [v1.5.0]: https://github.com/dbrgn/tealdeer/compare/v1.4.1...v1.5.0
+[v1.6.0]: https://github.com/dbrgn/tealdeer/compare/v1.5.0...v1.6.0
 
 [i34]: https://github.com/dbrgn/tealdeer/issues/34
 [i43]: https://github.com/dbrgn/tealdeer/issues/43
@@ -326,4 +383,21 @@ Thanks!
 [i215]: https://github.com/dbrgn/tealdeer/pull/215
 [i217]: https://github.com/dbrgn/tealdeer/pull/217
 [i227]: https://github.com/dbrgn/tealdeer/pull/227
+[#231]: https://github.com/dbrgn/tealdeer/pull/231
 [i240]: https://github.com/dbrgn/tealdeer/pull/240
+[#247]: https://github.com/dbrgn/tealdeer/pull/247
+[#249]: https://github.com/dbrgn/tealdeer/pull/249
+[#253]: https://github.com/dbrgn/tealdeer/pull/253
+[#254]: https://github.com/dbrgn/tealdeer/pull/254
+[#257]: https://github.com/dbrgn/tealdeer/pull/257
+[#259]: https://github.com/dbrgn/tealdeer/pull/259
+[#262]: https://github.com/dbrgn/tealdeer/pull/262
+[#271]: https://github.com/dbrgn/tealdeer/pull/271
+[#272]: https://github.com/dbrgn/tealdeer/pull/272
+[#274]: https://github.com/dbrgn/tealdeer/pull/274
+[#276]: https://github.com/dbrgn/tealdeer/pull/276
+[#284]: https://github.com/dbrgn/tealdeer/pull/284
+[#285]: https://github.com/dbrgn/tealdeer/pull/285
+[#287]: https://github.com/dbrgn/tealdeer/pull/287
+[#290]: https://github.com/dbrgn/tealdeer/pull/290
+[#291]: https://github.com/dbrgn/tealdeer/pull/291
