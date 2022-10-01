@@ -28,13 +28,13 @@ Colors can be specified in one of three ways:
 
       foreground = "green"
 
-- 256 color ANSI code (*Tealdeer v1.5.0+*)
+- 256 color ANSI code (*tealdeer v1.5.0+*)
 
   Example:
 
       foreground = { ansi = 4 }
 
-- 24-bit RGB color (*Tealdeer v1.5.0+*)
+- 24-bit RGB color (*tealdeer v1.5.0+*)
 
   Example:
 

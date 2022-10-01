@@ -89,7 +89,7 @@ To run lints:
 
 ## MSRV (Minimally Supported Rust Version)
 
-When publishing a Tealdeer release, the Rust version required to build it
+When publishing a tealdeer release, the Rust version required to build it
 should be stable for at least a month.
 
 

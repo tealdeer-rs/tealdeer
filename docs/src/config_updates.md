@@ -2,7 +2,7 @@
 
 ## Automatic updates
 
-tealdeer can refresh the cache automatically when it is outdated. This
+Tealdeer can refresh the cache automatically when it is outdated. This
 behavior can be configured in the `updates` section and is disabled by
 default.
 

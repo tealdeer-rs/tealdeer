@@ -1,6 +1,6 @@
 # Installing
 
-There are a few different ways to install Tealdeer:
+There are a few different ways to install tealdeer:
 
 - Through [package managers](#package-managers)
 - Through [static binaries](#static-binaries-linux)

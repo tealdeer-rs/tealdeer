@@ -107,7 +107,7 @@ The highlights:
 Note that the MSRV (Minimal Supported Rust Version) of the project
 [changed][i190]:
 
-> When publishing a Tealdeer release, the Rust version required to build it
+> When publishing a tealdeer release, the Rust version required to build it
 > should be stable for at least a month.
 
 Changes:
