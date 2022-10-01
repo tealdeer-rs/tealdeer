@@ -93,10 +93,6 @@ pub(crate) struct Args {
     #[clap(long = "show-paths")]
     pub show_paths: bool,
 
-    /// Show config file path
-    #[clap(long = "config-path")]
-    pub config_path: bool,
-
     /// Create a basic config
     #[clap(long = "seed-config")]
     pub seed_config: bool,
