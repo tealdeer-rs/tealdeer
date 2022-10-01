@@ -14,7 +14,7 @@ Possible log types:
 - `[chore]` for maintenance work.
 
 
-### [v1.5.1][v1.5.1] (2022-09-xx)
+### [v1.6.0][v1.6.0] (2022-10-01)
 
 Changes:
 
@@ -24,7 +24,7 @@ Changes:
 - [added] Add support for android platform ([#274])
 - [added] Add custom pages to list output ([#285])
 - [fixed] Cache: Return error if HTTP client cannot be created ([#247])
-- [fixed] Do not page output of `tldr--update` ([#231])
+- [fixed] Do not page output of `tldr --update` ([#231])
 - [fixed] Handle cache download errors ([#253])
 - [fixed] Create macOS release builds with bundled root certificates ([#272])
 - [fixed] Clean up and fix shell completions ([#262])
@@ -119,6 +119,7 @@ Contributors to this version:
 - [Dalton][@dmaahs2017]
 - [Danilo Bargen][@dbrgn]
 - [Danny Mösch][@SimplyDanny]
+- [Hans Gaiser][@hgaiser]
 - [Marcin Puc][@tranzystorek-io]
 - [Michael Cho][@cho-m]
 - [MS_Y][@black7375]
@@ -285,6 +286,7 @@ Thanks!
 [@dmaahs2017]: https://github.com/dmaahs2017
 [@equal-l2]: https://github.com/equal-l2
 [@gagarine]: https://github.com/gagarine
+[@hgaiser]: https://github.com/hgaiser
 [@ilai-deutel]: https://github.com/ilai-deutel
 [@invakid404]: https://github.com/invakid404
 [@james2doyle]: https://github.com/james2doyle
@@ -321,7 +323,7 @@ Thanks!
 [v1.4.0]: https://github.com/dbrgn/tealdeer/compare/v1.3.0...v1.4.0
 [v1.4.1]: https://github.com/dbrgn/tealdeer/compare/v1.4.0...v1.4.1
 [v1.5.0]: https://github.com/dbrgn/tealdeer/compare/v1.4.1...v1.5.0
-[v1.5.1]: https://github.com/dbrgn/tealdeer/compare/v1.5.0...v1.5.1
+[v1.6.0]: https://github.com/dbrgn/tealdeer/compare/v1.5.0...v1.6.0
 
 [i34]: https://github.com/dbrgn/tealdeer/issues/34
 [i43]: https://github.com/dbrgn/tealdeer/issues/43
@@ -381,5 +383,6 @@ Thanks!
 [#272]: https://github.com/dbrgn/tealdeer/pull/272
 [#274]: https://github.com/dbrgn/tealdeer/pull/274
 [#276]: https://github.com/dbrgn/tealdeer/pull/276
+[#284]: https://github.com/dbrgn/tealdeer/pull/284
 [#285]: https://github.com/dbrgn/tealdeer/pull/285
 [#287]: https://github.com/dbrgn/tealdeer/pull/287
