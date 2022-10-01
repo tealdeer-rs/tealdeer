@@ -67,15 +67,6 @@ pub(crate) struct Args {
     #[clap(short = 'r', long = "--raw", requires = "command_or_file")]
     pub raw: bool,
 
-    /// Deprecated alias of `raw`
-    #[clap(
-        long = "markdown",
-        short = 'm',
-        requires = "command_or_file",
-        hide = true
-    )]
-    pub markdown: bool,
-
     /// Suppress informational messages
     #[clap(short = 'q', long = "quiet")]
     pub quiet: bool,

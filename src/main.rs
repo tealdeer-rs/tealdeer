@@ -240,7 +240,7 @@ fn main() {
     init_log();
 
     // Parse arguments
-    let mut args = Args::parse();
+    let args = Args::parse();
 
     // Determine the usage of styles
     #[cfg(target_os = "windows")]
@@ -260,15 +260,6 @@ fn main() {
         // Disable styling
         ColorOptions::Never => false,
     };
-
-    // Handle renamed arguments
-    if args.markdown {
-        args.raw = true;
-        print_warning(
-            enable_styles,
-            "The -m / --markdown flag is deprecated, use -r / --raw instead",
-        );
-    }
 
     // Look up config file, if none is found fall back to default config.
     let config = match Config::load(enable_styles) {
