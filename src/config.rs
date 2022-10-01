@@ -1,11 +1,11 @@
 use std::{
-    env, fs,
+    env, fmt, fs,
     io::{Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     time::Duration,
 };
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{bail, ensure, Context, Result};
 use app_dirs::{get_app_root, AppDataType};
 use log::debug;
 use serde_derive::{Deserialize, Serialize};
@@ -129,12 +129,33 @@ struct RawStyleConfig {
     pub example_variable: RawStyle,
 }
 
+impl From<RawStyleConfig> for StyleConfig {
+    fn from(raw_style_config: RawStyleConfig) -> Self {
+        Self {
+            command_name: raw_style_config.command_name.into(),
+            description: raw_style_config.description.into(),
+            example_text: raw_style_config.example_text.into(),
+            example_code: raw_style_config.example_code.into(),
+            example_variable: raw_style_config.example_variable.into(),
+        }
+    }
+}
+
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawDisplayConfig {
     #[serde(default)]
     pub compact: bool,
     #[serde(default)]
     pub use_pager: bool,
+}
+
+impl From<RawDisplayConfig> for DisplayConfig {
+    fn from(raw_display_config: RawDisplayConfig) -> Self {
+        Self {
+            compact: raw_display_config.compact,
+            use_pager: raw_display_config.use_pager,
+        }
+    }
 }
 
 /// Serde doesn't support default values yet (tracking issue:
@@ -162,23 +183,23 @@ impl Default for RawUpdatesConfig {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
-struct RawDirectoriesConfig {
-    #[serde(default)]
-    pub custom_pages_dir: Option<PathBuf>,
-}
-
-impl Default for RawDirectoriesConfig {
-    fn default() -> Self {
+impl From<RawUpdatesConfig> for UpdatesConfig {
+    fn from(raw_updates_config: RawUpdatesConfig) -> Self {
         Self {
-            custom_pages_dir: get_app_root(AppDataType::UserData, &crate::APP_INFO)
-                .map(|path| {
-                    // Note: The `join("")` call ensures that there's a trailing slash
-                    path.join("pages").join("")
-                })
-                .ok(),
+            auto_update: raw_updates_config.auto_update,
+            auto_update_interval: Duration::from_secs(
+                raw_updates_config.auto_update_interval_hours * 3600,
+            ),
         }
     }
+}
+
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+struct RawDirectoriesConfig {
+    #[serde(default)]
+    pub cache_dir: Option<PathBuf>,
+    #[serde(default)]
+    pub custom_pages_dir: Option<PathBuf>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -238,8 +259,27 @@ pub struct UpdatesConfig {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PathWithSource {
+    pub path: PathBuf,
+    pub source: PathSource,
+}
+
+impl PathWithSource {
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
+impl fmt::Display for PathWithSource {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} ({})", self.path.display(), self.source)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DirectoriesConfig {
-    pub custom_pages_dir: Option<PathBuf>,
+    pub cache_dir: PathWithSource,
+    pub custom_pages_dir: Option<PathWithSource>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -250,34 +290,76 @@ pub struct Config {
     pub directories: DirectoriesConfig,
 }
 
-impl From<RawConfig> for Config {
-    fn from(raw_config: RawConfig) -> Self {
-        Self {
-            style: StyleConfig {
-                command_name: raw_config.style.command_name.into(),
-                description: raw_config.style.description.into(),
-                example_text: raw_config.style.example_text.into(),
-                example_code: raw_config.style.example_code.into(),
-                example_variable: raw_config.style.example_variable.into(),
-            },
-            display: DisplayConfig {
-                compact: raw_config.display.compact,
-                use_pager: raw_config.display.use_pager,
-            },
-            updates: UpdatesConfig {
-                auto_update: raw_config.updates.auto_update,
-                auto_update_interval: Duration::from_secs(
-                    raw_config.updates.auto_update_interval_hours * 3600,
-                ),
-            },
-            directories: DirectoriesConfig {
-                custom_pages_dir: raw_config.directories.custom_pages_dir,
-            },
-        }
-    }
-}
-
 impl Config {
+    /// Convert a `RawConfig` to a high-level `Config`.
+    ///
+    /// For this, some values need to be converted to other types and some
+    /// defaults need to be set (sometimes based on env variables).
+    fn from_raw(raw_config: RawConfig) -> Result<Self> {
+        let style = raw_config.style.into();
+        let display = raw_config.display.into();
+        let updates = raw_config.updates.into();
+
+        // Determine directories config. For this, we need to take some
+        // additional factory into account, like env variables, or the
+        // user config.
+        let cache_dir_env_var = "TEALDEER_CACHE_DIR";
+        let cache_dir = if let Ok(env_var) = env::var(cache_dir_env_var) {
+            // For backwards compatibility reasons, the cache directory can be
+            // overridden using an env variable. This is deprecated and will be
+            // phased out in the future.
+            eprintln!("Warning: The ${} env variable is deprecated, use the `cache_dir` option in the config file instead.", cache_dir_env_var);
+            PathWithSource {
+                path: PathBuf::from(env_var),
+                source: PathSource::EnvVar,
+            }
+        } else if let Some(config_value) = raw_config.directories.cache_dir {
+            // If the user explicitly configured a cache directory, use that.
+            PathWithSource {
+                path: config_value,
+                source: PathSource::ConfigFile,
+            }
+        } else if let Ok(default_dir) = get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
+            // Otherwise, fall back to the default user cache directory.
+            PathWithSource {
+                path: default_dir,
+                source: PathSource::OsConvention,
+            }
+        } else {
+            // If everything fails, give up
+            bail!("Could not determine user cache directory");
+        };
+        let custom_pages_dir = raw_config
+            .directories
+            .custom_pages_dir
+            .map(|path| PathWithSource {
+                path,
+                source: PathSource::OsConvention,
+            })
+            .or_else(|| {
+                get_app_root(AppDataType::UserData, &crate::APP_INFO)
+                    .map(|path| {
+                        // Note: The `join("")` call ensures that there's a trailing slash
+                        PathWithSource {
+                            path: path.join("pages").join(""),
+                            source: PathSource::ConfigFile,
+                        }
+                    })
+                    .ok()
+            });
+        let directories = DirectoriesConfig {
+            cache_dir,
+            custom_pages_dir,
+        };
+
+        Ok(Self {
+            style,
+            display,
+            updates,
+            directories,
+        })
+    }
+
     pub fn load(enable_styles: bool) -> Result<Self> {
         debug!("Loading config");
 
@@ -301,7 +383,7 @@ impl Config {
         };
 
         // Convert to config
-        let mut config = Self::from(raw_config);
+        let mut config = Self::from_raw(raw_config).context("Could not process raw config")?;
 
         // Potentially override styles
         if !enable_styles {

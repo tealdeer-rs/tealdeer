@@ -8,23 +8,20 @@ use std::{
 };
 
 use anyhow::{ensure, Context, Result};
-use app_dirs::{get_app_root, AppDataType};
 use log::debug;
 use reqwest::{blocking::Client, Proxy};
 use walkdir::{DirEntry, WalkDir};
 use zip::ZipArchive;
 
-use crate::types::{PathSource, PlatformType};
-
-static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
+use crate::types::PlatformType;
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 
 #[derive(Debug)]
 pub struct Cache {
-    url: String,
     platform: PlatformType,
+    cache_dir: PathBuf,
 }
 
 #[derive(Debug)]
@@ -54,13 +51,13 @@ impl PageLookupResult {
     pub fn reader(&self) -> Result<BufReader<Box<dyn Read>>> {
         // Open page file
         let page_file = File::open(&self.page_path)
-            .with_context(|| format!("Could not open page file at {:?}", self.page_path))?;
+            .with_context(|| format!("Could not open page file at {}", self.page_path.display()))?;
 
         // Open patch file
         let patch_file_opt = match &self.patch_path {
             Some(path) => Some(
                 File::open(path)
-                    .with_context(|| format!("Could not open patch file at {:?}", path))?,
+                    .with_context(|| format!("Could not open patch file at {}", path.display()))?,
             ),
             None => None,
         };
@@ -89,53 +86,57 @@ pub enum CacheFreshness {
 }
 
 impl Cache {
-    pub fn new<S>(url: S, platform: PlatformType) -> Self
+    pub fn new<P>(platform: PlatformType, cache_dir: P) -> Self
     where
-        S: Into<String>,
+        P: Into<PathBuf>,
     {
         Self {
-            url: url.into(),
             platform,
+            cache_dir: cache_dir.into(),
         }
     }
 
-    /// Return the path to the cache directory.
-    pub fn get_cache_dir() -> Result<(PathBuf, PathSource)> {
-        // Allow overriding the cache directory by setting the env variable.
-        if let Ok(value) = env::var(CACHE_DIR_ENV_VAR) {
-            let path = PathBuf::from(value);
-            let (path_exists, path_is_dir) = path
-                .metadata()
-                .map_or((false, false), |md| (true, md.is_dir()));
-            ensure!(
-                !path_exists || path_is_dir,
-                "Path specified by ${} is not a directory",
-                CACHE_DIR_ENV_VAR
-            );
-            if !path_exists {
-                // Try to create the complete directory path.
-                fs::create_dir_all(&path).with_context(|| {
-                    format!(
-                        "Directory path specified by ${} cannot be created",
-                        CACHE_DIR_ENV_VAR
-                    )
-                })?;
-                eprintln!(
-                    "Successfully created cache directory path `{}`.",
-                    path.to_str().unwrap()
-                );
-            }
-            return Ok((path, PathSource::EnvVar));
-        };
-
-        // Otherwise, fall back to user cache directory.
-        let dirs = get_app_root(AppDataType::UserCache, &crate::APP_INFO)
-            .context("Could not determine user cache directory")?;
-        Ok((dirs, PathSource::OsConvention))
+    pub fn cache_dir(&self) -> &Path {
+        &self.cache_dir
     }
 
-    /// Download the archive
-    fn download(&self) -> Result<Vec<u8>> {
+    /// Make sure that the cache directory exists and is a directory.
+    /// If necessary, create the directory.
+    fn ensure_cache_dir_exists(&self) -> Result<()> {
+        // Check whether `cache_dir` exists and is a directory
+        let (cache_dir_exists, cache_dir_is_dir) = self
+            .cache_dir
+            .metadata()
+            .map_or((false, false), |md| (true, md.is_dir()));
+        ensure!(
+            !cache_dir_exists || cache_dir_is_dir,
+            "Cache directory path `{}` is not a directory",
+            self.cache_dir.display(),
+        );
+
+        if !cache_dir_exists {
+            // If missing, try to create the complete directory path
+            fs::create_dir_all(&self.cache_dir).with_context(|| {
+                format!(
+                    "Cache directory path `{}` cannot be created",
+                    self.cache_dir.display(),
+                )
+            })?;
+            eprintln!(
+                "Successfully created cache directory path `{}`.",
+                self.cache_dir.display(),
+            );
+        }
+
+        Ok(())
+    }
+
+    fn pages_dir(&self) -> PathBuf {
+        self.cache_dir.join(TLDR_PAGES_DIR)
+    }
+
+    /// Download the archive from the specified URL.
+    fn download(archive_url: &str) -> Result<Vec<u8>> {
         let mut builder = Client::builder();
         if let Ok(ref host) = env::var("HTTP_PROXY") {
             if let Ok(proxy) = Proxy::http(host) {
@@ -151,32 +152,26 @@ impl Cache {
             .build()
             .context("Could not instantiate HTTP client")?;
         let mut resp = client
-            .get(&self.url)
+            .get(archive_url)
             .send()?
             .error_for_status()
-            .with_context(|| format!("Could not download tldr pages from {}", &self.url))?;
+            .with_context(|| format!("Could not download tldr pages from {}", archive_url))?;
         let mut buf: Vec<u8> = vec![];
         let bytes_downloaded = resp.copy_to(&mut buf)?;
         debug!("{} bytes downloaded", bytes_downloaded);
         Ok(buf)
     }
 
-    /// Update the pages cache.
-    pub fn update(&self) -> Result<()> {
+    /// Update the pages cache from the specified URL.
+    pub fn update(&self, archive_url: &str) -> Result<()> {
+        self.ensure_cache_dir_exists()?;
+
         // First, download the compressed data
-        let bytes: Vec<u8> = self.download()?;
+        let bytes: Vec<u8> = Self::download(archive_url)?;
 
         // Decompress the response body into an `Archive`
         let mut archive = ZipArchive::new(Cursor::new(bytes))
             .context("Could not decompress downloaded ZIP archive")?;
-
-        // Determine paths
-        let (cache_dir, _) = Self::get_cache_dir()?;
-        let pages_dir = cache_dir.join(TLDR_PAGES_DIR);
-
-        // Make sure that cache directory exists
-        debug!("Ensure cache directory {:?} exists", &cache_dir);
-        fs::create_dir_all(&cache_dir).context("Could not create cache directory")?;
 
         // Clear cache directory
         // Note: This is not the best solution. Ideally we would download the
@@ -184,32 +179,31 @@ impl Cache {
         // But renaming a directory doesn't work across filesystems and Rust
         // does not yet offer a recursive directory copying function. So for
         // now, we'll use this approach.
-        Self::clear().context("Could not clear the cache directory")?;
+        self.clear()
+            .context("Could not clear the cache directory")?;
 
-        // Extract archive
+        // Extract archive into pages dir
         archive
-            .extract(&pages_dir)
+            .extract(&self.pages_dir())
             .context("Could not unpack compressed data")?;
 
         Ok(())
     }
 
     /// Return the duration since the cache directory was last modified.
-    pub fn last_update() -> Option<Duration> {
-        if let Ok((cache_dir, _)) = Self::get_cache_dir() {
-            if let Ok(metadata) = fs::metadata(cache_dir.join(TLDR_PAGES_DIR)) {
-                if let Ok(mtime) = metadata.modified() {
-                    let now = SystemTime::now();
-                    return now.duration_since(mtime).ok();
-                };
+    pub fn last_update(&self) -> Option<Duration> {
+        if let Ok(metadata) = fs::metadata(self.pages_dir()) {
+            if let Ok(mtime) = metadata.modified() {
+                let now = SystemTime::now();
+                return now.duration_since(mtime).ok();
             };
         };
         None
     }
 
     /// Return the freshness of the cache (fresh, stale or missing).
-    pub fn freshness() -> CacheFreshness {
-        match Cache::last_update() {
+    pub fn freshness(&self) -> CacheFreshness {
+        match self.last_update() {
             Some(ago) if ago > crate::config::MAX_CACHE_AGE => CacheFreshness::Stale(ago),
             Some(_) => CacheFreshness::Fresh,
             None => CacheFreshness::Missing,
@@ -230,13 +224,13 @@ impl Cache {
     /// Check for pages for a given platform in one of the given languages.
     fn find_page_for_platform(
         page_name: &str,
-        cache_dir: &Path,
+        pages_dir: &Path,
         platform: &str,
         language_dirs: &[String],
     ) -> Option<PathBuf> {
         language_dirs
             .iter()
-            .map(|lang_dir| cache_dir.join(lang_dir).join(platform).join(page_name))
+            .map(|lang_dir| pages_dir.join(lang_dir).join(platform).join(page_name))
             .find(|path| path.exists() && path.is_file())
     }
 
@@ -258,15 +252,8 @@ impl Cache {
         let patch_filename = format!("{}.patch", name);
         let custom_filename = format!("{}.page", name);
 
-        // Get cache dir
-        let cache_dir = match Self::get_cache_dir() {
-            Ok((cache_dir, _)) => cache_dir.join(TLDR_PAGES_DIR),
-            Err(e) => {
-                log::error!("Could not get cache directory: {}", e);
-                return None;
-            }
-        };
-
+        // Determine directory paths
+        let pages_dir = self.pages_dir();
         let lang_dirs: Vec<String> = languages
             .iter()
             .map(|lang| {
@@ -291,21 +278,20 @@ impl Cache {
         // Try to find a platform specific path next, append custom patch to it.
         let platform_dir = self.get_platform_dir();
         if let Some(page) =
-            Self::find_page_for_platform(&page_filename, &cache_dir, platform_dir, &lang_dirs)
+            Self::find_page_for_platform(&page_filename, &pages_dir, platform_dir, &lang_dirs)
         {
             return Some(PageLookupResult::with_page(page).with_optional_patch(patch_path));
         }
 
         // Did not find platform specific results, fall back to "common"
-        Self::find_page_for_platform(&page_filename, &cache_dir, "common", &lang_dirs)
+        Self::find_page_for_platform(&page_filename, &pages_dir, "common", &lang_dirs)
             .map(|page| PageLookupResult::with_page(page).with_optional_patch(patch_path))
     }
 
     /// Return the available pages.
-    pub fn list_pages(&self, custom_pages_dir: Option<&Path>) -> Result<Vec<String>> {
+    pub fn list_pages(&self, custom_pages_dir: Option<&Path>) -> Vec<String> {
         // Determine platforms directory and platform
-        let (cache_dir, _) = Self::get_cache_dir()?;
-        let platforms_dir = cache_dir.join(TLDR_PAGES_DIR).join("pages");
+        let platforms_dir = self.pages_dir().join("pages");
         let platform_dir = self.get_platform_dir();
 
         // Closure that allows the WalkDir instance to traverse platform
@@ -367,29 +353,27 @@ impl Cache {
 
         pages.sort();
         pages.dedup();
-        Ok(pages)
+        pages
     }
 
-    /// Delete the cache directory.
-    pub fn clear() -> Result<()> {
-        let (path, _) = Self::get_cache_dir()?;
-
-        // Check preconditions
+    /// Delete the cache directory
+    ///
+    /// Returns true if the cache was deleted and false if the cache dir did
+    /// not exist.
+    pub fn clear(&self) -> Result<bool> {
+        if !self.cache_dir.exists() {
+            return Ok(false);
+        }
         ensure!(
-            path.exists(),
-            "Cache path ({}) does not exist.",
-            path.display(),
-        );
-        ensure!(
-            path.is_dir(),
+            self.cache_dir.is_dir(),
             "Cache path ({}) is not a directory.",
-            path.display()
+            self.cache_dir.display(),
         );
 
         // Delete old tldr-pages cache location as well if present
         // TODO: To be removed in the future
         for pages_dir_name in [TLDR_PAGES_DIR, TLDR_OLD_PAGES_DIR] {
-            let pages_dir = path.join(pages_dir_name);
+            let pages_dir = self.cache_dir.join(pages_dir_name);
 
             if pages_dir.exists() {
                 fs::remove_dir_all(&pages_dir).with_context(|| {
@@ -401,7 +385,7 @@ impl Cache {
             }
         }
 
-        Ok(())
+        Ok(true)
     }
 }
 

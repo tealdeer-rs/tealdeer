@@ -43,7 +43,7 @@ mod utils;
 use crate::{
     cache::{Cache, CacheFreshness, PageLookupResult, TLDR_PAGES_DIR},
     cli::Args,
-    config::{get_config_dir, get_config_path, make_default_config, Config},
+    config::{get_config_dir, get_config_path, make_default_config, Config, PathWithSource},
     extensions::Dedup,
     output::print_page,
     types::{ColorOptions, PlatformType},
@@ -59,11 +59,13 @@ const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
 
 /// The cache should be updated if it was explicitly requested,
 /// or if an automatic update is due and allowed.
-fn should_update_cache(args: &Args, config: &Config) -> bool {
+fn should_update_cache(cache: &Cache, args: &Args, config: &Config) -> bool {
     args.update
         || (!args.no_auto_update
             && config.updates.auto_update
-            && Cache::last_update().map_or(true, |ago| ago >= config.updates.auto_update_interval))
+            && cache
+                .last_update()
+                .map_or(true, |ago| ago >= config.updates.auto_update_interval))
 }
 
 #[derive(PartialEq)]
@@ -73,8 +75,8 @@ enum CheckCacheResult {
 }
 
 /// Check the cache for freshness. If it's stale or missing, show a warning.
-fn check_cache(args: &Args, enable_styles: bool) -> CheckCacheResult {
-    match Cache::freshness() {
+fn check_cache(cache: &Cache, args: &Args, enable_styles: bool) -> CheckCacheResult {
+    match cache.freshness() {
         CacheFreshness::Fresh => CheckCacheResult::CacheFound,
         CacheFreshness::Stale(_) if args.quiet => CheckCacheResult::CacheFound,
         CacheFreshness::Stale(age) => {
@@ -109,19 +111,27 @@ fn check_cache(args: &Args, enable_styles: bool) -> CheckCacheResult {
 }
 
 /// Clear the cache
-fn clear_cache(quietly: bool, enable_styles: bool) {
-    Cache::clear().unwrap_or_else(|e| {
+fn clear_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
+    let cache_dir_found = cache.clear().unwrap_or_else(|e| {
         print_error(enable_styles, &e.context("Could not clear cache"));
         process::exit(1);
     });
     if !quietly {
-        eprintln!("Successfully deleted cache.");
+        let cache_dir = cache.cache_dir().display();
+        if cache_dir_found {
+            eprintln!("Successfully cleared cache at `{}`.", cache_dir);
+        } else {
+            eprintln!(
+                "Cache directory not found at `{}`, nothing to do.",
+                cache_dir
+            );
+        }
     }
 }
 
 /// Update the cache
 fn update_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
-    cache.update().unwrap_or_else(|e| {
+    cache.update(ARCHIVE_URL).unwrap_or_else(|e| {
         print_error(enable_styles, &e.context("Could not update cache"));
         process::exit(1);
     });
@@ -157,35 +167,19 @@ fn show_paths(config: &Config) {
     );
     let config_path = get_config_path().map_or_else(
         |e| format!("[Error: {}]", e),
-        |(path, _)| path.to_str().unwrap_or("[Invalid]").to_string(),
+        |(path, _)| path.display().to_string(),
     );
-    let cache_dir = Cache::get_cache_dir().map_or_else(
-        |e| format!("[Error: {}]", e),
-        |(mut path, source)| {
-            path.push(""); // Trailing path separator
-            match path.to_str() {
-                Some(path) => format!("{} ({})", path, source),
-                None => "[Invalid]".to_string(),
-            }
-        },
-    );
-    let pages_dir = Cache::get_cache_dir().map_or_else(
-        |e| format!("[Error: {}]", e),
-        |(mut path, _)| {
-            path.push(TLDR_PAGES_DIR);
-            path.push(""); // Trailing path separator
-            path.into_os_string()
-                .into_string()
-                .unwrap_or_else(|_| "[Invalid]".to_string())
-        },
-    );
-    let custom_pages_dir = config.directories.custom_pages_dir.as_deref().map_or_else(
-        || "[None]".to_string(),
-        |path| {
-            path.to_str()
-                .map_or_else(|| "[Invalid]".to_string(), ToString::to_string)
-        },
-    );
+    let cache_dir = config.directories.cache_dir.to_string();
+    let pages_dir = {
+        let mut path = config.directories.cache_dir.path.clone();
+        path.push(TLDR_PAGES_DIR);
+        path.push(""); // Trailing path separator
+        path.display().to_string()
+    };
+    let custom_pages_dir = match config.directories.custom_pages_dir {
+        Some(ref path_with_source) => path_with_source.to_string(),
+        None => "[None]".to_string(),
+    };
     println!("Config dir:       {}", config_dir);
     println!("Config path:      {}", config_path);
     println!("Cache dir:        {}", cache_dir);
@@ -338,16 +332,16 @@ fn main() {
         };
     }
 
-    // Initialize cache
-    let cache = Cache::new(ARCHIVE_URL, platform);
+    // Instantiate cache. This will not yet create the cache directory!
+    let cache = Cache::new(platform, &config.directories.cache_dir.path);
 
     // Clear cache, pass through
     if args.clear_cache {
-        clear_cache(args.quiet, enable_styles);
+        clear_cache(&cache, args.quiet, enable_styles);
     }
 
     // Cache update, pass through
-    let cache_updated = if should_update_cache(&args, &config) {
+    let cache_updated = if should_update_cache(&cache, &args, &config) {
         update_cache(&cache, args.quiet, enable_styles);
         true
     } else {
@@ -357,23 +351,19 @@ fn main() {
     // Check cache presence and freshness
     if !cache_updated
         && (args.list || !args.command.is_empty())
-        && check_cache(&args, enable_styles) == CheckCacheResult::CacheMissing
+        && check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing
     {
         process::exit(1);
     }
 
     // List cached commands and exit
     if args.list {
-        // Get list of pages
-        let pages = cache
-            .list_pages(config.directories.custom_pages_dir.as_deref())
-            .unwrap_or_else(|e| {
-                print_error(enable_styles, &e.context("Could not get list of pages"));
-                process::exit(1);
-            });
-
-        // Print pages
-        println!("{}", pages.join("\n"));
+        let custom_pages_dir = config
+            .directories
+            .custom_pages_dir
+            .as_ref()
+            .map(PathWithSource::path);
+        println!("{}", cache.list_pages(custom_pages_dir).join("\n"));
         process::exit(0);
     }
 
@@ -393,7 +383,11 @@ fn main() {
         if let Some(lookup_result) = cache.find_page(
             &command,
             &languages,
-            config.directories.custom_pages_dir.as_deref(),
+            config
+                .directories
+                .custom_pages_dir
+                .as_ref()
+                .map(PathWithSource::path),
         ) {
             if let Err(ref e) =
                 print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)
