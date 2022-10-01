@@ -269,13 +269,6 @@ fn main() {
             "The -m / --markdown flag is deprecated, use -r / --raw instead",
         );
     }
-    if args.os.is_some() {
-        print_warning(
-            enable_styles,
-            "The -o / --os flag is deprecated, use -p / --platform instead",
-        );
-    }
-    args.platform = args.platform.or(args.os);
 
     // Look up config file, if none is found fall back to default config.
     let config = match Config::load(enable_styles) {

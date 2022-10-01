@@ -43,15 +43,6 @@ pub(crate) struct Args {
     )]
     pub platform: Option<PlatformType>,
 
-    /// Deprecated alias of `platform`
-    #[clap(
-        short = 'o',
-        long = "os",
-        possible_values = ["linux", "macos", "windows", "sunos", "osx"],
-        hide = true
-    )]
-    pub os: Option<PlatformType>,
-
     /// Override the language
     #[clap(short = 'L', long = "language")]
     pub language: Option<String>,
