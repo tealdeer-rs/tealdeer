@@ -1,8 +1,12 @@
 //! Definition of the CLI arguments and options.
 
-use std::path::PathBuf;
+use std::{fs::File, path::PathBuf};
 
-use clap::{AppSettings, ArgGroup, Parser};
+use clap::{AppSettings, ArgGroup, CommandFactory, Parser, Subcommand, ValueEnum, ValueHint};
+use clap_complete::{
+    generate,
+    shells::{Bash, Elvish, Fish, PowerShell, Zsh},
+};
 
 use crate::types::{ColorOptions, PlatformType};
 
@@ -42,6 +46,10 @@ pub(crate) struct Args {
         possible_values = ["linux", "macos", "windows", "sunos", "osx", "android"],
     )]
     pub platform: Option<PlatformType>,
+
+    /// Generate completions for shells
+    #[clap(subcommand)]
+    pub generator: Option<Generate>,
 
     /// Override the language
     #[clap(short = 'L', long = "language")]
@@ -92,4 +100,57 @@ pub(crate) struct Args {
     // while TLDR specification requires `-v` to be used.
     #[clap(short = 'v', long = "version")]
     pub version: bool,
+}
+
+#[derive(Subcommand, Clone, Debug)]
+pub enum Generate {
+    Completion {
+        #[clap(long, short, value_name = "SHELL", value_enum)]
+        shell: Shell,
+        #[clap(value_hint = ValueHint::AnyPath)]
+        path: PathBuf,
+    },
+}
+
+#[derive(ValueEnum, Clone, Debug)]
+pub enum Shell {
+    Bash,
+    Zsh,
+    Fish,
+    PowerShell,
+    Elvish,
+}
+
+impl Generate {
+    pub fn generate(&self) {
+        let mut cmd = Args::command();
+        let mut file = File::options();
+        let file = file.read(true).write(true).create(true);
+        let name = "tldr";
+
+        match self {
+            Generate::Completion { shell, path } => match shell {
+                Shell::Bash => {
+                    let mut file = file.open(path).unwrap();
+                    generate::<Bash, _>(Bash, &mut cmd, name, &mut file);
+                }
+                Shell::Zsh => {
+                    let mut file = file.open(path).unwrap();
+                    generate::<Zsh, _>(Zsh, &mut cmd, name, &mut file);
+                }
+                Shell::Fish => {
+                    let mut file = file.open(path).unwrap();
+                    generate::<Fish, _>(Fish, &mut cmd, name, &mut file);
+                }
+                Shell::PowerShell => {
+                    let mut file = file.open(path).unwrap();
+                    generate::<PowerShell, _>(PowerShell, &mut cmd, name, &mut file);
+                }
+                Shell::Elvish => {
+                    let mut file = file.open(path).unwrap();
+                    generate::<Elvish, _>(Elvish, &mut cmd, name, &mut file);
+                }
+            },
+        }
+    }
 }

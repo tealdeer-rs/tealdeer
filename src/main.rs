@@ -42,7 +42,7 @@ mod utils;
 
 use crate::{
     cache::{Cache, CacheFreshness, PageLookupResult, TLDR_PAGES_DIR},
-    cli::Args,
+    cli::{Args, Generate},
     config::{get_config_dir, get_config_path, make_default_config, Config, PathWithSource},
     extensions::Dedup,
     output::print_page,
@@ -270,6 +270,15 @@ fn main() {
         }
     };
 
+    let mut has_generator = false;
+    // Generate completions
+    if let Some(generator) = &args.generator {
+        let Generate::Completion { shell, path: _ } = generator;
+        eprintln!("Generating completion file for {:?}...", shell);
+        generator.generate();
+        has_generator = true;
+    }
+
     // Show various paths
     if args.show_paths {
         show_paths(&config);
@@ -303,7 +312,7 @@ fn main() {
     }
 
     // Cache update, pass through
-    let cache_updated = if should_update_cache(&cache, &args, &config) {
+    let cache_updated = if should_update_cache(&cache, &args, &config) || has_generator {
         update_cache(&cache, args.quiet, enable_styles);
         true
     } else {
