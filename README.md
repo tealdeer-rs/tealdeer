@@ -41,20 +41,19 @@ output as fast as possible.
 
 We think that `tealdeer` reaches these goals. We put together a (more or less)
 reproducible benchmark that compiles a handful of clients from source and
-measures the execution times on a cold disk cache. The benchmarking is run in a
+measures the execution times on a cold disk cache. The benchmark is run in a
 Docker container using sharkdp's [`hyperfine`][hyperfine-gh]
 ([Dockerfile][benchmark-dockerfile]).
 
-| Client (50 runs, 17.10.2021)      | Programming Language | Mean in ms | Deviation in ms | Comments                |
+| Client (150 runs, 04.10.2022)     | Programming Language | Mean in ms | Deviation in ms | Comments                |
 | :---:                             | :---:                | :---:      | :---:           | :---:                   |
-| [`outfieldr`][outfieldr-gh]       | Zig                  | 9.1        | 0.5             | no user configuration   |
-| `tealdeer`                        | Rust                 | 13.2       | 0.5             |                         |
-| [`fast-tldr`][fast-tldr-gh]       | Haskell              | 17.0       | 0.6             | no example highlighting |
-| [`tldr-hs`][hs-gh]                | Haskell              | 25.1       | 0.5             | no example highlighting |
-| [`tldr-bash`][bash-gh]            | Bash                 | 30.0       | 0.8             |                         |
-| [`tldr-c`][c-gh]                  | C                    | 38.4       | 1.0             |                         |
-| [`tldr-python-client`][python-gh] | Python               | 87.0       | 2.4             |                         |
-| [`tldr-node-client`][node-gh]     | JavaScript / NodeJS  | 407.1      | 12.9            |                         |
+| [`outfieldr`][outfieldr-gh]       | Zig                  | 10.5       | 1.1             | no user configuration   |
+| `tealdeer`                        | Rust                 | 13.5       | 1.0             |                         |
+| [`fast-tldr`][fast-tldr-gh]       | Haskell              | 20.6       | 1.4             | no example highlighting |
+| [`tldr-hs`][hs-gh]                | Haskell              | 38.3       | 1.2             | no example highlighting |
+| [`tldr-c`][c-gh]                  | C                    | 37.2       | 1.5             |                         |
+| [`tldr-python-client`][python-gh] | Python               | 121.7      | 2.2             |                         |
+| [`tldr-node-client`][node-gh]     | JavaScript / NodeJS  | 621.9      | 8.0             |                         |
 
 As you can see, `tealdeer` is one of the fastest of the tested clients.
 However, we strive for useful features and code quality over raw performance,
