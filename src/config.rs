@@ -334,7 +334,7 @@ impl Config {
             .custom_pages_dir
             .map(|path| PathWithSource {
                 path,
-                source: PathSource::OsConvention,
+                source: PathSource::ConfigFile,
             })
             .or_else(|| {
                 get_app_root(AppDataType::UserData, &crate::APP_INFO)
@@ -342,7 +342,7 @@ impl Config {
                         // Note: The `join("")` call ensures that there's a trailing slash
                         PathWithSource {
                             path: path.join("pages").join(""),
-                            source: PathSource::ConfigFile,
+                            source: PathSource::OsConvention,
                         }
                     })
                     .ok()
