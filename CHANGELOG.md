@@ -14,6 +14,20 @@ Possible log types:
 - `[chore]` for maintenance work.
 
 
+### [v1.6.1][v1.6.1] (2022-10-24)
+
+Changes:
+
+- [fixed] Fix path source for custom pages dir ([#297])
+- [chore] Update dependendencies ([#299])
+
+Contributors to this version:
+
+- [Cyrus Yip][@CyrusYip]
+
+Thanks!
+
+
 ### [v1.6.0][v1.6.0] (2022-10-02)
 
 It's been 9 months since the last release already! This is not a huge update
@@ -291,8 +305,9 @@ Thanks!
 [@bl-ue]: https://github.com/bl-ue
 [@Calinou]: https://github.com/Calinou
 [@cam8001]: https://github.com/cam8001
-[@cyqsimon]: https://github.com/cyqsimon
 [@cho-m]: https://github.com/cho-m
+[@cyqsimon]: https://github.com/cyqsimon
+[@CyrusYip]: https://github.com/CyrusYip
 [@das-g]: https://github.com/das-g
 [@dbrgn]: https://github.com/dbrgn
 [@Delapouite]: https://github.com/Delapouite
@@ -337,6 +352,7 @@ Thanks!
 [v1.4.1]: https://github.com/dbrgn/tealdeer/compare/v1.4.0...v1.4.1
 [v1.5.0]: https://github.com/dbrgn/tealdeer/compare/v1.4.1...v1.5.0
 [v1.6.0]: https://github.com/dbrgn/tealdeer/compare/v1.5.0...v1.6.0
+[v1.6.1]: https://github.com/dbrgn/tealdeer/compare/v1.6.0...v1.6.1
 
 [i34]: https://github.com/dbrgn/tealdeer/issues/34
 [i43]: https://github.com/dbrgn/tealdeer/issues/43
@@ -401,3 +417,5 @@ Thanks!
 [#287]: https://github.com/dbrgn/tealdeer/pull/287
 [#290]: https://github.com/dbrgn/tealdeer/pull/290
 [#291]: https://github.com/dbrgn/tealdeer/pull/291
+[#297]: https://github.com/dbrgn/tealdeer/pull/297
+[#299]: https://github.com/dbrgn/tealdeer/pull/299
