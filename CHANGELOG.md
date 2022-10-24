@@ -24,6 +24,7 @@ Changes:
 Contributors to this version:
 
 - [Cyrus Yip][@CyrusYip]
+- [Danilo Bargen][@dbrgn]
 
 Thanks!
 
