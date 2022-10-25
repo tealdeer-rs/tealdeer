@@ -8,7 +8,7 @@ use crate::types::{ColorOptions, PlatformType};
 
 // Note: flag names are specified explicitly in clap attributes
 // to improve readability and allow contributors to grep names like "clear-cache"
-#[derive(Parser, Debug, Clone)]
+#[derive(Parser, Debug)]
 #[clap(about = "A fast TLDR client", author, version)]
 #[clap(
     after_help = "To view the user documentation, please visit https://dbrgn.github.io/tealdeer/."

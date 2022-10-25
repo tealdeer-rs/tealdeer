@@ -281,10 +281,10 @@ fn main() {
     }
 
     // Specify target OS
-    let platforms: Vec<PlatformType> = args
-        .clone()
-        .platform
-        .unwrap_or(vec![PlatformType::current()]);
+    let platforms: Vec<PlatformType> = match args.platform {
+        Some(ref p) => p.to_vec(),
+        None => vec![PlatformType::current()],
+    };
 
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
@@ -300,9 +300,10 @@ fn main() {
     let mut err_cmd: Option<String> = None;
 
     // Collect languages
-    let languages = args.clone()
-        .language
-        .map_or_else(get_languages_from_env, |lang| vec![lang]);
+    let languages = match args.language {
+        Some(ref lang) => vec![lang.to_string()],
+        None => get_languages_from_env(),
+    };
 
     for platform in platforms {
         // Instantiate cache. This will not yet create the cache directory!
