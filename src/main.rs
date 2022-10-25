@@ -282,7 +282,7 @@ fn main() {
 
     // Specify target OS
     let platforms: Vec<PlatformType> = match args.platform {
-        Some(ref p) => p.to_vec(),
+        Some(ref p) => p.clone(),
         None => vec![PlatformType::current()],
     };
 
@@ -366,7 +366,7 @@ fn main() {
                 }
                 process::exit(0);
             } else {
-                err_cmd = Some(command)
+                err_cmd = Some(command);
             }
         }
     }
