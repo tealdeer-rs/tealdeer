@@ -281,7 +281,10 @@ fn main() {
     }
 
     // Specify target OS
-    let platform: PlatformType = args.platform.unwrap_or_else(PlatformType::current);
+    let platforms: Vec<PlatformType> = args
+        .clone()
+        .platform
+        .unwrap_or(vec![PlatformType::current()]);
 
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
@@ -294,84 +297,93 @@ fn main() {
         };
     }
 
-    // Instantiate cache. This will not yet create the cache directory!
-    let cache = Cache::new(platform, &config.directories.cache_dir.path);
+    let mut err_cmd: Option<String> = None;
 
-    // Clear cache, pass through
-    if args.clear_cache {
-        clear_cache(&cache, args.quiet, enable_styles);
-    }
+    // Collect languages
+    let languages = args.clone()
+        .language
+        .map_or_else(get_languages_from_env, |lang| vec![lang]);
 
-    // Cache update, pass through
-    let cache_updated = if should_update_cache(&cache, &args, &config) {
-        update_cache(&cache, args.quiet, enable_styles);
-        true
-    } else {
-        false
-    };
+    for platform in platforms {
+        // Instantiate cache. This will not yet create the cache directory!
+        let cache = Cache::new(platform, &config.directories.cache_dir.path);
 
-    // Check cache presence and freshness
-    if !cache_updated
-        && (args.list || !args.command.is_empty())
-        && check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing
-    {
-        process::exit(1);
-    }
+        // Clear cache, pass through
+        if args.clear_cache {
+            clear_cache(&cache, args.quiet, enable_styles);
+        }
 
-    // List cached commands and exit
-    if args.list {
-        let custom_pages_dir = config
-            .directories
-            .custom_pages_dir
-            .as_ref()
-            .map(PathWithSource::path);
-        println!("{}", cache.list_pages(custom_pages_dir).join("\n"));
-        process::exit(0);
-    }
+        // Cache update, pass through
+        let cache_updated = if should_update_cache(&cache, &args, &config) {
+            update_cache(&cache, args.quiet, enable_styles);
+            true
+        } else {
+            false
+        };
 
-    // Show command from cache
-    if !args.command.is_empty() {
-        // Note: According to the TLDR client spec, page names must be transparently
-        // lowercased before lookup:
-        // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#page-names
-        let command = args.command.join("-").to_lowercase();
+        // Check cache presence and freshness
+        if !cache_updated
+            && (args.list || !args.command.is_empty())
+            && check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing
+        {
+            process::exit(1);
+        }
 
-        // Collect languages
-        let languages = args
-            .language
-            .map_or_else(get_languages_from_env, |lang| vec![lang]);
-
-        // Search for command in cache
-        if let Some(lookup_result) = cache.find_page(
-            &command,
-            &languages,
-            config
+        // List cached commands and exit
+        if args.list {
+            let custom_pages_dir = config
                 .directories
                 .custom_pages_dir
                 .as_ref()
-                .map(PathWithSource::path),
-        ) {
-            if let Err(ref e) =
-                print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)
-            {
-                print_error(enable_styles, e);
-                process::exit(1);
-            }
+                .map(PathWithSource::path);
+            println!("{}", cache.list_pages(custom_pages_dir).join("\n"));
             process::exit(0);
-        } else {
-            if !args.quiet {
-                print_warning(
-                    enable_styles,
-                    &format!(
-                        "Page `{}` not found in cache.\n\
-                         Try updating with `tldr --update`, or submit a pull request to:\n\
-                         https://github.com/tldr-pages/tldr",
-                        &command
-                    ),
-                );
-            }
-            process::exit(1);
         }
+
+        // Show command from cache
+        if !args.command.is_empty() {
+            // Note: According to the TLDR client spec, page names must be transparently
+            // lowercased before lookup:
+            // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#page-names
+            let command = args.command.join("-").to_lowercase();
+
+            // Search for command in cache
+            if let Some(lookup_result) = cache.find_page(
+                &command,
+                &languages,
+                config
+                    .directories
+                    .custom_pages_dir
+                    .as_ref()
+                    .map(PathWithSource::path),
+            ) {
+                if let Err(ref e) =
+                    print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)
+                {
+                    print_error(enable_styles, e);
+                    process::exit(1);
+                }
+                process::exit(0);
+            } else {
+                err_cmd = Some(command)
+            }
+        }
+    }
+
+    // If any errors encountered
+    if let Some(command) = err_cmd {
+        if !args.quiet {
+            print_warning(
+                enable_styles,
+                &format!(
+                    "Page `{}` not found in cache.\n\
+            Try updating with `tldr --update`, or submit a pull request to:\n\
+            https://github.com/tldr-pages/tldr",
+                    &command
+                ),
+            );
+        }
+        process::exit(1);
     }
 }
 

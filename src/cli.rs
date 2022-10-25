@@ -2,13 +2,13 @@
 
 use std::path::PathBuf;
 
-use clap::{AppSettings, ArgGroup, Parser};
+use clap::{AppSettings, ArgAction, ArgGroup, Parser};
 
 use crate::types::{ColorOptions, PlatformType};
 
 // Note: flag names are specified explicitly in clap attributes
 // to improve readability and allow contributors to grep names like "clear-cache"
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[clap(about = "A fast TLDR client", author, version)]
 #[clap(
     after_help = "To view the user documentation, please visit https://dbrgn.github.io/tealdeer/."
@@ -39,9 +39,10 @@ pub(crate) struct Args {
     #[clap(
         short = 'p',
         long = "platform",
+        action = ArgAction::Append,
         possible_values = ["linux", "macos", "windows", "sunos", "osx", "android"],
     )]
-    pub platform: Option<PlatformType>,
+    pub platform: Option<Vec<PlatformType>>,
 
     /// Override the language
     #[clap(short = 'L', long = "language")]

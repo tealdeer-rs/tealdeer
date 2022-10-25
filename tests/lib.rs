@@ -563,6 +563,28 @@ fn test_pager_flag_enable() {
 }
 
 #[test]
+fn test_multiple_platform_command_search() {
+    let testenv = TestEnv::new();
+    testenv.add_os_entry("linux", "linux-only", "this command only exists for linux");
+
+    testenv.command()
+    .args(["--platform", "macos", "--platform", "linux", "linux-only"])
+    .assert()
+    .success();
+}
+
+#[test]
+fn test_multiple_platform_command_search_not_found() {
+    let testenv = TestEnv::new();
+    testenv.add_os_entry("windows", "windows-only", "this command only exists for Windows");
+
+    testenv.command()
+    .args(["--platform", "macos", "--platform", "linux", "windows-only"])
+    .assert()
+    .stderr(contains("Page `windows-only` not found in cache."));
+}
+
+#[test]
 fn test_list_flag_rendering() {
     let testenv = TestEnv::new();
 
