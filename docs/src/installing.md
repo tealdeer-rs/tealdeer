@@ -25,6 +25,7 @@ Tealdeer has been added to a few package managers:
 - openSUSE: [`tealdeer`](https://software.opensuse.org/package/tealdeer?search_term=tealdeer)
 - Solus: [`tealdeer`](https://packages.getsol.us/shannon/t/tealdeer/)
 - Void Linux: [`tealdeer`](https://github.com/void-linux/void-packages/tree/master/srcpkgs/tealdeer)
+- Scoop: [`tealdeer`](https://github.com/ScoopInstaller/Main/blob/master/bucket/tealdeer.json)
 
 ## Static Binaries (Linux)
 
