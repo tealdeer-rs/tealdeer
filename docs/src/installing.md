@@ -23,8 +23,8 @@ Tealdeer has been added to a few package managers:
 - NetBSD: [`sysutils/tealdeer`](https://pkgsrc.se/sysutils/tealdeer)
 - Nix: [`tealdeer`](https://nixos.org/nixos/packages.html#tealdeer)
 - openSUSE: [`tealdeer`](https://software.opensuse.org/package/tealdeer?search_term=tealdeer)
-- Solus: [`tealdeer`](https://packages.getsol.us/shannon/t/tealdeer/)
 - Scoop: [`tealdeer`](https://github.com/ScoopInstaller/Main/blob/master/bucket/tealdeer.json)
+- Solus: [`tealdeer`](https://packages.getsol.us/shannon/t/tealdeer/)
 - Void Linux: [`tealdeer`](https://github.com/void-linux/void-packages/tree/master/srcpkgs/tealdeer)
 
 ## Static Binaries (Linux)
