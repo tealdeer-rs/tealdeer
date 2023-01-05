@@ -280,9 +280,8 @@ fn main() {
         create_config_and_exit(enable_styles);
     }
 
-    // Specify target OS
-    let platforms: Vec<PlatformType> = match args.platform {
-        Some(ref p) => p.clone(),
+    let platforms = match args.platform {
+        Some(ref platforms) => platforms.clone(),
         None => vec![PlatformType::current()],
     };
 
@@ -297,94 +296,88 @@ fn main() {
         };
     }
 
-    let mut err_cmd: Option<String> = None;
+    // Instantiate cache. This will not yet create the cache directory!
+    let cache = Cache::new(config.directories.cache_dir.path.clone());
 
-    // Collect languages
-    let languages = match args.language {
-        Some(ref lang) => vec![lang.to_string()],
-        None => get_languages_from_env(),
+    // Clear cache, pass through
+    if args.clear_cache {
+        clear_cache(&cache, args.quiet, enable_styles);
+    }
+
+    // Cache update, pass through
+    let cache_updated = if should_update_cache(&cache, &args, &config) {
+        update_cache(&cache, args.quiet, enable_styles);
+        true
+    } else {
+        false
     };
 
-    for platform in platforms {
-        // Instantiate cache. This will not yet create the cache directory!
-        let cache = Cache::new(platform, &config.directories.cache_dir.path);
+    // Check cache presence and freshness
+    if !cache_updated
+        && (args.list || !args.command.is_empty())
+        && check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing
+    {
+        process::exit(1);
+    }
 
-        // Clear cache, pass through
-        if args.clear_cache {
-            clear_cache(&cache, args.quiet, enable_styles);
-        }
+    // List cached commands and exit
+    if args.list {
+        let custom_pages_dir = config
+            .directories
+            .custom_pages_dir
+            .as_ref()
+            .map(PathWithSource::path);
+        println!(
+            "{}",
+            cache.list_pages(custom_pages_dir, &platforms).join("\n")
+        );
+        process::exit(0);
+    }
 
-        // Cache update, pass through
-        let cache_updated = if should_update_cache(&cache, &args, &config) {
-            update_cache(&cache, args.quiet, enable_styles);
-            true
-        } else {
-            false
-        };
+    // Show command from cache
+    if !args.command.is_empty() {
+        // Note: According to the TLDR client spec, page names must be transparently
+        // lowercased before lookup:
+        // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#page-names
+        let command = args.command.join("-").to_lowercase();
 
-        // Check cache presence and freshness
-        if !cache_updated
-            && (args.list || !args.command.is_empty())
-            && check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing
-        {
-            process::exit(1);
-        }
+        // Collect languages
+        let languages = args
+            .language
+            .map_or_else(get_languages_from_env, |lang| vec![lang]);
 
-        // List cached commands and exit
-        if args.list {
-            let custom_pages_dir = config
+        // Search for command in cache
+        if let Some(lookup_result) = cache.find_page(
+            &command,
+            &languages,
+            config
                 .directories
                 .custom_pages_dir
                 .as_ref()
-                .map(PathWithSource::path);
-            println!("{}", cache.list_pages(custom_pages_dir).join("\n"));
-            process::exit(0);
-        }
-
-        // Show command from cache
-        if !args.command.is_empty() {
-            // Note: According to the TLDR client spec, page names must be transparently
-            // lowercased before lookup:
-            // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#page-names
-            let command = args.command.join("-").to_lowercase();
-
-            // Search for command in cache
-            if let Some(lookup_result) = cache.find_page(
-                &command,
-                &languages,
-                config
-                    .directories
-                    .custom_pages_dir
-                    .as_ref()
-                    .map(PathWithSource::path),
-            ) {
-                if let Err(ref e) =
-                    print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)
-                {
-                    print_error(enable_styles, e);
-                    process::exit(1);
-                }
-                process::exit(0);
-            } else {
-                err_cmd = Some(command);
+                .map(PathWithSource::path),
+            &platforms,
+        ) {
+            if let Err(ref e) =
+                print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)
+            {
+                print_error(enable_styles, e);
+                process::exit(1);
             }
+            process::exit(0);
+        } else {
+            if !args.quiet {
+                print_warning(
+                    enable_styles,
+                    &format!(
+                        "Page `{}` not found in cache.\n\
+                            Try updating with `tldr --update`, or submit a pull request to:\n\
+                            https://github.com/tldr-pages/tldr",
+                        &command
+                    ),
+                );
+            }
+            process::exit(1);
         }
-    }
-
-    // If any errors encountered
-    if let Some(command) = err_cmd {
-        if !args.quiet {
-            print_warning(
-                enable_styles,
-                &format!(
-                    "Page `{}` not found in cache.\n\
-            Try updating with `tldr --update`, or submit a pull request to:\n\
-            https://github.com/tldr-pages/tldr",
-                    &command
-                ),
-            );
-        }
-        process::exit(1);
     }
 }
 
