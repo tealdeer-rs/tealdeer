@@ -51,7 +51,7 @@ pub fn print_page(
         // Print the raw markdown of the file.
         for line in reader.lines() {
             let line = line.context("Error while reading from a page")?;
-            writeln!(handle, "{}", line).context("Could not write to stdout")?;
+            writeln!(handle, "{line}").context("Could not write to stdout")?;
         }
     } else {
         // Closure that processes a page snippet and writes it to stdout

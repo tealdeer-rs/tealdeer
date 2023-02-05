@@ -11,7 +11,7 @@ pub fn print_warning(enable_styles: bool, message: &str) {
 pub fn print_error(enable_styles: bool, error: &anyhow::Error) {
     print_msg(
         enable_styles,
-        &format!("{:?}", error),
+        &format!("{error:?}"),
         "Error: ",
         Color::Red,
     );
@@ -21,6 +21,6 @@ fn print_msg(enable_styles: bool, message: &str, prefix: &'static str, color: Co
     if enable_styles {
         eprintln!("{}{}", color.paint(prefix), color.paint(message));
     } else {
-        eprintln!("{}", message);
+        eprintln!("{message}");
     }
 }
