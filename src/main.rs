@@ -121,9 +121,7 @@ fn clear_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
         if cache_dir_found {
             eprintln!("Successfully cleared cache at `{cache_dir}`.");
         } else {
-            eprintln!(
-                "Cache directory not found at `{cache_dir}`, nothing to do."
-            );
+            eprintln!("Cache directory not found at `{cache_dir}`, nothing to do.");
         }
     }
 }
