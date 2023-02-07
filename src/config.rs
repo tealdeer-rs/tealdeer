@@ -308,7 +308,7 @@ impl Config {
             // For backwards compatibility reasons, the cache directory can be
             // overridden using an env variable. This is deprecated and will be
             // phased out in the future.
-            eprintln!("Warning: The ${} env variable is deprecated, use the `cache_dir` option in the config file instead.", cache_dir_env_var);
+            eprintln!("Warning: The ${cache_dir_env_var} env variable is deprecated, use the `cache_dir` option in the config file instead.");
             PathWithSource {
                 path: PathBuf::from(env_var),
                 source: PathSource::EnvVar,
@@ -376,7 +376,7 @@ impl Config {
                 format!("Failed to read from config file at {:?}", &config_file_path)
             })?;
             toml::from_str(&contents).with_context(|| {
-                format!("Failed to parse TOML config file at {:?}", config_file_path)
+                format!("Failed to parse TOML config file at {config_file_path:?}")
             })?
         } else {
             RawConfig::new()

@@ -119,12 +119,9 @@ fn clear_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
     if !quietly {
         let cache_dir = cache.cache_dir().display();
         if cache_dir_found {
-            eprintln!("Successfully cleared cache at `{}`.", cache_dir);
+            eprintln!("Successfully cleared cache at `{cache_dir}`.");
         } else {
-            eprintln!(
-                "Cache directory not found at `{}`, nothing to do.",
-                cache_dir
-            );
+            eprintln!("Cache directory not found at `{cache_dir}`, nothing to do.");
         }
     }
 }
@@ -143,17 +140,17 @@ fn update_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
 /// Show file paths
 fn show_paths(config: &Config) {
     let config_dir = get_config_dir().map_or_else(
-        |e| format!("[Error: {}]", e),
+        |e| format!("[Error: {e}]"),
         |(mut path, source)| {
             path.push(""); // Trailing path separator
             match path.to_str() {
-                Some(path) => format!("{} ({})", path, source),
+                Some(path) => format!("{path} ({source})"),
                 None => "[Invalid]".to_string(),
             }
         },
     );
     let config_path = get_config_path().map_or_else(
-        |e| format!("[Error: {}]", e),
+        |e| format!("[Error: {e}]"),
         |(path, _)| path.display().to_string(),
     );
     let cache_dir = config.directories.cache_dir.to_string();
@@ -167,11 +164,11 @@ fn show_paths(config: &Config) {
         Some(ref path_with_source) => path_with_source.to_string(),
         None => "[None]".to_string(),
     };
-    println!("Config dir:       {}", config_dir);
-    println!("Config path:      {}", config_path);
-    println!("Cache dir:        {}", cache_dir);
-    println!("Pages dir:        {}", pages_dir);
-    println!("Custom pages dir: {}", custom_pages_dir);
+    println!("Config dir:       {config_dir}");
+    println!("Config path:      {config_path}");
+    println!("Cache dir:        {cache_dir}");
+    println!("Pages dir:        {pages_dir}");
+    println!("Custom pages dir: {custom_pages_dir}");
 }
 
 /// Create seed config file and exit

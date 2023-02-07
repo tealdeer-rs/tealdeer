@@ -155,7 +155,7 @@ impl Cache {
             .get(archive_url)
             .send()?
             .error_for_status()
-            .with_context(|| format!("Could not download tldr pages from {}", archive_url))?;
+            .with_context(|| format!("Could not download tldr pages from {archive_url}"))?;
         let mut buf: Vec<u8> = vec![];
         let bytes_downloaded = resp.copy_to(&mut buf)?;
         debug!("{} bytes downloaded", bytes_downloaded);
@@ -248,9 +248,9 @@ impl Cache {
         languages: &[String],
         custom_pages_dir: Option<&Path>,
     ) -> Option<PageLookupResult> {
-        let page_filename = format!("{}.md", name);
-        let patch_filename = format!("{}.patch", name);
-        let custom_filename = format!("{}.page", name);
+        let page_filename = format!("{name}.md");
+        let patch_filename = format!("{name}.patch");
+        let custom_filename = format!("{name}.page");
 
         // Determine directory paths
         let pages_dir = self.pages_dir();
@@ -260,7 +260,7 @@ impl Cache {
                 if lang == "en" {
                     String::from("pages")
                 } else {
-                    format!("pages.{}", lang)
+                    format!("pages.{lang}")
                 }
             })
             .collect();

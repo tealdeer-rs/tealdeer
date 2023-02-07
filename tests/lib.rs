@@ -55,7 +55,7 @@ impl TestEnv {
     /// Write `content` to "config.toml" in the `config_dir` directory
     fn write_config(&self, content: impl AsRef<str>) {
         let config_file_name = self.config_dir.path().join("config.toml");
-        println!("Config path: {:?}", config_file_name);
+        println!("Config path: {config_file_name:?}");
 
         let mut config_file = File::create(&config_file_name).unwrap();
         config_file.write_all(content.as_ref().as_bytes()).unwrap();
@@ -76,7 +76,7 @@ impl TestEnv {
             .join(os);
         create_dir_all(&dir).unwrap();
 
-        let mut file = File::create(&dir.join(format!("{}.md", name))).unwrap();
+        let mut file = File::create(dir.join(format!("{name}.md"))).unwrap();
         file.write_all(contents.as_bytes()).unwrap();
     }
 
@@ -84,7 +84,7 @@ impl TestEnv {
     fn add_page_entry(&self, name: &str, contents: &str) {
         let dir = self.custom_pages_dir.path();
         create_dir_all(dir).unwrap();
-        let mut file = File::create(&dir.join(format!("{}.page", name))).unwrap();
+        let mut file = File::create(dir.join(format!("{name}.page"))).unwrap();
         file.write_all(contents.as_bytes()).unwrap();
     }
 
@@ -92,7 +92,7 @@ impl TestEnv {
     fn add_patch_entry(&self, name: &str, contents: &str) {
         let dir = self.custom_pages_dir.path();
         create_dir_all(dir).unwrap();
-        let mut file = File::create(&dir.join(format!("{}.patch", name))).unwrap();
+        let mut file = File::create(dir.join(format!("{name}.patch"))).unwrap();
         file.write_all(contents.as_bytes()).unwrap();
     }
 
@@ -120,7 +120,7 @@ impl TestEnv {
             build = build.arg("--no-default-features");
         }
         if !self.features.is_empty() {
-            build = build.arg(&format!("--feature {}", self.features.join(",")));
+            build = build.arg(format!("--feature {}", self.features.join(",")));
         }
         let run = build.run().unwrap();
         let mut cmd = run.command();
@@ -426,7 +426,7 @@ fn _test_correct_rendering(
 
     // Create input file
     let file_path = testenv.input_dir.path().join(filename);
-    println!("Testfile path: {:?}", file_path);
+    println!("Testfile path: {file_path:?}");
     let mut file = File::create(&file_path).unwrap();
     file.write_all(input_file.as_bytes()).unwrap();
 
@@ -501,7 +501,7 @@ fn test_correct_rendering_with_config() {
     // Setup config file
     // TODO should be config::CONFIG_FILE_NAME
     let config_file_path = testenv.config_dir.path().join("config.toml");
-    println!("Config path: {:?}", config_file_path);
+    println!("Config path: {config_file_path:?}");
 
     let mut config_file = File::create(&config_file_path).unwrap();
     config_file
@@ -510,7 +510,7 @@ fn test_correct_rendering_with_config() {
 
     // Create input file
     let file_path = testenv.input_dir.path().join("inkscape-v2.md");
-    println!("Testfile path: {:?}", file_path);
+    println!("Testfile path: {file_path:?}");
 
     let mut file = File::create(&file_path).unwrap();
     file.write_all(include_bytes!("inkscape-v2.md")).unwrap();
@@ -620,7 +620,7 @@ fn test_autoupdate_cache() {
     let cache_file_path = testenv.cache_dir.path().join(TLDR_PAGES_DIR);
 
     // Activate automatic updates, set the auto-update interval to 24 hours
-    let mut config_file = File::create(&config_file_path).unwrap();
+    let mut config_file = File::create(config_file_path).unwrap();
     config_file
         .write_all(b"[updates]\nauto_update = true\nauto_update_interval_hours = 24")
         .unwrap();
