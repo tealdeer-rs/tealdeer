@@ -1,6 +1,6 @@
 //! Code to split a `BufRead` instance into an iterator of `LineType`s.
 
-use std::io::BufRead;
+use std::io::{BufRead, Read};
 
 use log::warn;
 
@@ -64,9 +64,10 @@ impl<R: BufRead> Iterator for LineIterator<R> {
                         self.format = TldrFormat::V1;
                     } else {
                         // It's the new format! Drop next line.
-                        // (Hmm, is there a way to do this without an allocation?)
-                        let mut devnull = String::new();
-                        if let Err(e) = self.reader.read_line(&mut devnull) {
+                        if let Err(e) = Read::bytes(&mut self.reader)
+                            .find(|b| matches!(b, Ok(b'\n') | Err(_)))
+                            .transpose()
+                        {
                             warn!("Could not read line from reader: {:?}", e);
                             return None;
                         }
