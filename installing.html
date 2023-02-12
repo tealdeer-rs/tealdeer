@@ -164,7 +164,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#installing" id="installing">Installing</a></h1>
-<p>There are a few different ways to install Tealdeer:</p>
+<p>There are a few different ways to install tealdeer:</p>
 <ul>
 <li>Through <a href="#package-managers">package managers</a></li>
 <li>Through <a href="#static-binaries-linux">static binaries</a></li>
@@ -198,21 +198,19 @@ Simply download the binary for your platform and run it!</p>
 <p>Build and install the tool via cargo...</p>
 <pre><code>$ cargo install tealdeer
 </code></pre>
-<p><em>(Note: You might need to install OpenSSL development headers, otherwise you get
-a &quot;failed to run custom build command for openssl-sys&quot; error message. The
-package is called <code>libssl-dev</code> on Ubuntu.)</em></p>
 <h2><a class="header" href="#build-from-source" id="build-from-source">Build From Source</a></h2>
-<p>Debug build with logging enabled:</p>
-<pre><code>$ cargo build --features logging
-</code></pre>
-<p>Release build without logging:</p>
+<p>Release build:</p>
 <pre><code>$ cargo build --release
 </code></pre>
-<p>To enable the log output, set the <code>RUST_LOG</code> env variable:</p>
-<pre><code>$ export RUST_LOG=tldr=debug
+<p>Release build with bundled CA roots:</p>
+<pre><code>$ cargo build --release --no-default-features --features webpki-roots
 </code></pre>
+<p>Debug build with logging support:</p>
+<pre><code>$ cargo build --features logging
+</code></pre>
+<p>(To enable logging at runtime, export the <code>RUST_LOG=tldr=debug</code> env variable.)</p>
 <h2><a class="header" href="#autocompletion" id="autocompletion">Autocompletion</a></h2>
-<p>Shell completion scripts are located in the folder <code>completion</code>. 
+<p>Shell completion scripts are located in the folder <code>completion</code>.
 Just copy them to their designated location:</p>
 <ul>
 <li><em>Bash</em>: <code>cp completion/bash_tealdeer /usr/share/bash-completion/completions/tldr</code></li>
