@@ -38,7 +38,7 @@ probably the option to override the cache directory through the config file.
 The `TEALDEER_CACHE_DIR` env variable is now deprecated.
 
 A note to packagers: Shell completions have been moved to the `completion/`
-subdirectory! Packaging scripst might need to be updated.
+subdirectory! Packaging scripts might need to be updated.
 
 Changes:
 
@@ -107,7 +107,7 @@ The highlights:
 Note that the MSRV (Minimal Supported Rust Version) of the project
 [changed][i190]:
 
-> When publishing a Tealdeer release, the Rust version required to build it
+> When publishing a tealdeer release, the Rust version required to build it
 > should be stable for at least a month.
 
 Changes:

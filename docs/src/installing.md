@@ -1,6 +1,6 @@
 # Installing
 
-There are a few different ways to install Tealdeer:
+There are a few different ways to install tealdeer:
 
 - Through [package managers](#package-managers)
 - Through [static binaries](#static-binaries-linux)
@@ -40,27 +40,25 @@ Build and install the tool via cargo...
 
     $ cargo install tealdeer
 
-*(Note: You might need to install OpenSSL development headers, otherwise you get
-a "failed to run custom build command for openssl-sys" error message. The
-package is called `libssl-dev` on Ubuntu.)*
-
 ## Build From Source
 
-Debug build with logging enabled:
-
-    $ cargo build --features logging
-
-Release build without logging:
+Release build:
 
     $ cargo build --release
 
-To enable the log output, set the `RUST_LOG` env variable:
+Release build with bundled CA roots:
 
-    $ export RUST_LOG=tldr=debug
+    $ cargo build --release --no-default-features --features webpki-roots
+
+Debug build with logging support:
+
+    $ cargo build --features logging
+
+(To enable logging at runtime, export the `RUST_LOG=tldr=debug` env variable.)
 
 ## Autocompletion
 
-Shell completion scripts are located in the folder `completion`. 
+Shell completion scripts are located in the folder `completion`.
 Just copy them to their designated location:
 
 - *Bash*: `cp completion/bash_tealdeer /usr/share/bash-completion/completions/tldr`

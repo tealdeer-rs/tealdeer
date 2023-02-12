@@ -6,7 +6,7 @@ and community-driven man pages.
 
 ![Screenshot](screenshot-default.png)
 
-This documentation shows how to install, use and configure Tealdeer.
+This documentation shows how to install, use and configure tealdeer.
 
 ## Links
 
