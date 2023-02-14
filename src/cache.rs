@@ -299,7 +299,7 @@ impl Cache {
         let platforms_dir = self.pages_dir().join("pages");
         let platform_dirs: Vec<&'static str> = platforms
             .iter()
-            .map(|&p| Cache::get_platform_dir(p))
+            .map(|&p| Self::get_platform_dir(p))
             .collect();
 
         // Closure that allows the WalkDir instance to traverse platform

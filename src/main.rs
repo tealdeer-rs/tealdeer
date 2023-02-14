@@ -280,10 +280,11 @@ fn main() {
         create_config_and_exit(enable_styles);
     }
 
-    let platforms = match args.platform {
-        Some(ref platforms) => platforms.clone(),
-        None => vec![PlatformType::current()],
-    };
+    let fallback_platforms: &[PlatformType] = &[PlatformType::current()];
+    let platforms = args
+        .platform
+        .as_ref()
+        .map_or(fallback_platforms, Vec::as_slice);
 
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
@@ -297,7 +298,7 @@ fn main() {
     }
 
     // Instantiate cache. This will not yet create the cache directory!
-    let cache = Cache::new(config.directories.cache_dir.path.clone());
+    let cache = Cache::new(&config.directories.cache_dir.path);
 
     // Clear cache, pass through
     if args.clear_cache {
@@ -370,8 +371,8 @@ fn main() {
                     enable_styles,
                     &format!(
                         "Page `{}` not found in cache.\n\
-                            Try updating with `tldr --update`, or submit a pull request to:\n\
-                            https://github.com/tldr-pages/tldr",
+                         Try updating with `tldr --update`, or submit a pull request to:\n\
+                         https://github.com/tldr-pages/tldr",
                         &command
                     ),
                 );
