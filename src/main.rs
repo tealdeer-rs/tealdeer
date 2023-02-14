@@ -330,7 +330,7 @@ fn main() {
             .map(PathWithSource::path);
         println!(
             "{}",
-            cache.list_pages(custom_pages_dir, &platforms).join("\n")
+            cache.list_pages(custom_pages_dir, platforms).join("\n")
         );
         process::exit(0);
     }
@@ -356,7 +356,7 @@ fn main() {
                 .custom_pages_dir
                 .as_ref()
                 .map(PathWithSource::path),
-            &platforms,
+            platforms,
         ) {
             if let Err(ref e) =
                 print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)
