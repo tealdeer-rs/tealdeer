@@ -606,30 +606,84 @@ fn test_list_flag_rendering() {
         .assert()
         .failure()
         .stderr(contains("Page cache not found. Please run `tldr --update`"));
+}
 
-    testenv.add_entry("foo", "");
+#[test]
+fn test_multi_platform_list_flag_rendering() {
+    let testenv = TestEnv::new();
+
+    // set custom pages directory
+    testenv.write_config(format!(
+        "[directories]\ncustom_pages_dir = '{}'",
+        testenv.custom_pages_dir.path().to_str().unwrap()
+    ));
+
+    testenv
+        .command()
+        .args(["--list"])
+        .assert()
+        .failure()
+        .stderr(contains("Page cache not found. Please run `tldr --update`"));
+
+    testenv.add_entry("common", "");
 
     testenv
         .command()
         .args(["--list"])
         .assert()
         .success()
-        .stdout("foo\n");
-
-    testenv.add_entry("bar", "");
-    testenv.add_entry("baz", "");
-    testenv.add_entry("qux", "");
-    testenv.add_page_entry("faz", "");
-    testenv.add_page_entry("bar", "");
-    testenv.add_page_entry("fiz", "");
-    testenv.add_patch_entry("buz", "");
+        .stdout("common\n");
 
     testenv
         .command()
-        .args(["--list"])
+        .args(["--platform", "linux", "--list"])
         .assert()
         .success()
-        .stdout("bar\nbaz\nfaz\nfiz\nfoo\nqux\n");
+        .stdout("common\n");
+
+    testenv
+        .command()
+        .args(["--platform", "windows", "--list"])
+        .assert()
+        .success()
+        .stdout("common\n");
+
+    testenv.add_os_entry("linux", "rm", "");
+    testenv.add_os_entry("linux", "ls", "");
+    testenv.add_os_entry("windows", "del", "");
+    testenv.add_os_entry("windows", "dir", "");
+
+    // test `--list` for `--platform linux` by itself
+    testenv
+        .command()
+        .args(["--platform", "linux", "--list"])
+        .assert()
+        .success()
+        .stdout("common\nls\nrm\n");
+
+    // test `--list` for `--platform windows` by itself
+    testenv
+        .command()
+        .args(["--platform", "windows", "--list"])
+        .assert()
+        .success()
+        .stdout("common\ndel\ndir\n");
+
+    // test `--list` for `--platform linux --platform windows`
+    testenv
+        .command()
+        .args(["--platform", "linux", "--platform", "windows", "--list"])
+        .assert()
+        .success()
+        .stdout("common\ndel\ndir\nls\nrm\n");
+
+    // test `--list` for `--platform windows --platform linux`
+    testenv
+        .command()
+        .args(["--platform", "linux", "--platform", "windows", "--list"])
+        .assert()
+        .success()
+        .stdout("common\ndel\ndir\nls\nrm\n");
 }
 
 #[test]
