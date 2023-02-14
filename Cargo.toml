@@ -46,9 +46,20 @@ filetime = "0.2.10"
 
 [features]
 default = ["native-roots"]
+logging = ["env_logger"]
+
+# Reqwest (the HTTP client library) can handle TLS connections in three
+# different modes:
+#
+# - Rustls with native roots
+# - Rustls with WebPK roots
+# - Native TLS (SChannel on Windows, Secure Transport on macOS and OpenSSL otherwise)
+#
+# Exactly one of the three variants must be selected. By default, Rustls with
+# native roots is enabled.
 native-roots = ["reqwest/rustls-tls-native-roots"]
 webpki-roots = ["reqwest/rustls-tls-webpki-roots"]
-logging = ["env_logger"]
+native-tls = ["reqwest/native-tls"]
 
 [profile.release]
 lto = true
