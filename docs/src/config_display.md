@@ -21,3 +21,10 @@ Set this to enforce more compact output, where empty lines are stripped out
 
     [display]
     compact = true
+
+## `language`
+
+Override the language.
+
+    [display]
+    language = "zh_CN"

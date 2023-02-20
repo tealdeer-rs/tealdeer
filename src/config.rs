@@ -147,6 +147,7 @@ struct RawDisplayConfig {
     pub compact: bool,
     #[serde(default)]
     pub use_pager: bool,
+    pub language: Option<String>,
 }
 
 impl From<RawDisplayConfig> for DisplayConfig {
@@ -154,6 +155,7 @@ impl From<RawDisplayConfig> for DisplayConfig {
         Self {
             compact: raw_display_config.compact,
             use_pager: raw_display_config.use_pager,
+            language: raw_display_config.language,
         }
     }
 }
@@ -246,10 +248,11 @@ pub struct StyleConfig {
     pub example_variable: Style,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DisplayConfig {
     pub compact: bool,
     pub use_pager: bool,
+    pub language: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

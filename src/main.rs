@@ -30,6 +30,7 @@ compile_error!(
     "exactly one of the features \"native-roots\", \"webpki-roots\" or \"native-tls\" must be enabled"
 );
 
+use std::iter::once;
 use std::{env, process};
 
 use app_dirs::AppInfo;
@@ -202,17 +203,26 @@ fn init_log() {
 #[cfg(not(feature = "logging"))]
 fn init_log() {}
 
-fn get_languages(env_lang: Option<&str>, env_language: Option<&str>) -> Vec<String> {
+fn get_languages(
+    command_line_lang: Option<&str>,
+    config_lang: Option<&str>,
+    env_lang: Option<&str>,
+    env_language: Option<&str>,
+) -> Vec<String> {
     // Language list according to
     // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#language
 
-    if env_lang.is_none() {
-        return vec!["en".to_string()];
-    }
-    let env_lang = env_lang.unwrap();
+    let env_language = env_language.unwrap_or("").split(':');
 
-    // Create an iterator that contains $LANGUAGE (':' separated list) followed by $LANG (single language)
-    let locales = env_language.unwrap_or("").split(':').chain([env_lang]);
+    let locales: Vec<&str> = if let Some(command_line_lang) = command_line_lang {
+        vec![command_line_lang]
+    } else if let Some(config_lang) = config_lang {
+        vec![config_lang]
+    } else if let Some(env_lang) = env_lang {
+        env_language.chain(once(env_lang)).collect()
+    } else {
+        env_language.collect()
+    };
 
     let mut lang_list = Vec::new();
     for locale in locales {
@@ -229,13 +239,6 @@ fn get_languages(env_lang: Option<&str>, env_language: Option<&str>) -> Vec<Stri
     lang_list.push("en");
     lang_list.clear_duplicates();
     lang_list.into_iter().map(str::to_string).collect()
-}
-
-fn get_languages_from_env() -> Vec<String> {
-    get_languages(
-        std::env::var("LANG").ok().as_deref(),
-        std::env::var("LANGUAGE").ok().as_deref(),
-    )
 }
 
 fn main() {
@@ -340,9 +343,12 @@ fn main() {
         let command = args.command.join("-").to_lowercase();
 
         // Collect languages
-        let languages = args
-            .language
-            .map_or_else(get_languages_from_env, |lang| vec![lang]);
+        let languages = get_languages(
+            args.language.as_deref(),
+            config.display.language.as_deref(),
+            env::var("LANG").ok().as_deref(),
+            env::var("LANGUAGE").ok().as_deref(),
+        );
 
         // Search for command in cache
         if let Some(lookup_result) = cache.find_page(
@@ -386,43 +392,75 @@ mod test {
         use super::*;
 
         #[test]
-        fn missing_lang_env() {
-            let lang_list = get_languages(None, Some("de:fr"));
-            assert_eq!(lang_list, ["en"]);
-            let lang_list = get_languages(None, None);
+        fn default() {
+            let lang_list = get_languages(None, None, None, None);
             assert_eq!(lang_list, ["en"]);
         }
 
         #[test]
-        fn missing_language_env() {
-            let lang_list = get_languages(Some("de"), None);
+        fn only_cli_lang() {
+            let lang_list = get_languages(Some("cn"), None, None, None);
+            assert_eq!(lang_list, ["cn", "en"]);
+        }
+
+        #[test]
+        fn only_config_lang() {
+            let lang_list = get_languages(None, Some("cn"), None, None);
+            assert_eq!(lang_list, ["cn", "en"]);
+        }
+
+        #[test]
+        fn only_lang_env() {
+            let lang_list = get_languages(None, None, Some("de"), None);
             assert_eq!(lang_list, ["de", "en"]);
         }
 
         #[test]
-        fn preference_order() {
-            let lang_list = get_languages(Some("de"), Some("fr:cn"));
+        fn only_language_env() {
+            let lang_list = get_languages(None, None, None, Some("de:fr"));
+            assert_eq!(lang_list, ["de", "fr", "en"]);
+        }
+
+        #[test]
+        fn cli_preference_order() {
+            let lang_list = get_languages(Some("it"), Some("cz"), Some("de"), Some("fr:cn"));
+            assert_eq!(lang_list, ["it", "en"])
+        }
+
+        #[test]
+        fn config_preference_order() {
+            let lang_list = get_languages(None, Some("cz"), Some("de"), Some("fr:cn"));
+            assert_eq!(lang_list, ["cz", "en"])
+        }
+
+        #[test]
+        fn env_preference_order() {
+            let lang_list = get_languages(None, None, Some("de"), Some("fr:cn"));
             assert_eq!(lang_list, ["fr", "cn", "de", "en"]);
         }
 
         #[test]
         fn country_code_expansion() {
-            let lang_list = get_languages(Some("pt_BR"), None);
+            let lang_list = get_languages(None, None, Some("pt_BR"), None);
             assert_eq!(lang_list, ["pt_BR", "pt", "en"]);
         }
 
         #[test]
         fn ignore_posix_and_c() {
-            let lang_list = get_languages(Some("POSIX"), None);
+            let lang_list = get_languages(None, None, Some("POSIX"), None);
             assert_eq!(lang_list, ["en"]);
-            let lang_list = get_languages(Some("C"), None);
+            let lang_list = get_languages(None, None, Some("C"), None);
             assert_eq!(lang_list, ["en"]);
         }
 
         #[test]
         fn no_duplicates() {
-            let lang_list = get_languages(Some("de"), Some("fr:de:cn:de"));
+            let lang_list = get_languages(None, None, Some("de"), Some("fr:de:cn:de"));
             assert_eq!(lang_list, ["fr", "de", "cn", "en"]);
+            let lang_list = get_languages(Some("en"), None, None, None);
+            assert_eq!(lang_list, ["en"]);
+            let lang_list = get_languages(None, Some("en"), None, None);
+            assert_eq!(lang_list, ["en"]);
         }
     }
 }
