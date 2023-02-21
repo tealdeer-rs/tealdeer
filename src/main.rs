@@ -30,8 +30,7 @@ compile_error!(
     "exactly one of the features \"native-roots\", \"webpki-roots\" or \"native-tls\" must be enabled"
 );
 
-use std::iter::once;
-use std::{env, process};
+use std::{env, iter::once, process};
 
 use app_dirs::AppInfo;
 use atty::Stream;
@@ -203,6 +202,12 @@ fn init_log() {
 #[cfg(not(feature = "logging"))]
 fn init_log() {}
 
+/// Return language(s) with the following precedence:
+///
+/// 1. CLI language parameter (`-L`, `--language`)
+/// 2. Language as set in the config file
+/// 3. If the `$LANG` env var is set: `$LANGUAGE` (list separated by `:`) followed by `$LANG` (single language)
+/// 4. Fallback: English
 fn get_languages(
     command_line_lang: Option<&str>,
     config_lang: Option<&str>,
@@ -221,7 +226,7 @@ fn get_languages(
     } else if let Some(env_lang) = env_lang {
         env_language.chain(once(env_lang)).collect()
     } else {
-        env_language.collect()
+        Vec::new()
     };
 
     let mut lang_list = Vec::new();
@@ -418,7 +423,7 @@ mod test {
         #[test]
         fn only_language_env() {
             let lang_list = get_languages(None, None, None, Some("de:fr"));
-            assert_eq!(lang_list, ["de", "fr", "en"]);
+            assert_eq!(lang_list, ["en"]);
         }
 
         #[test]
