@@ -42,7 +42,7 @@ pub(crate) struct Args {
         action = ArgAction::Append,
         possible_values = ["linux", "macos", "windows", "sunos", "osx", "android"],
     )]
-    pub platform: Option<Vec<PlatformType>>,
+    pub platforms: Option<Vec<PlatformType>>,
 
     /// Override the language
     #[clap(short = 'L', long = "language")]

@@ -282,7 +282,7 @@ fn main() {
 
     let fallback_platforms: &[PlatformType] = &[PlatformType::current()];
     let platforms = args
-        .platform
+        .platforms
         .as_ref()
         .map_or(fallback_platforms, Vec::as_slice);
 
