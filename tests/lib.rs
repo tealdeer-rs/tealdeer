@@ -643,6 +643,30 @@ fn test_list_flag_rendering() {
         .assert()
         .failure()
         .stderr(contains("Page cache not found. Please run `tldr --update`"));
+
+    testenv.add_entry("foo", "");
+
+    testenv
+        .command()
+        .args(["--list"])
+        .assert()
+        .success()
+        .stdout("foo\n");
+
+    testenv.add_entry("bar", "");
+    testenv.add_entry("baz", "");
+    testenv.add_entry("qux", "");
+    testenv.add_page_entry("faz", "");
+    testenv.add_page_entry("bar", "");
+    testenv.add_page_entry("fiz", "");
+    testenv.add_patch_entry("buz", "");
+
+    testenv
+        .command()
+        .args(["--list"])
+        .assert()
+        .success()
+        .stdout("bar\nbaz\nfaz\nfiz\nfoo\nqux\n");
 }
 
 #[test]
@@ -654,13 +678,6 @@ fn test_multi_platform_list_flag_rendering() {
         "[directories]\ncustom_pages_dir = '{}'",
         testenv.custom_pages_dir.path().to_str().unwrap()
     ));
-
-    testenv
-        .command()
-        .args(["--list"])
-        .assert()
-        .failure()
-        .stderr(contains("Page cache not found. Please run `tldr --update`"));
 
     testenv.add_entry("common", "");
 
@@ -689,6 +706,8 @@ fn test_multi_platform_list_flag_rendering() {
     testenv.add_os_entry("linux", "ls", "");
     testenv.add_os_entry("windows", "del", "");
     testenv.add_os_entry("windows", "dir", "");
+    testenv.add_os_entry("linux", "winux", "");
+    testenv.add_os_entry("windows", "winux", "");
 
     // test `--list` for `--platform linux` by itself
     testenv
@@ -696,7 +715,7 @@ fn test_multi_platform_list_flag_rendering() {
         .args(["--platform", "linux", "--list"])
         .assert()
         .success()
-        .stdout("common\nls\nrm\n");
+        .stdout("common\nls\nrm\nwinux\n");
 
     // test `--list` for `--platform windows` by itself
     testenv
@@ -704,7 +723,7 @@ fn test_multi_platform_list_flag_rendering() {
         .args(["--platform", "windows", "--list"])
         .assert()
         .success()
-        .stdout("common\ndel\ndir\n");
+        .stdout("common\ndel\ndir\nwinux\n");
 
     // test `--list` for `--platform linux --platform windows`
     testenv
@@ -712,7 +731,7 @@ fn test_multi_platform_list_flag_rendering() {
         .args(["--platform", "linux", "--platform", "windows", "--list"])
         .assert()
         .success()
-        .stdout("common\ndel\ndir\nls\nrm\n");
+        .stdout("common\ndel\ndir\nls\nrm\nwinux\n");
 
     // test `--list` for `--platform windows --platform linux`
     testenv
@@ -720,7 +739,7 @@ fn test_multi_platform_list_flag_rendering() {
         .args(["--platform", "linux", "--platform", "windows", "--list"])
         .assert()
         .success()
-        .stdout("common\ndel\ndir\nls\nrm\n");
+        .stdout("common\ndel\ndir\nls\nrm\nwinux\n");
 }
 
 #[test]
