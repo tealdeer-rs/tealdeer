@@ -566,12 +566,49 @@ fn test_pager_flag_enable() {
 fn test_multiple_platform_command_search() {
     let testenv = TestEnv::new();
     testenv.add_os_entry("linux", "linux-only", "this command only exists for linux");
+    testenv.add_os_entry(
+        "linux",
+        "windows-and-linux",
+        "# windows-and-linux \n\n > linux version",
+    );
+    testenv.add_os_entry(
+        "windows",
+        "windows-and-linux",
+        "# windows-and-linux \n\n > windows version",
+    );
 
     testenv
         .command()
-        .args(["--platform", "macos", "--platform", "linux", "linux-only"])
+        .args(["--platform", "windows", "--platform", "linux", "linux-only"])
         .assert()
         .success();
+
+    // test order of platforms supplied if preserved
+    testenv
+        .command()
+        .args([
+            "--platform",
+            "windows",
+            "--platform",
+            "linux",
+            "windows-and-linux",
+        ])
+        .assert()
+        .success()
+        .stdout(contains("windows version"));
+
+    testenv
+        .command()
+        .args([
+            "--platform",
+            "linux",
+            "--platform",
+            "windows",
+            "windows-and-linux",
+        ])
+        .assert()
+        .success()
+        .stdout(contains("linux version"));
 }
 
 #[test]
