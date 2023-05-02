@@ -232,7 +232,7 @@ impl Cache {
             .find(|path| path.exists() && path.is_file())
     }
 
-    /// Look up custom patch (<name>.patch). If it exists, store it in a variable.
+    /// Look up custom patch (<name>.patch.md). If it exists, store it in a variable.
     fn find_patch(patch_name: &str, custom_pages_dir: Option<&Path>) -> Option<PathBuf> {
         custom_pages_dir
             .map(|custom_dir| custom_dir.join(patch_name))
@@ -248,8 +248,8 @@ impl Cache {
         platforms: &[PlatformType],
     ) -> Option<PageLookupResult> {
         let page_filename = format!("{name}.md");
-        let patch_filename = format!("{name}.patch");
-        let custom_filename = format!("{name}.page");
+        let patch_filename = format!("{name}.patch.md");
+        let custom_filename = format!("{name}.page.md");
 
         // Determine directory paths
         let pages_dir = self.pages_dir();
@@ -264,7 +264,7 @@ impl Cache {
             })
             .collect();
 
-        // Look up custom page (<name>.page). If it exists, return it directly
+        // Look up custom page (<name>.page.md). If it exists, return it directly
         if let Some(config_dir) = custom_pages_dir {
             let custom_page = config_dir.join(custom_filename);
             if custom_page.exists() && custom_page.is_file() {
@@ -411,8 +411,8 @@ mod tests {
     fn test_reader_with_patch() {
         // Write test files
         let dir = tempfile::tempdir().unwrap();
-        let page_path = dir.path().join("test.page");
-        let patch_path = dir.path().join("test.patch");
+        let page_path = dir.path().join("test.page.md");
+        let patch_path = dir.path().join("test.patch.md");
         {
             let mut f1 = File::create(&page_path).unwrap();
             f1.write_all(b"Hello\n").unwrap();
@@ -435,7 +435,7 @@ mod tests {
     fn test_reader_without_patch() {
         // Write test file
         let dir = tempfile::tempdir().unwrap();
-        let page_path = dir.path().join("test.page");
+        let page_path = dir.path().join("test.page.md");
         {
             let mut f = File::create(&page_path).unwrap();
             f.write_all(b"Hello\n").unwrap();
