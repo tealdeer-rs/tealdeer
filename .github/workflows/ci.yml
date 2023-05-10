@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: run rustfmt
-        run: fmt --all -- --check
+        run: cargo fmt --all -- --check
 
   docs:
     name: build docs
