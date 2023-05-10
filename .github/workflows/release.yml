@@ -2,12 +2,13 @@ on:
   push:
     tags:
       - "v*" # push events to matching v*, i.e. v1.0, v20.15.10
+  workflow_dispatch:
 
 jobs:
   create-release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Create release for tag
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -18,12 +19,12 @@ jobs:
   upload-completions:
     needs:
       - create-release
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         target: ["bash", "fish", "zsh"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Upload completion
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -34,12 +35,12 @@ jobs:
   upload-license:
     needs:
       - create-release
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         target: ["MIT", "APACHE"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Upload license
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -48,7 +49,7 @@ jobs:
           upload_release_file ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} ${GITHUB_REF#refs/*/} LICENSE-${{ matrix.target }} LICENSE-${{ matrix.target }}.txt
 
   build-linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
@@ -63,42 +64,36 @@ jobs:
           - arch: "arm"
             libc: "musleabihf"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Pull Docker image
         run: docker pull messense/rust-musl-cross:${{ matrix.arch }}-${{ matrix.libc }}
       - name: Build in Docker
         run: docker run --rm -i -v "$(pwd)":/home/rust/src messense/rust-musl-cross:${{ matrix.arch }}-${{ matrix.libc }} cargo build --release
       - name: Strip binary
         run: docker run --rm -i -v "$(pwd)":/home/rust/src messense/rust-musl-cross:${{ matrix.arch }}-${{ matrix.libc }} musl-strip -s /home/rust/src/target/${{ matrix.arch }}-unknown-linux-${{ matrix.libc }}/release/tldr
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: "tealdeer-linux-${{ matrix.arch }}-${{ matrix.libc }}"
           path: "target/${{ matrix.arch }}-unknown-linux-${{ matrix.libc }}/release/tldr"
 
   build-macos:
-    runs-on: macos-11
+    runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --target x86_64-apple-darwin --no-default-features --features webpki-roots
-      - uses: actions/upload-artifact@v2
+        run: cargo build --release --target x86_64-apple-darwin --no-default-features --features webpki-roots
+      - uses: actions/upload-artifact@v3
         with:
           name: "tealdeer-macos-x86_64"
           path: "target/x86_64-apple-darwin/release/tldr"
 
   build-windows:
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --target x86_64-pc-windows-msvc
-      - uses: actions/upload-artifact@v2
+        run: cargo build --release --target x86_64-pc-windows-msvc
+      - uses: actions/upload-artifact@v3
         with:
           name: "tealdeer-windows-x86_64-msvc"
           path: "target/x86_64-pc-windows-msvc/release/tldr.exe"
@@ -109,7 +104,7 @@ jobs:
       - build-linux
       - build-macos
       - build-windows
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         target:
@@ -121,8 +116,8 @@ jobs:
           - macos-x86_64
           - windows-x86_64-msvc
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
       - name: Upload binary
         if: startsWith(github.ref, 'refs/tags/')
         run: |
