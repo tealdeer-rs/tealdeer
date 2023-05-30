@@ -35,6 +35,7 @@ jobs:
        - uses: dtolnay/rust-toolchain@stable
          with:
            toolchain: stable
+           components: clippy
        - name: run clippy lints
          run: cargo clippy --features logging
 
@@ -45,6 +46,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+          components: rustfmt
       - name: run rustfmt
         run: cargo fmt --all -- --check
 
