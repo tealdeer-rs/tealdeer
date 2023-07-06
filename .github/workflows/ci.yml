@@ -61,10 +61,11 @@ jobs:
         uses: peaceiris/actions-mdbook@v1
         with:
           mdbook-version: '0.4.4'
-      - name: Build
+      - name: Setup toolchain
         uses: dtolnay/rust-toolchain@master
         with:
             toolchain: stable
+      - name: Build
         run: cargo build
       - name: Ensure that docs can be built
         run: cd docs && mdbook build
