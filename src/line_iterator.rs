@@ -96,21 +96,27 @@ mod test {
 
     #[test]
     fn test_first_line_old_format() {
-        let input = "# The Title\n\n";
+        let input = "# The Title\n> Description\n";
         let mut lines = LineIterator::new(input.as_bytes());
         let title = lines.next().unwrap();
         assert_eq!(title, LineType::Title("The Title".to_string()));
-        let empty = lines.next().unwrap();
-        assert_eq!(empty, LineType::Empty);
+        let description = lines.next().unwrap();
+        assert_eq!(
+            description,
+            LineType::Description("Description".to_string())
+        );
     }
 
     #[test]
     fn test_first_line_new_format() {
-        let input = "The Title\n=========\n\n";
+        let input = "The Title\n=========\n> Description\n";
         let mut lines = LineIterator::new(input.as_bytes());
         let title = lines.next().unwrap();
         assert_eq!(title, LineType::Title("The Title".to_string()));
-        let empty = lines.next().unwrap();
-        assert_eq!(empty, LineType::Empty);
+        let description = lines.next().unwrap();
+        assert_eq!(
+            description,
+            LineType::Description("Description".to_string())
+        );
     }
 }
