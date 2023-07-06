@@ -20,7 +20,9 @@ complete -c tldr      -l seed-config    -d 'Create a basic config.' -f
 complete -c tldr      -l color          -d 'Controls when to use color.' -xa 'always auto never'
 
 function __tealdeer_entries
-    tldr --list | string replace -a -i -r "\,\s" "\n"
+    if set entries (tldr --list  2>/dev/null)
+        string replace -a -i -r "\,\s" "\n" $entries
+    end
 end
 
 complete -f -c tldr -a '(__tealdeer_entries)'
