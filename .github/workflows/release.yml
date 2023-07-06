@@ -83,7 +83,7 @@ jobs:
            uses: dtolnay/rust-toolchain@master
            with:
               toolchain: stable
-           run: cargo build --release --target x86_64-apple-darwin --no-default-features --features webpki-roots
+              command: cargo build --release --target x86_64-apple-darwin --no-default-features --features webpki-roots
       - uses: actions/upload-artifact@v3
         with:
           name: "tealdeer-macos-x86_64"
@@ -97,7 +97,7 @@ jobs:
        uses: dtolnay/rust-toolchain@master
         with:
             toolchain: stable
-        run: cargo build --release --target x86_64-pc-windows-msvc
+           command: cargo build --release --target x86_64-pc-windows-msvc
       - uses: actions/upload-artifact@v3
         with:
           name: "tealdeer-windows-x86_64-msvc"
