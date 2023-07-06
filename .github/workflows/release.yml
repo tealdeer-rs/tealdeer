@@ -2,7 +2,6 @@ on:
   push:
     tags:
       - "v*" # push events to matching v*, i.e. v1.0, v20.15.10
-  workflow_dispatch:
 
 jobs:
   create-release:
@@ -81,7 +80,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Build
-        run: cargo build --release --target x86_64-apple-darwin --no-default-features --features webpki-roots
+           uses: dtolnay/rust-toolchain@master
+           with:
+              toolchain: stable
+           run: cargo build --release --target x86_64-apple-darwin --no-default-features --features webpki-roots
       - uses: actions/upload-artifact@v3
         with:
           name: "tealdeer-macos-x86_64"
@@ -92,6 +94,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Build
+       uses: dtolnay/rust-toolchain@master
+        with:
+            toolchain: stable
         run: cargo build --release --target x86_64-pc-windows-msvc
       - uses: actions/upload-artifact@v3
         with:
