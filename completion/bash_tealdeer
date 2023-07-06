@@ -27,8 +27,9 @@ _tealdeer()
 		COMPREPLY=( $( compgen -W '$( _parse_help "$1" )' -- "$cur" ) )
 		return
 	fi
-
-	COMPREPLY=( $(compgen -W '$( tldr -l | tr -d , )' -- "${cur}") )
+	if tldrlist=$(tldr -l 2>/dev/null); then
+		COMPREPLY=( $(compgen -W '$( echo "$tldrlist" | tr -d , )' -- "${cur}") )
+	fi
 }
 
 complete -F _tealdeer tldr

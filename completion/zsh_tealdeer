@@ -2,8 +2,9 @@
 
 _applications() {
     local -a commands
-    commands=(${(uonzf)"$(tldr --list 2>/dev/null)"//:/\\:})
-    _describe -t commands 'command' commands
+    if commands=(${(uonzf)"$(tldr --list 2>/dev/null)"//:/\\:}); then
+        _describe -t commands 'command' commands
+    fi
 }
 
 _tealdeer() {
