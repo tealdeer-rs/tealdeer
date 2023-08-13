@@ -5,7 +5,7 @@ authors = [
 ]
 description = "Fetch and show tldr help pages for many CLI commands. Full featured offline client with caching support."
 homepage = "https://github.com/dbrgn/tealdeer/"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 name = "tealdeer"
 readme = "README.md"
 repository = "https://github.com/dbrgn/tealdeer/"
