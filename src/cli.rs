@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use clap::{AppSettings, ArgGroup, Parser};
+use clap::{AppSettings, ArgAction, ArgGroup, Parser};
 
 use crate::types::{ColorOptions, PlatformType};
 
@@ -39,9 +39,10 @@ pub(crate) struct Args {
     #[clap(
         short = 'p',
         long = "platform",
+        action = ArgAction::Append,
         possible_values = ["linux", "macos", "windows", "sunos", "osx", "android"],
     )]
-    pub platform: Option<PlatformType>,
+    pub platforms: Option<Vec<PlatformType>>,
 
     /// Override the language
     #[clap(short = 'L', long = "language")]

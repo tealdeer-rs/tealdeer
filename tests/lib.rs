@@ -563,6 +563,71 @@ fn test_pager_flag_enable() {
 }
 
 #[test]
+fn test_multiple_platform_command_search() {
+    let testenv = TestEnv::new();
+    testenv.add_os_entry("linux", "linux-only", "this command only exists for linux");
+    testenv.add_os_entry(
+        "linux",
+        "windows-and-linux",
+        "# windows-and-linux \n\n > linux version",
+    );
+    testenv.add_os_entry(
+        "windows",
+        "windows-and-linux",
+        "# windows-and-linux \n\n > windows version",
+    );
+
+    testenv
+        .command()
+        .args(["--platform", "windows", "--platform", "linux", "linux-only"])
+        .assert()
+        .success();
+
+    // test order of platforms supplied if preserved
+    testenv
+        .command()
+        .args([
+            "--platform",
+            "windows",
+            "--platform",
+            "linux",
+            "windows-and-linux",
+        ])
+        .assert()
+        .success()
+        .stdout(contains("windows version"));
+
+    testenv
+        .command()
+        .args([
+            "--platform",
+            "linux",
+            "--platform",
+            "windows",
+            "windows-and-linux",
+        ])
+        .assert()
+        .success()
+        .stdout(contains("linux version"));
+}
+
+#[test]
+fn test_multiple_platform_command_search_not_found() {
+    let testenv = TestEnv::new();
+    testenv.add_os_entry(
+        "windows",
+        "windows-only",
+        "this command only exists for Windows",
+    );
+
+    testenv
+        .command()
+        .args(["--platform", "macos", "--platform", "linux", "windows-only"])
+        .assert()
+        .stderr(contains("Page `windows-only` not found in cache."));
+}
+
+#[test]
 fn test_list_flag_rendering() {
     let testenv = TestEnv::new();
 
@@ -602,6 +667,79 @@ fn test_list_flag_rendering() {
         .assert()
         .success()
         .stdout("bar\nbaz\nfaz\nfiz\nfoo\nqux\n");
+}
+
+#[test]
+fn test_multi_platform_list_flag_rendering() {
+    let testenv = TestEnv::new();
+
+    // set custom pages directory
+    testenv.write_config(format!(
+        "[directories]\ncustom_pages_dir = '{}'",
+        testenv.custom_pages_dir.path().to_str().unwrap()
+    ));
+
+    testenv.add_entry("common", "");
+
+    testenv
+        .command()
+        .args(["--list"])
+        .assert()
+        .success()
+        .stdout("common\n");
+
+    testenv
+        .command()
+        .args(["--platform", "linux", "--list"])
+        .assert()
+        .success()
+        .stdout("common\n");
+
+    testenv
+        .command()
+        .args(["--platform", "windows", "--list"])
+        .assert()
+        .success()
+        .stdout("common\n");
+
+    testenv.add_os_entry("linux", "rm", "");
+    testenv.add_os_entry("linux", "ls", "");
+    testenv.add_os_entry("windows", "del", "");
+    testenv.add_os_entry("windows", "dir", "");
+    testenv.add_os_entry("linux", "winux", "");
+    testenv.add_os_entry("windows", "winux", "");
+
+    // test `--list` for `--platform linux` by itself
+    testenv
+        .command()
+        .args(["--platform", "linux", "--list"])
+        .assert()
+        .success()
+        .stdout("common\nls\nrm\nwinux\n");
+
+    // test `--list` for `--platform windows` by itself
+    testenv
+        .command()
+        .args(["--platform", "windows", "--list"])
+        .assert()
+        .success()
+        .stdout("common\ndel\ndir\nwinux\n");
+
+    // test `--list` for `--platform linux --platform windows`
+    testenv
+        .command()
+        .args(["--platform", "linux", "--platform", "windows", "--list"])
+        .assert()
+        .success()
+        .stdout("common\ndel\ndir\nls\nrm\nwinux\n");
+
+    // test `--list` for `--platform windows --platform linux`
+    testenv
+        .command()
+        .args(["--platform", "linux", "--platform", "windows", "--list"])
+        .assert()
+        .success()
+        .stdout("common\ndel\ndir\nls\nrm\nwinux\n");
 }
 
 #[test]

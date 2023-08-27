@@ -283,8 +283,11 @@ fn main() {
         create_config_and_exit(enable_styles);
     }
 
-    // Specify target OS
-    let platform: PlatformType = args.platform.unwrap_or_else(PlatformType::current);
+    let fallback_platforms: &[PlatformType] = &[PlatformType::current()];
+    let platforms = args
+        .platforms
+        .as_ref()
+        .map_or(fallback_platforms, Vec::as_slice);
 
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
@@ -298,7 +301,7 @@ fn main() {
     }
 
     // Instantiate cache. This will not yet create the cache directory!
-    let cache = Cache::new(platform, &config.directories.cache_dir.path);
+    let cache = Cache::new(&config.directories.cache_dir.path);
 
     // Clear cache, pass through
     if args.clear_cache {
@@ -328,7 +331,10 @@ fn main() {
             .custom_pages_dir
             .as_ref()
             .map(PathWithSource::path);
-        println!("{}", cache.list_pages(custom_pages_dir).join("\n"));
+        println!(
+            "{}",
+            cache.list_pages(custom_pages_dir, platforms).join("\n")
+        );
         process::exit(0);
     }
 
@@ -353,6 +359,7 @@ fn main() {
                 .custom_pages_dir
                 .as_ref()
                 .map(PathWithSource::path),
+            platforms,
         ) {
             if let Err(ref e) =
                 print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)

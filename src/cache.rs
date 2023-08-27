@@ -20,7 +20,6 @@ static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 
 #[derive(Debug)]
 pub struct Cache {
-    platform: PlatformType,
     cache_dir: PathBuf,
 }
 
@@ -86,12 +85,11 @@ pub enum CacheFreshness {
 }
 
 impl Cache {
-    pub fn new<P>(platform: PlatformType, cache_dir: P) -> Self
+    pub fn new<P>(cache_dir: P) -> Self
     where
         P: Into<PathBuf>,
     {
         Self {
-            platform,
             cache_dir: cache_dir.into(),
         }
     }
@@ -211,8 +209,8 @@ impl Cache {
     }
 
     /// Return the platform directory.
-    fn get_platform_dir(&self) -> &'static str {
-        match self.platform {
+    fn get_platform_dir(platform: PlatformType) -> &'static str {
+        match platform {
             PlatformType::Linux => "linux",
             PlatformType::OsX => "osx",
             PlatformType::SunOs => "sunos",
@@ -247,6 +245,7 @@ impl Cache {
         name: &str,
         languages: &[String],
         custom_pages_dir: Option<&Path>,
+        platforms: &[PlatformType],
     ) -> Option<PageLookupResult> {
         let page_filename = format!("{name}.md");
         let patch_filename = format!("{name}.patch");
@@ -275,12 +274,14 @@ impl Cache {
 
         let patch_path = Self::find_patch(&patch_filename, custom_pages_dir);
 
-        // Try to find a platform specific path next, append custom patch to it.
-        let platform_dir = self.get_platform_dir();
-        if let Some(page) =
-            Self::find_page_for_platform(&page_filename, &pages_dir, platform_dir, &lang_dirs)
-        {
-            return Some(PageLookupResult::with_page(page).with_optional_patch(patch_path));
+        // Try to find a platform specific path next, in the order supplied by the user, and append custom patch to it.
+        for &platform in platforms {
+            let platform_dir = Cache::get_platform_dir(platform);
+            if let Some(page) =
+                Self::find_page_for_platform(&page_filename, &pages_dir, platform_dir, &lang_dirs)
+            {
+                return Some(PageLookupResult::with_page(page).with_optional_patch(patch_path));
+            }
         }
 
         // Did not find platform specific results, fall back to "common"
@@ -289,10 +290,17 @@ impl Cache {
     }
 
     /// Return the available pages.
-    pub fn list_pages(&self, custom_pages_dir: Option<&Path>) -> Vec<String> {
+    pub fn list_pages(
+        &self,
+        custom_pages_dir: Option<&Path>,
+        platforms: &[PlatformType],
+    ) -> Vec<String> {
         // Determine platforms directory and platform
         let platforms_dir = self.pages_dir().join("pages");
-        let platform_dir = self.get_platform_dir();
+        let platform_dirs: Vec<&'static str> = platforms
+            .iter()
+            .map(|&p| Self::get_platform_dir(p))
+            .collect();
 
         // Closure that allows the WalkDir instance to traverse platform
         // specific and common page directories, but not others.
@@ -303,7 +311,7 @@ impl Cache {
                 None => return false,
             };
             if file_type.is_dir() {
-                return file_name == "common" || file_name == platform_dir;
+                return file_name == "common" || platform_dirs.contains(&file_name);
             } else if file_type.is_file() {
                 return true;
             }
