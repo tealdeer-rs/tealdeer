@@ -9,6 +9,7 @@ use std::{
 
 use anyhow::{ensure, Context, Result};
 use log::debug;
+use rand::prelude::SliceRandom;
 use reqwest::{blocking::Client, Proxy};
 use walkdir::{DirEntry, WalkDir};
 use zip::ZipArchive;
@@ -21,6 +22,17 @@ static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 #[derive(Debug)]
 pub struct Cache {
     cache_dir: PathBuf,
+}
+
+impl Cache {
+    pub fn random_page(&self, pages_dir: Option<&Path>, platforms: &[PlatformType]) -> Option<PageLookupResult> {
+        return self.find_page(
+            &self.list_pages(pages_dir, platforms).choose(&mut rand::thread_rng()).unwrap(),
+            &["en".to_string()],
+            pages_dir,
+            platforms,
+        );
+    }
 }
 
 #[derive(Debug)]
@@ -86,8 +98,8 @@ pub enum CacheFreshness {
 
 impl Cache {
     pub fn new<P>(cache_dir: P) -> Self
-    where
-        P: Into<PathBuf>,
+        where
+            P: Into<PathBuf>,
     {
         Self {
             cache_dir: cache_dir.into(),

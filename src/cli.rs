@@ -68,6 +68,10 @@ pub(crate) struct Args {
     #[clap(short = 'r', long = "--raw", requires = "command_or_file")]
     pub raw: bool,
 
+    ///Get  a random tldr page command
+    #[clap(short = 'R', long = "--random")]
+    pub random: bool,
+
     /// Suppress informational messages
     #[clap(short = 'q', long = "quiet")]
     pub quiet: bool,
@@ -79,6 +83,7 @@ pub(crate) struct Args {
     /// Create a basic config
     #[clap(long = "seed-config")]
     pub seed_config: bool,
+
 
     /// Control whether to use color
     #[clap(

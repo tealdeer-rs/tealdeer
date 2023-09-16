@@ -17,14 +17,14 @@
 #![allow(clippy::too_many_lines)]
 
 #[cfg(any(
-    all(feature = "native-roots", feature = "webpki-roots"),
-    all(feature = "native-roots", feature = "native-tls"),
-    all(feature = "webpki-roots", feature = "native-tls"),
-    not(any(
-        feature = "native-roots",
-        feature = "webpki-roots",
-        feature = "native-tls"
-    )),
+all(feature = "native-roots", feature = "webpki-roots"),
+all(feature = "native-roots", feature = "native-tls"),
+all(feature = "webpki-roots", feature = "native-tls"),
+not(any(
+feature = "native-roots",
+feature = "webpki-roots",
+feature = "native-tls"
+)),
 ))]
 compile_error!(
     "exactly one of the features \"native-roots\", \"webpki-roots\" or \"native-tls\" must be enabled"
@@ -68,10 +68,10 @@ const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
 fn should_update_cache(cache: &Cache, args: &Args, config: &Config) -> bool {
     args.update
         || (!args.no_auto_update
-            && config.updates.auto_update
-            && cache
-                .last_update()
-                .map_or(true, |ago| ago >= config.updates.auto_update_interval))
+        && config.updates.auto_update
+        && cache
+        .last_update()
+        .map_or(true, |ago| ago >= config.updates.auto_update_interval))
 }
 
 #[derive(PartialEq)]
@@ -247,9 +247,9 @@ fn main() {
 
     // Determine the usage of styles
     #[cfg(target_os = "windows")]
-    let ansi_support = yansi::Paint::enable_windows_ascii();
+        let ansi_support = yansi::Paint::enable_windows_ascii();
     #[cfg(not(target_os = "windows"))]
-    let ansi_support = true;
+        let ansi_support = true;
     let enable_styles = match args.color.unwrap_or_default() {
         // Attempt to use styling if instructed
         ColorOptions::Always => true,
@@ -336,6 +336,23 @@ fn main() {
             cache.list_pages(custom_pages_dir, platforms).join("\n")
         );
         process::exit(0);
+    }
+    // show random tldr page to client
+    if args.random {
+        let custom_pages_dir = config
+            .directories
+            .custom_pages_dir
+            .as_ref()
+            .map(PathWithSource::path);
+        if let Some(random_page) = cache.random_page(custom_pages_dir, platforms) {
+            match print_page(&random_page, args.raw, enable_styles, args.pager, &config) {
+                Ok(()) => process::exit(0),
+                Err(e) => {
+                    print_error(enable_styles, &e);
+                    process::exit(1);
+                }
+            }
+        }
     }
 
     // Show command from cache

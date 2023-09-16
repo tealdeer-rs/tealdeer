@@ -33,6 +33,7 @@ toml = "0.5.1"
 walkdir = "2.0.1"
 yansi = "0.5"
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
+rand = "0.8.5"
 
 [target.'cfg(not(windows))'.dependencies]
 pager = "0.16"
