@@ -19,6 +19,7 @@ OPTIONS:
     -c, --clear-cache             Clear the local cache
         --pager                   Use a pager to page output
     -r, --raw                     Display the raw markdown instead of rendering it
+    -R, --random                  Display a random page
     -q, --quiet                   Suppress informational messages
         --show-paths              Show file and directory paths used by tealdeer
         --seed-config             Create a basic config

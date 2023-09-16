@@ -68,7 +68,7 @@ pub(crate) struct Args {
     #[clap(short = 'r', long = "--raw", requires = "command_or_file")]
     pub raw: bool,
 
-    ///Get  a random tldr page command
+    /// Get a random command page
     #[clap(short = 'R', long = "--random")]
     pub random: bool,
 

@@ -14,6 +14,7 @@ complete -c tldr      -l no-auto-update -d 'If auto update is configured, disabl
 complete -c tldr -s c -l clear-cache    -d 'Clear the local cache.' -f
 complete -c tldr      -l pager          -d 'Use a pager to page output.' -f
 complete -c tldr -s r -l raw            -d 'Display the raw markdown instead of rendering it.' -f
+complete -c tldr -s R -l random         -d 'Display a random page.' -f
 complete -c tldr -s q -l quiet          -d 'Suppress informational messages.' -f
 complete -c tldr      -l show-paths     -d 'Show file and directory paths used by tealdeer.' -f
 complete -c tldr      -l seed-config    -d 'Create a basic config.' -f

@@ -28,6 +28,7 @@ _tealdeer() {
         "($I -c --clear-cache)"{-c,--clear-cache}"[Clear the local cache]"
         "($I)--pager[Use a pager to page output]"
         "($I -r --raw)"{-r,--raw}"[Display the raw markdown instead of rendering it]"
+        "($I -R --random)"{-R,--random}"[Display a random page]"
         "($I -q --quiet)"{-q,--quiet}"[Suppress informational messages]"
         "($I)--show-paths[Show file and directory paths used by tealdeer]"
         "($I)--seed-config[Create a basic config]"

@@ -27,7 +27,7 @@ pub struct Cache {
 impl Cache {
     pub fn random_page(&self, pages_dir: Option<&Path>, platforms: &[PlatformType]) -> Option<PageLookupResult> {
         return self.find_page(
-            &self.list_pages(pages_dir, platforms).choose(&mut rand::thread_rng()).unwrap(),
+            self.list_pages(pages_dir, platforms).choose(&mut rand::thread_rng()).unwrap(),
             &["en".to_string()],
             pages_dir,
             platforms,
