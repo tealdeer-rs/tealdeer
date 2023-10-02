@@ -10,3 +10,4 @@
   - [Section: \[style\]](./config_style.md)
   - [Section: \[updates\]](./config_updates.md)
   - [Section: \[directories\]](./config_directories.md)
+- [Tips and Tricks](./tips_and_tricks.md)
