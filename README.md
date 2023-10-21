@@ -127,6 +127,6 @@ Thanks to @severen for coming up with the name "tealdeer"!
 
 <!-- Badges -->
 [github-actions]: https://github.com/dbrgn/tealdeer/actions?query=branch%3Amain
-[github-actions-badge]: https://github.com/dbrgn/tealdeer/workflows/CI/badge.svg
+[github-actions-badge]: https://github.com/dbrgn/tealdeer/actions/workflows/ci.yml/badge.svg?branch=main
 [crates-io]: https://crates.io/crates/tealdeer
 [crates-io-badge]: https://img.shields.io/crates/v/tealdeer.svg
