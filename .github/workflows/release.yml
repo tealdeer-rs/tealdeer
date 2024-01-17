@@ -54,6 +54,8 @@ jobs:
         include:
           - arch: "x86_64"
             libc: "musl"
+          - arch: "aarch64"
+            libc: "musl"
           - arch: "i686"
             libc: "musl"
           - arch: "armv7"
@@ -116,6 +118,7 @@ jobs:
       matrix:
         target:
           - linux-x86_64-musl
+          - linux-aarch64-musl
           - linux-i686-musl
           - linux-armv7-musleabihf
           - linux-arm-musleabi
