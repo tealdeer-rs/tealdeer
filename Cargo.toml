@@ -12,7 +12,7 @@ repository = "https://github.com/dbrgn/tealdeer/"
 documentation = "https://dbrgn.github.io/tealdeer/"
 version = "1.6.1"
 include = ["/src/**/*", "/tests/**/*", "/Cargo.toml", "/README.md", "/LICENSE-*", "/screenshot.png", "completion/*"]
-rust-version = "1.62"
+rust-version = "1.64"
 edition = "2021"
 
 [[bin]]
