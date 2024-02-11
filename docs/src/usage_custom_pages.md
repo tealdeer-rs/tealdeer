@@ -1,5 +1,13 @@
 # Custom Pages and Patches
 
+> ⚠️ **Breaking change in version 1.7.0:** The file name extension for custom
+> pages and patches was changed:
+>
+> - `<name>.page` → `<name>.page.md`
+> - `<name>.patch` → `<name>.patch.md`
+>
+> If you have custom pages or patches, you need to rename them.
+
 Tealdeer allows creating new custom pages, overriding existing pages as well as
 extending existing pages.
 
