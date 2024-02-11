@@ -22,7 +22,7 @@ Tealdeer has been added to a few package managers:
 - Homebrew: [`tealdeer`](https://formulae.brew.sh/formula/tealdeer)
 - MacPorts: [`tealdeer`](https://ports.macports.org/port/tealdeer/)
 - NetBSD: [`sysutils/tealdeer`](https://pkgsrc.se/sysutils/tealdeer)
-- Nix: [`tealdeer`](https://nixos.org/nixos/packages.html#tealdeer)
+- Nix: [`tealdeer`](https://search.nixos.org/packages?query=tealdeer)
 - openSUSE: [`tealdeer`](https://software.opensuse.org/package/tealdeer?search_term=tealdeer)
 - Scoop: [`tealdeer`](https://github.com/ScoopInstaller/Main/blob/master/bucket/tealdeer.json)
 - Solus: [`tealdeer`](https://packages.getsol.us/shannon/t/tealdeer/)
