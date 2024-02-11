@@ -326,6 +326,15 @@ impl Cache {
                 .map(str::to_string)
         };
 
+        let to_stem_custom = |entry: DirEntry| -> Option<String> {
+            entry
+                .path()
+                .file_name()
+                .and_then(OsStr::to_str)
+                .and_then(|s| s.strip_suffix(".page.md"))
+                .map(str::to_string)
+        };
+
         // Recursively walk through common and (if applicable) platform specific directory
         let mut pages = WalkDir::new(platforms_dir)
             .min_depth(1) // Skip root directory
@@ -344,8 +353,11 @@ impl Cache {
 
         if let Some(custom_pages_dir) = custom_pages_dir {
             let is_page = |entry: &DirEntry| -> bool {
-                let extension = entry.path().extension().unwrap_or_default();
-                entry.file_type().is_file() && extension == "page"
+                entry.file_type().is_file() &&
+                    entry.path()
+                        .file_name()
+                        .and_then(OsStr::to_str)
+                        .map_or(false, |file_name| file_name.ends_with(".page.md"))
             };
 
             let custom_pages = WalkDir::new(custom_pages_dir)
@@ -354,7 +366,7 @@ impl Cache {
                 .into_iter()
                 .filter_entry(is_page)
                 .filter_map(Result::ok)
-                .filter_map(to_stem);
+                .filter_map(to_stem_custom);
 
             pages.extend(custom_pages);
         }
