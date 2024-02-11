@@ -266,6 +266,8 @@ impl Cache {
 
         // Look up custom page (<name>.page.md). If it exists, return it directly
         if let Some(config_dir) = custom_pages_dir {
+            self.check_for_old_custom_pages(config_dir);
+
             let custom_page = config_dir.join(custom_filename);
             if custom_page.exists() && custom_page.is_file() {
                 return Some(PageLookupResult::with_page(custom_page));
@@ -406,6 +408,32 @@ impl Cache {
         }
 
         Ok(true)
+    }
+
+    fn check_for_old_custom_pages(&self, custom_pages_dir: &Path) {
+        let old_custom_pages_exist = WalkDir::new(custom_pages_dir)
+            .min_depth(1)
+            .max_depth(1)
+            .into_iter()
+            .filter_entry(|entry| entry.file_type().is_file())
+            .any(|entry| {
+                if let Ok(entry) = entry {
+                    let extension = entry.path().extension();
+                    if let Some(extension) = extension {
+                        extension == "page" || extension == "patch"
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            });
+        if old_custom_pages_exist {
+            eprintln!("Warning: Custom pages using the old naming convention were found.\n\
+                Please rename them to follow the new convention:\n\
+                \t- `<name>.page` → `<name>.page.md`\n\
+                \t- `<name>.patch` → `<name>.patch.md`\n");
+        }
     }
 }
 
