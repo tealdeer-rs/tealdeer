@@ -14,6 +14,9 @@ Update version numbers:
     $ vim Cargo.toml
     $ cargo update -p tealdeer
 
+For release 1.7.0: Remove this note and uncomment warning in
+`docs/src/usage_custom_pages.md`.
+
 Update docs:
 
     $ cargo run -- --help > docs/src/usage.txt
