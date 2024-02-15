@@ -266,6 +266,7 @@ impl Cache {
 
         // Look up custom page (<name>.page.md). If it exists, return it directly
         if let Some(config_dir) = custom_pages_dir {
+            // TODO: Remove this check 1 year after version 1.7.0 was released
             self.check_for_old_custom_pages(config_dir);
 
             let custom_page = config_dir.join(custom_filename);
@@ -411,6 +412,7 @@ impl Cache {
         Ok(true)
     }
 
+    /// Check for old custom pages (without .md suffix) and print a warning.
     fn check_for_old_custom_pages(&self, custom_pages_dir: &Path) {
         let old_custom_pages_exist = WalkDir::new(custom_pages_dir)
             .min_depth(1)
