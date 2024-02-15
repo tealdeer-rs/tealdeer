@@ -13,7 +13,7 @@ use reqwest::{blocking::Client, Proxy};
 use walkdir::{DirEntry, WalkDir};
 use zip::ZipArchive;
 
-use crate::types::PlatformType;
+use crate::{types::PlatformType, utils::print_warning};
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
@@ -21,6 +21,7 @@ static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 #[derive(Debug)]
 pub struct Cache {
     cache_dir: PathBuf,
+    enable_styles: bool,
 }
 
 #[derive(Debug)]
@@ -85,12 +86,13 @@ pub enum CacheFreshness {
 }
 
 impl Cache {
-    pub fn new<P>(cache_dir: P) -> Self
+    pub fn new<P>(cache_dir: P, enable_styles: bool) -> Self
     where
         P: Into<PathBuf>,
     {
         Self {
             cache_dir: cache_dir.into(),
+            enable_styles,
         }
     }
 
@@ -432,11 +434,15 @@ impl Cache {
                 }
             });
         if old_custom_pages_exist {
-            eprintln!(
-                "Warning: Custom pages using the old naming convention were found.\n\
-                Please rename them to follow the new convention:\n\
-                \t- `<name>.page` → `<name>.page.md`\n\
-                \t- `<name>.patch` → `<name>.patch.md`\n"
+            print_warning(
+                self.enable_styles,
+                &format!(
+                    "Custom pages using the old naming convention were found in {}.\n\
+                     Please rename them to follow the new convention:\n\
+                     - `<name>.page` → `<name>.page.md`\n\
+                     - `<name>.patch` → `<name>.patch.md`",
+                    custom_pages_dir.display()
+                ),
             );
         }
     }
