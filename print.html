@@ -266,6 +266,16 @@ OPTIONS:
 To view the user documentation, please visit https://dbrgn.github.io/tealdeer/.
 </code></pre>
 <h1><a class="header" href="#custom-pages-and-patches" id="custom-pages-and-patches">Custom Pages and Patches</a></h1>
+<!--
+TODO: Uncomment when releasing 1.7.0.
+> ⚠️ **Breaking change in version 1.7.0:** The file name extension for custom
+> pages and patches was changed:
+>
+> - `<name>.page` → `<name>.page.md`
+> - `<name>.patch` → `<name>.patch.md`
+>
+> If you have custom pages or patches, you need to rename them.
+-->
 <p>Tealdeer allows creating new custom pages, overriding existing pages as well as
 extending existing pages.</p>
 <p>The directory, where these custom pages and patches can be placed, follows OS
@@ -277,24 +287,24 @@ file</a>.</p>
 <h2><a class="header" href="#custom-pages" id="custom-pages">Custom Pages</a></h2>
 <p>To document internal command line tools, or if you want to replace an existing
 tldr page with one that's better suited for you, place a file with the name
-<code>&lt;command&gt;.page</code> in the custom pages directory. When calling <code>tldr &lt;command&gt;</code>,
+<code>&lt;command&gt;.page.md</code> in the custom pages directory. When calling <code>tldr &lt;command&gt;</code>,
 your custom page will be shown instead of the upstream version in the cache.</p>
 <p>Path:</p>
-<pre><code>$CUSTOM_PAGES_DIR/&lt;command&gt;.page
+<pre><code>$CUSTOM_PAGES_DIR/&lt;command&gt;.page.md
 </code></pre>
 <p>Example:</p>
-<pre><code>~/.local/share/tealdeer/pages/ufw.page
+<pre><code>~/.local/share/tealdeer/pages/ufw.page.md
 </code></pre>
 <h2><a class="header" href="#custom-patches" id="custom-patches">Custom Patches</a></h2>
 <p>Sometimes you don't want to fully replace an existing upstream page, but just
 want to extend it with your own examples that you frequently need. In this
-case, use a file called <code>&lt;command&gt;.patch</code>, it will be appended to existing
+case, use a file called <code>&lt;command&gt;.patch.md</code>, it will be appended to existing
 pages.</p>
 <p>Path:</p>
-<pre><code>$CUSTOM_PAGES_DIR/&lt;command&gt;.patch
+<pre><code>$CUSTOM_PAGES_DIR/&lt;command&gt;.patch.md
 </code></pre>
 <p>Example:</p>
-<pre><code>~/.local/share/tealdeer/pages/ufw.patch
+<pre><code>~/.local/share/tealdeer/pages/ufw.patch.md
 </code></pre>
 <h1><a class="header" href="#configuration" id="configuration">Configuration</a></h1>
 <p>Tealdeer can be customized with a config file in <a href="https://toml.io/">TOML
