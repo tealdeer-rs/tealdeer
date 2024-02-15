@@ -355,8 +355,9 @@ impl Cache {
 
         if let Some(custom_pages_dir) = custom_pages_dir {
             let is_page = |entry: &DirEntry| -> bool {
-                entry.file_type().is_file() &&
-                    entry.path()
+                entry.file_type().is_file()
+                    && entry
+                        .path()
                         .file_name()
                         .and_then(OsStr::to_str)
                         .map_or(false, |file_name| file_name.ends_with(".page.md"))
@@ -429,10 +430,12 @@ impl Cache {
                 }
             });
         if old_custom_pages_exist {
-            eprintln!("Warning: Custom pages using the old naming convention were found.\n\
+            eprintln!(
+                "Warning: Custom pages using the old naming convention were found.\n\
                 Please rename them to follow the new convention:\n\
                 \t- `<name>.page` → `<name>.page.md`\n\
-                \t- `<name>.patch` → `<name>.patch.md`\n");
+                \t- `<name>.patch` → `<name>.patch.md`\n"
+            );
         }
     }
 }
