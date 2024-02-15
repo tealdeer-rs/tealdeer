@@ -84,7 +84,7 @@ impl TestEnv {
     fn add_page_entry(&self, name: &str, contents: &str) {
         let dir = self.custom_pages_dir.path();
         create_dir_all(dir).unwrap();
-        let mut file = File::create(dir.join(format!("{name}.page"))).unwrap();
+        let mut file = File::create(dir.join(format!("{name}.page.md"))).unwrap();
         file.write_all(contents.as_bytes()).unwrap();
     }
 
@@ -92,7 +92,7 @@ impl TestEnv {
     fn add_patch_entry(&self, name: &str, contents: &str) {
         let dir = self.custom_pages_dir.path();
         create_dir_all(dir).unwrap();
-        let mut file = File::create(dir.join(format!("{name}.patch"))).unwrap();
+        let mut file = File::create(dir.join(format!("{name}.patch.md"))).unwrap();
         file.write_all(contents.as_bytes()).unwrap();
     }
 
@@ -798,7 +798,7 @@ fn test_autoupdate_cache() {
     check_cache_updated(false);
 }
 
-/// End-end test to ensure .page files overwrite pages in cache_dir
+/// End-end test to ensure .page.md files overwrite pages in cache_dir
 #[test]
 fn test_custom_page_overwrites() {
     let testenv = TestEnv::new();
@@ -811,7 +811,7 @@ fn test_custom_page_overwrites() {
 
     // Add file that should be ignored to the cache dir
     testenv.add_entry("inkscape-v2", "");
-    // Add .page file to custome_pages_dir
+    // Add .page.md file to custom_pages_dir
     testenv.add_page_entry("inkscape-v2", include_str!("inkscape-v2.md"));
 
     // Load expected output
@@ -825,7 +825,7 @@ fn test_custom_page_overwrites() {
         .stdout(diff(expected));
 }
 
-/// End-End test to ensure that .patch files are appended to pages in the cache_dir
+/// End-End test to ensure that .patch.md files are appended to pages in the cache_dir
 #[test]
 fn test_custom_patch_appends_to_common() {
     let testenv = TestEnv::new();
@@ -838,8 +838,8 @@ fn test_custom_patch_appends_to_common() {
 
     // Add page to the cache dir
     testenv.add_entry("inkscape-v2", include_str!("inkscape-v2.md"));
-    // Add .page file to custome_pages_dir
-    testenv.add_patch_entry("inkscape-v2", include_str!("inkscape-v2.patch"));
+    // Add .page.md file to custom_pages_dir
+    testenv.add_patch_entry("inkscape-v2", include_str!("inkscape-v2.patch.md"));
 
     // Load expected output
     let expected = include_str!("inkscape-patched-no-color.expected");
@@ -852,7 +852,7 @@ fn test_custom_patch_appends_to_common() {
         .stdout(diff(expected));
 }
 
-/// End-End test to ensure that .patch files are not appended to .page files in the custom_pages_dir
+/// End-End test to ensure that .patch.md files are not appended to .page.md files in the custom_pages_dir
 /// Maybe this interaction should change but I put this test here for the coverage
 #[test]
 fn test_custom_patch_does_not_append_to_custom() {
@@ -868,8 +868,8 @@ fn test_custom_patch_does_not_append_to_custom() {
 
     // Add page to the cache dir
     testenv.add_page_entry("inkscape-v2", include_str!("inkscape-v2.md"));
-    // Add .page file to custome_pages_dir
-    testenv.add_patch_entry("inkscape-v2", include_str!("inkscape-v2.patch"));
+    // Add .page.md file to custom_pages_dir
+    testenv.add_patch_entry("inkscape-v2", include_str!("inkscape-v2.patch.md"));
 
     // Load expected output
     let expected = include_str!("inkscape-default-no-color.expected");
