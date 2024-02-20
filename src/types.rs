@@ -1,6 +1,6 @@
 //! Shared types used in tealdeer.
 
-use std::{fmt::{self, write}, str};
+use std::{fmt, str};
 
 use anyhow::{anyhow, Result};
 use serde_derive::{Deserialize, Serialize};
@@ -61,10 +61,7 @@ impl PlatformType {
         Self::Linux
     }
 
-    #[cfg(any(
-        target_os = "macos",
-        target_os = "dragonfly"
-    ))]
+    #[cfg(any(target_os = "macos", target_os = "dragonfly"))]
     pub fn current() -> Self {
         Self::OsX
     }
@@ -79,23 +76,17 @@ impl PlatformType {
         Self::Android
     }
 
-    #[cfg(any(
-        target_os = "freebsd",
-    ))]
+    #[cfg(any(target_os = "freebsd",))]
     pub fn current() -> Self {
         Self::FreeBSD
     }
 
-    #[cfg(any(
-        target_os = "netbsd",
-    ))]
+    #[cfg(any(target_os = "netbsd",))]
     pub fn current() -> Self {
         Self::NetBSD
     }
 
-    #[cfg(any(
-        target_os = "openbsd",
-    ))]
+    #[cfg(any(target_os = "openbsd",))]
     pub fn current() -> Self {
         Self::OpenBSD
     }
