@@ -9,6 +9,7 @@ use serde_derive::{Deserialize, Serialize};
 #[serde(rename_all = "lowercase")]
 #[allow(dead_code)]
 pub enum PlatformType {
+    Common,
     Linux,
     OsX,
     SunOs,
@@ -22,6 +23,7 @@ pub enum PlatformType {
 impl fmt::Display for PlatformType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Self::Common => write!(f, "Common"),
             Self::Linux => write!(f, "Linux"),
             Self::OsX => write!(f, "macOS / BSD"),
             Self::SunOs => write!(f, "SunOS"),
@@ -39,6 +41,7 @@ impl str::FromStr for PlatformType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "common" => Ok(Self::Common),
             "linux" => Ok(Self::Linux),
             "osx" | "macos" => Ok(Self::OsX),
             "sunos" => Ok(Self::SunOs),
@@ -48,7 +51,7 @@ impl str::FromStr for PlatformType {
             "netbsd" => Ok(Self::NetBSD),
             "openbsd" => Ok(Self::OpenBSD),
             other => Err(anyhow!(
-                "Unknown OS: {}. Possible values: linux, macos, osx, sunos, windows, android, freebsd, netbsd, openbsd",
+                "Unknown OS: {}. Possible values: common, linux, macos, osx, sunos, windows, android, freebsd, netbsd, openbsd",
                 other
             )),
         }
@@ -91,7 +94,13 @@ impl PlatformType {
         Self::OpenBSD
     }
 
+    #[cfg(any(target_os = "common",))]
+    pub fn current() -> Self {
+        Self::Common
+    }
+
     #[cfg(not(any(
+        target_os = "common",
         target_os = "linux",
         target_os = "macos",
         target_os = "freebsd",

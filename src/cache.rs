@@ -213,6 +213,7 @@ impl Cache {
     /// Return the platform directory.
     fn get_platform_dir(platform: PlatformType) -> &'static str {
         match platform {
+            PlatformType::Common => "common",
             PlatformType::Linux => "linux",
             PlatformType::OsX => "osx",
             PlatformType::SunOs => "sunos",

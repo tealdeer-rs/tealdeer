@@ -16,6 +16,7 @@ _tealdeer() {
         "($I -l --list)"{-l,--list}"[List all commands in the cache]"
         "($I -f --render)"{-f,--render}"[Render a specific markdown file]:file:_files"
         "($I -p --platform)"{-p,--platform}'[Override the operating system]:platform:((
+            common
             linux
             macos
             sunos
