@@ -13,6 +13,7 @@ Possible log types:
 - `[docs]` for documentation changes.
 - `[chore]` for maintenance work.
 
+
 ### [v1.6.1][v1.6.1] (2022-10-24)
 
 Changes:
@@ -26,6 +27,7 @@ Contributors to this version:
 - [Danilo Bargen][@dbrgn]
 
 Thanks!
+
 
 ### [v1.6.0][v1.6.0] (2022-10-02)
 
@@ -74,6 +76,7 @@ Contributors to this version:
 - [Simon Perdrisat][@gagarine]
 
 Thanks!
+
 
 ### [v1.5.0][v1.5.0] (2021-12-31)
 
@@ -162,6 +165,7 @@ Thanks!
 Last but not least, [Niklas Mohrin][@niklasmohrin] has joined the project as
 co-maintainer. Thank you for your help!
 
+
 ### [v1.4.1][v1.4.1] (2020-09-04)
 
 - [fixed] Syntax error in zsh completion file ([#138][i138])
@@ -173,6 +177,7 @@ Contributors to this version:
 - [Francesco][@BachoSeven]
 
 Thanks!
+
 
 ### [v1.4.0][v1.4.0] (2020-09-03)
 
@@ -194,6 +199,7 @@ Contributors to this version:
 - [Niklas Mohrin][@niklasmohrin]
 
 Thanks!
+
 
 ### [v1.3.0][v1.3.0] (2020-02-28)
 
@@ -219,6 +225,7 @@ Contributors to this version:
 - [Marc-André Renaud][@ma-renaud]
 
 Thanks!
+
 
 ### [v1.2.0][v1.2.0] (2019-08-10)
 
@@ -246,6 +253,7 @@ Contributors to this version:
 
 Thanks!
 
+
 ### [v1.1.0][v1.1.0] (2018-10-22)
 
 - [added] Configuration file support ([#43][i43])
@@ -263,6 +271,7 @@ Contributors to this version:
 
 Thanks!
 
+
 ### [v1.0.0][v1.0.0] (2018-02-11)
 
 - [added] Include bash completions ([#34][i34])
@@ -270,18 +279,22 @@ Thanks!
 - [changed] Require at least Rust 1.19 to build (previous: 1.9)
 - [changed] Improved unit/integration testing
 
+
 ### v0.4.0 (2016-11-25)
 
 - [added] Support for new page format
 - [changed] Update all dependencies
 
+
 ### v0.3.0 (2016-08-01)
 
 - [changed] Update curl dependency
 
+
 ### v0.2.0 (2016-04-16)
 
 - First crates.io release
+
 
 [@0ndorio]: https://github.com/0ndorio
 [@aldanor]: https://github.com/aldanor
