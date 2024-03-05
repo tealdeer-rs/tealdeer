@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
-        toolchain: [stable, 1.64.0]
+        toolchain: [stable, 1.76.0]
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v3
@@ -60,7 +60,7 @@ jobs:
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1
         with:
-          mdbook-version: '0.4.4'
+          mdbook-version: '0.4.37'
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@master
         with:

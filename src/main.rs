@@ -152,10 +152,12 @@ fn show_paths(config: &Config) {
         |e| format!("[Error: {e}]"),
         |(mut path, source)| {
             path.push(""); // Trailing path separator
-            path.to_str().map_or_else(|| {
-                "[Invalid]".to_string()
-            }, |path| format!("{path} ({source})"))
-        });
+            path.to_str().map_or_else(
+                || "[Invalid]".to_string(),
+                |path| format!("{path} ({source})"),
+            )
+        },
+    );
     let config_path = get_config_path().map_or_else(
         |e| format!("[Error: {e}]"),
         |(path, _)| path.display().to_string(),
@@ -167,9 +169,10 @@ fn show_paths(config: &Config) {
         path.push(""); // Trailing path separator
         path.display().to_string()
     };
-    let custom_pages_dir = config.directories.custom_pages_dir.as_ref().map_or_else(||{
-        "[None]".to_string()
-    }, |ref path_with_source| path_with_source.to_string());
+    let custom_pages_dir = config.directories.custom_pages_dir.as_ref().map_or_else(
+        || "[None]".to_string(),
+        |ref path_with_source| path_with_source.to_string(),
+    );
 
     println!("Config dir:       {config_dir}");
     println!("Config path:      {config_path}");
