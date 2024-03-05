@@ -17,7 +17,7 @@ use crate::types::{ColorOptions, PlatformType};
 #[clap(arg_required_else_help(true))]
 #[clap(disable_colored_help(true))]
 #[clap(group = ArgGroup::new("command_or_file").args(&["command", "render"]))]
-pub(crate) struct Args {
+pub struct Args {
     /// The command to show (e.g. `tar` or `git log`)
     #[clap(min_values = 1)]
     pub command: Vec<String>,

@@ -16,7 +16,7 @@ pub enum PageSnippet<'a> {
 }
 
 impl<'a> PageSnippet<'a> {
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         use PageSnippet::*;
 
         match self {

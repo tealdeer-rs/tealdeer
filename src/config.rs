@@ -17,15 +17,15 @@ pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
 const DEFAULT_UPDATE_INTERVAL_HOURS: u64 = MAX_CACHE_AGE.as_secs() / 3600; // 30 days
 
-fn default_underline() -> bool {
+const fn default_underline() -> bool {
     false
 }
 
-fn default_bold() -> bool {
+const fn default_bold() -> bool {
     false
 }
 
-fn default_italic() -> bool {
+const fn default_italic() -> bool {
     false
 }
 
@@ -219,7 +219,7 @@ impl RawConfig {
 
 impl Default for RawConfig {
     fn default() -> Self {
-        let mut raw_config = RawConfig {
+        let mut raw_config = Self {
             style: RawStyleConfig::default(),
             display: RawDisplayConfig::default(),
             updates: RawUpdatesConfig::default(),
@@ -450,7 +450,7 @@ pub fn make_default_config() -> Result<PathBuf> {
     ensure!(
         !config_file_path.is_file(),
         "A configuration file already exists at {}, no action was taken.",
-        config_file_path.to_str().unwrap()
+        config_file_path.to_string_lossy()
     );
 
     // Create default config

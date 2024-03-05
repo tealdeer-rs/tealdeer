@@ -48,7 +48,7 @@ impl str::FromStr for PlatformType {
 
 impl PlatformType {
     #[cfg(target_os = "linux")]
-    pub fn current() -> Self {
+    pub const fn current() -> Self {
         Self::Linux
     }
 

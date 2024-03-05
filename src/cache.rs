@@ -31,7 +31,7 @@ pub struct PageLookupResult {
 }
 
 impl PageLookupResult {
-    pub fn with_page(page_path: PathBuf) -> Self {
+    pub const fn with_page(page_path: PathBuf) -> Self {
         Self {
             page_path,
             patch_path: None,
@@ -77,7 +77,7 @@ impl PageLookupResult {
 }
 
 pub enum CacheFreshness {
-    /// The cache is still fresh (less than MAX_CACHE_AGE old)
+    /// The cache is still fresh (less than `MAX_CACHE_AGE` old)
     Fresh,
     /// The cache is stale and should be updated
     Stale(Duration),
@@ -211,7 +211,7 @@ impl Cache {
     }
 
     /// Return the platform directory.
-    fn get_platform_dir(platform: PlatformType) -> &'static str {
+    const fn get_platform_dir(platform: PlatformType) -> &'static str {
         match platform {
             PlatformType::Linux => "linux",
             PlatformType::OsX => "osx",
@@ -281,7 +281,7 @@ impl Cache {
 
         // Try to find a platform specific path next, in the order supplied by the user, and append custom patch to it.
         for &platform in platforms {
-            let platform_dir = Cache::get_platform_dir(platform);
+            let platform_dir = Self::get_platform_dir(platform);
             if let Some(page) =
                 Self::find_page_for_platform(&page_filename, &pages_dir, platform_dir, &lang_dirs)
             {
@@ -317,7 +317,9 @@ impl Cache {
             };
             if file_type.is_dir() {
                 return file_name == "common" || platform_dirs.contains(&file_name);
-            } else if file_type.is_file() {
+            }
+
+            if file_type.is_file() {
                 return true;
             }
             false
@@ -422,16 +424,12 @@ impl Cache {
             .into_iter()
             .filter_entry(|entry| entry.file_type().is_file())
             .any(|entry| {
-                if let Ok(entry) = entry {
+                entry.map_or(false, |entry| {
                     let extension = entry.path().extension();
-                    if let Some(extension) = extension {
-                        extension == "page" || extension == "patch"
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                }
+                    extension.map_or(false, |extension| {
+                        extension == "page" || extension == "path"
+                    })
+                })
             });
         if old_custom_pages_exist {
             print_warning(
@@ -453,10 +451,7 @@ impl Cache {
 mod tests {
     use super::*;
 
-    use std::{
-        fs::File,
-        io::{Read, Write},
-    };
+    use std::io::Write;
 
     #[test]
     fn test_reader_with_patch() {

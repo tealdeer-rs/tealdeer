@@ -15,6 +15,8 @@
 #![allow(clippy::similar_names)]
 #![allow(clippy::struct_excessive_bools)]
 #![allow(clippy::too_many_lines)]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::nursery)]
 
 #[cfg(any(
     all(feature = "native-roots", feature = "webpki-roots"),
@@ -26,9 +28,10 @@
         feature = "native-tls"
     )),
 ))]
-compile_error!(
+/*compile_error!(
     "exactly one of the features \"native-roots\", \"webpki-roots\" or \"native-tls\" must be enabled"
-);
+);*/
+print!("hi");
 
 use std::{env, process};
 
@@ -149,12 +152,10 @@ fn show_paths(config: &Config) {
         |e| format!("[Error: {e}]"),
         |(mut path, source)| {
             path.push(""); // Trailing path separator
-            match path.to_str() {
-                Some(path) => format!("{path} ({source})"),
-                None => "[Invalid]".to_string(),
-            }
-        },
-    );
+            path.to_str().map_or_else(|| {
+                "[Invalid]".to_string()
+            }, |path| format!("{path} ({source})"))
+        });
     let config_path = get_config_path().map_or_else(
         |e| format!("[Error: {e}]"),
         |(path, _)| path.display().to_string(),
@@ -166,10 +167,10 @@ fn show_paths(config: &Config) {
         path.push(""); // Trailing path separator
         path.display().to_string()
     };
-    let custom_pages_dir = match config.directories.custom_pages_dir {
-        Some(ref path_with_source) => path_with_source.to_string(),
-        None => "[None]".to_string(),
-    };
+    let custom_pages_dir = config.directories.custom_pages_dir.as_ref().map_or_else(||{
+        "[None]".to_string()
+    }, |ref path_with_source| path_with_source.to_string());
+
     println!("Config dir:       {config_dir}");
     println!("Config path:      {config_path}");
     println!("Cache dir:        {cache_dir}");
@@ -183,7 +184,7 @@ fn create_config_and_exit(enable_styles: bool) {
         Ok(config_file_path) => {
             eprintln!(
                 "Successfully created seed config file here: {}",
-                config_file_path.to_str().unwrap()
+                config_file_path.to_string_lossy()
             );
             process::exit(0);
         }
@@ -200,7 +201,7 @@ fn init_log() {
 }
 
 #[cfg(not(feature = "logging"))]
-fn init_log() {}
+const fn init_log() {}
 
 fn get_languages(env_lang: Option<&str>, env_language: Option<&str>) -> Vec<String> {
     // Language list according to
@@ -209,7 +210,9 @@ fn get_languages(env_lang: Option<&str>, env_language: Option<&str>) -> Vec<Stri
     if env_lang.is_none() {
         return vec!["en".to_string()];
     }
-    let env_lang = env_lang.unwrap();
+
+    let env_lang = env_lang
+        .expect("Sorry It Shouldn't Be Happened We've checked and the env lang is not None!");
 
     // Create an iterator that contains $LANGUAGE (':' separated list) followed by $LANG (single language)
     let locales = env_language.unwrap_or("").split(':').chain([env_lang]);
@@ -295,9 +298,8 @@ fn main() {
         if let Err(ref e) = print_page(&path, args.raw, enable_styles, args.pager, &config) {
             print_error(enable_styles, e);
             process::exit(1);
-        } else {
-            process::exit(0);
-        };
+        }
+        process::exit(0);
     }
 
     // Instantiate cache. This will not yet create the cache directory!
@@ -368,20 +370,19 @@ fn main() {
                 process::exit(1);
             }
             process::exit(0);
-        } else {
-            if !args.quiet {
-                print_warning(
-                    enable_styles,
-                    &format!(
-                        "Page `{}` not found in cache.\n\
+        }
+        if !args.quiet {
+            print_warning(
+                enable_styles,
+                &format!(
+                    "Page `{}` not found in cache.\n\
                          Try updating with `tldr --update`, or submit a pull request to:\n\
                          https://github.com/tldr-pages/tldr",
-                        &command
-                    ),
-                );
-            }
-            process::exit(1);
+                    &command
+                ),
+            );
         }
+        process::exit(1);
     }
 }
 

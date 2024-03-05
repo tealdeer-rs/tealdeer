@@ -10,7 +10,7 @@ pub(crate) trait Dedup<T: PartialEq + Clone> {
 /// For small vectors, this will be faster than a `HashSet`.
 impl<T: PartialEq + Clone> Dedup<T> for Vec<T> {
     fn clear_duplicates(&mut self) {
-        let orig = mem::replace(self, Vec::with_capacity(self.len()));
+        let orig = mem::replace(self, Self::with_capacity(self.len()));
         for item in orig {
             if !self.contains(&item) {
                 self.push(item);
