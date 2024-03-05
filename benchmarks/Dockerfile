@@ -68,7 +68,7 @@ RUN npm install tldr \
 
 ################################################################################
 
-FROM euantorano/zig:0.8.0 AS zig-builder
+FROM euantorano/zig:0.9.1 AS zig-builder
 
 WORKDIR /build
 RUN apk add git \
@@ -78,7 +78,16 @@ RUN apk add git \
         && git submodule update \
         && zig build -Drelease-safe \
         && mkdir /build-outputs \
-        && cp bin/tldr /build-outputs/outfieldr
+        && cp bin/tldr /build-outputs/outfieldr-gitlab
+
+RUN git clone https://github.com/MANICX100/outfieldr.git \
+        && cd outfieldr \
+        && git submodule init \
+        && git submodule update \
+        && zig build -Drelease-safe \
+        && mkdir /build-outputs \
+        && cp bin/tldr /build-outputs/outfieldr-github
+
 
 ################################################################################
 
