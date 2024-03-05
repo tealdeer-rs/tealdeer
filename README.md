@@ -45,18 +45,27 @@ measures the execution times on a cold disk cache. The benchmarking is run in a
 Docker container using sharkdp's [`hyperfine`][hyperfine-gh]
 ([Dockerfile][benchmark-dockerfile]).
 
-| Client (50 runs, 17.10.2021)      | Programming Language | Mean in ms | Deviation in ms | Comments                |
-| :---:                             | :---:                | :---:      | :---:           | :---:                   |
-| [`outfieldr`][outfieldr-gh]       | Zig                  | 9.1        | 0.5             | no user configuration   |
-| `tealdeer`                        | Rust                 | 13.2       | 0.5             |                         |
-| [`fast-tldr`][fast-tldr-gh]       | Haskell              | 17.0       | 0.6             | no example highlighting |
-| [`tldr-hs`][hs-gh]                | Haskell              | 25.1       | 0.5             | no example highlighting |
-| [`tldr-bash`][bash-gh]            | Bash                 | 30.0       | 0.8             |                         |
-| [`tldr-c`][c-gh]                  | C                    | 38.4       | 1.0             |                         |
-| [`tldr-python-client`][python-gh] | Python               | 87.0       | 2.4             |                         |
-| [`tldr-node-client`][node-gh]     | JavaScript / NodeJS  | 407.1      | 12.9            |                         |
+| Client (50 runs, 05.03.2024)      | Programming Language | Mean in ms | Deviation in ms | Comments                         |
+| :---:                             | :---:                | :---:      | :---:           | :---:                            |
+| [`outfieldr`][outfieldr-gh]       | Zig                  | ???        | ???             | lacks maintenance and features   |
+| `tealdeer`                        | Rust                 | 1.4        | 0.3             |                                  |
+| [`fast-tldr`][fast-tldr-gh]       | Haskell              | 4.7        | 0.6             | no example highlighting          |
+| [`tldr-c`][c-gh]                  | C                    | 4.8        | 0.8             |                                  |
+| [`tldr-hs`][hs-gh]                | Haskell              | 11.6       | 0.3             | no example highlighting          |
+| [`tldr-python-client`][python-gh] | Python               | 54.1       | 3.6             |                                  |
+| [`tldr-bash`][bash-gh]            | Bash                 | 117.7      | 6.3             |                                  |
+| [`tldr-node-client`][node-gh]     | JavaScript / NodeJS  | 326.8      | 8.6             |                                  |
 
-As you can see, `tealdeer` is one of the fastest of the tested clients.
+### Note For `outfieldr` benchmark
+I've tried to install it and run it from both [Github Repo](https://github.com/MANICX100/outfieldr) and [Gitlab Repo](https://gitlab.com/ve-nt/outfieldr).
+Since Both Repo didn't support [zig's](https://ziglang.org) latest version `0.11.0`,
+I Compiled them with version `0.9.1` but Gitlab repo failed, it's seem like build file has some issues,
+Anyway Github repo completed without any errors and warning but,
+When I run it, it try to download the tldr pages from `https://codeload.github.com/tldr-pages/tldr/tar.gz/master` which is seem removed and gave 404.
+So I left it's runtimes as `???` in benchmarking.
+If you know how to fix those issues and be able to run it, please help us with adding those results.
+
+As you can see, `tealdeer` is one of the fastest and well maintained client of the tested clients.
 However, we strive for useful features and code quality over raw performance,
 even if that means that we don't come out on top in this friendly competition.
 That said, we are still optimizing the code, for example when the `outfieldr`
