@@ -28,10 +28,9 @@
         feature = "native-tls"
     )),
 ))]
-/*compile_error!(
+compile_error!(
     "exactly one of the features \"native-roots\", \"webpki-roots\" or \"native-tls\" must be enabled"
-);*/
-print!("hi");
+);
 
 use std::{env, process};
 
@@ -203,8 +202,9 @@ fn init_log() {
     env_logger::init();
 }
 
+#[allow(clippy::missing_const_for_fn)]
 #[cfg(not(feature = "logging"))]
-const fn init_log() {}
+fn init_log() {}
 
 fn get_languages(env_lang: Option<&str>, env_language: Option<&str>) -> Vec<String> {
     // Language list according to
@@ -214,8 +214,10 @@ fn get_languages(env_lang: Option<&str>, env_language: Option<&str>) -> Vec<Stri
         return vec!["en".to_string()];
     }
 
-    let env_lang = env_lang
-        .expect("Sorry It Shouldn't Be Happened We've checked and the env lang is not None!");
+    let Some(env_lang) = env_lang else {
+        eprintln!("Sorry It Shouldn't Be Happened We've checked and the env lang is not None!");
+        process::exit(1);
+    };
 
     // Create an iterator that contains $LANGUAGE (':' separated list) followed by $LANG (single language)
     let locales = env_language.unwrap_or("").split(':').chain([env_lang]);

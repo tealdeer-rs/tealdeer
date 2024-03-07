@@ -66,8 +66,3 @@ strip = true
 opt-level = 3
 lto = true
 codegen-units = 1
-
-[profile.release.package."*"]
-strip = true
-opt-level = 3
-codegen-units = 1
