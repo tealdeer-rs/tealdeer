@@ -27,9 +27,9 @@ impl fmt::Display for PlatformType {
             Self::SunOs => write!(f, "SunOS"),
             Self::Windows => write!(f, "Windows"),
             Self::Android => write!(f, "Android"),
-            Self::FreeBSD => write!(f, "FreeBSD"),
-            Self::NetBSD => write!(f, "NetBSD"),
-            Self::OpenBSD => write!(f, "OpenBSD"),
+            Self::FreeBsd => write!(f, "FreeBSD"),
+            Self::NetBsd => write!(f, "NetBSD"),
+            Self::OpenBsd => write!(f, "OpenBSD"),
         }
     }
 }
@@ -44,9 +44,9 @@ impl str::FromStr for PlatformType {
             "sunos" => Ok(Self::SunOs),
             "windows" => Ok(Self::Windows),
             "android" => Ok(Self::Android),
-            "freebsd" => Ok(Self::FreeBSD),
-            "netbsd" => Ok(Self::NetBSD),
-            "openbsd" => Ok(Self::OpenBSD),
+            "freebsd" => Ok(Self::FreeBsd),
+            "netbsd" => Ok(Self::NetBsd),
+            "openbsd" => Ok(Self::OpenBsd),
             other => Err(anyhow!(
                 "Unknown OS: {}. Possible values: linux, macos, osx, sunos, windows, android, freebsd, netbsd, openbsd",
                 other
@@ -78,17 +78,17 @@ impl PlatformType {
 
     #[cfg(any(target_os = "freebsd"))]
     pub fn current() -> Self {
-        Self::FreeBSD
+        Self::FreeBsd
     }
 
     #[cfg(any(target_os = "netbsd"))]
     pub fn current() -> Self {
-        Self::NetBSD
+        Self::NetBsd
     }
 
     #[cfg(any(target_os = "openbsd"))]
     pub fn current() -> Self {
-        Self::OpenBSD
+        Self::OpenBsd
     }
 
     #[cfg(not(any(
