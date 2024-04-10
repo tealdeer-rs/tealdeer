@@ -14,9 +14,9 @@ pub enum PlatformType {
     SunOs,
     Windows,
     Android,
-    FreeBSD,
-    NetBSD,
-    OpenBSD,
+    FreeBsd,
+    NetBsd,
+    OpenBsd,
 }
 
 impl fmt::Display for PlatformType {
@@ -76,17 +76,17 @@ impl PlatformType {
         Self::Android
     }
 
-    #[cfg(any(target_os = "freebsd",))]
+    #[cfg(any(target_os = "freebsd"))]
     pub fn current() -> Self {
         Self::FreeBSD
     }
 
-    #[cfg(any(target_os = "netbsd",))]
+    #[cfg(any(target_os = "netbsd"))]
     pub fn current() -> Self {
         Self::NetBSD
     }
 
-    #[cfg(any(target_os = "openbsd",))]
+    #[cfg(any(target_os = "openbsd"))]
     pub fn current() -> Self {
         Self::OpenBSD
     }
