@@ -2,8 +2,8 @@ name: github pages
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "v*" # push events matching `v` followed by anything, e.g. v1.0, v20.15.10
 
 jobs:
   deploy:
