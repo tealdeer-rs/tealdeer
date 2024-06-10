@@ -314,9 +314,8 @@ impl Cache {
         // specific and common page directories, but not others.
         let should_walk = |entry: &DirEntry| -> bool {
             let file_type = entry.file_type();
-            let file_name = match entry.file_name().to_str() {
-                Some(name) => name,
-                None => return false,
+            let Some(file_name) = entry.file_name().to_str() else {
+                return false;
             };
             if file_type.is_dir() {
                 return file_name == "common" || platform_dirs.contains(&file_name);

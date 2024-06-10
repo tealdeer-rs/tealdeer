@@ -82,17 +82,17 @@ impl PlatformType {
         Self::Android
     }
 
-    #[cfg(any(target_os = "freebsd"))]
+    #[cfg(target_os = "freebsd")]
     pub fn current() -> Self {
         Self::FreeBsd
     }
 
-    #[cfg(any(target_os = "netbsd"))]
+    #[cfg(target_os = "netbsd")]
     pub fn current() -> Self {
         Self::NetBsd
     }
 
-    #[cfg(any(target_os = "openbsd"))]
+    #[cfg(target_os = "openbsd")]
     pub fn current() -> Self {
         Self::OpenBsd
     }
