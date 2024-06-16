@@ -1,9 +1,8 @@
-name: github pages
-
+name: GitHub Pages
 on:
   push:
     tags:
-      - "v*" # push events matching `v` followed by anything, e.g. v1.0, v20.15.10
+      - "v[1-9]*" # push events matching `v` followed by anything larger than 0, e.g. v1.0, v20.15.10
 
 jobs:
   deploy:

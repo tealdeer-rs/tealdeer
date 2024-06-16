@@ -1,3 +1,4 @@
+name: Release
 on:
   push:
     tags:
@@ -79,18 +80,24 @@ jobs:
 
   build-macos:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - arch: "x86_64"
+          - arch: "aarch64"
     steps:
       - uses: actions/checkout@v4
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
+          targets: "${{ matrix.arch }}-apple-darwin"
       - name: Build
-        run: cargo build --release --target x86_64-apple-darwin --no-default-features --features webpki-roots
+        run: cargo build --release --target ${{ matrix.arch }}-apple-darwin --no-default-features --features webpki-roots
       - uses: actions/upload-artifact@v4
         with:
-          name: "tealdeer-macos-x86_64"
-          path: "target/x86_64-apple-darwin/release/tldr"
+          name: "tealdeer-macos-${{ matrix.arch }}"
+          path: "target/${{ matrix.arch }}-apple-darwin/release/tldr"
 
   build-windows:
     runs-on: windows-latest
@@ -124,6 +131,7 @@ jobs:
           - linux-arm-musleabi
           - linux-arm-musleabihf
           - macos-x86_64
+          - macos-aarch64
           - windows-x86_64-msvc
     steps:
       - uses: actions/checkout@v4
