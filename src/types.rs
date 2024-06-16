@@ -2,7 +2,6 @@
 
 use std::{fmt, str};
 
-use anyhow::{anyhow, Result};
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Serialize, Deserialize)]
@@ -11,8 +10,8 @@ use serde_derive::{Deserialize, Serialize};
 pub enum PlatformType {
     Linux,
     OsX,
-    SunOs,
     Windows,
+    SunOs,
     Android,
     FreeBsd,
     NetBsd,
@@ -24,8 +23,8 @@ impl fmt::Display for PlatformType {
         match self {
             Self::Linux => write!(f, "Linux"),
             Self::OsX => write!(f, "macOS / BSD"),
-            Self::SunOs => write!(f, "SunOS"),
             Self::Windows => write!(f, "Windows"),
+            Self::SunOs => write!(f, "SunOS"),
             Self::Android => write!(f, "Android"),
             Self::FreeBsd => write!(f, "FreeBSD"),
             Self::NetBsd => write!(f, "NetBSD"),
@@ -34,23 +33,30 @@ impl fmt::Display for PlatformType {
     }
 }
 
-impl str::FromStr for PlatformType {
-    type Err = anyhow::Error;
+impl clap::ValueEnum for PlatformType {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[
+            Self::Linux,
+            Self::OsX,
+            Self::SunOs,
+            Self::Windows,
+            Self::Android,
+            Self::FreeBsd,
+            Self::NetBsd,
+            Self::OpenBsd,
+        ]
+    }
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "linux" => Ok(Self::Linux),
-            "osx" | "macos" => Ok(Self::OsX),
-            "sunos" => Ok(Self::SunOs),
-            "windows" => Ok(Self::Windows),
-            "android" => Ok(Self::Android),
-            "freebsd" => Ok(Self::FreeBsd),
-            "netbsd" => Ok(Self::NetBsd),
-            "openbsd" => Ok(Self::OpenBsd),
-            other => Err(anyhow!(
-                "Unknown OS: {}. Possible values: linux, macos, osx, sunos, windows, android, freebsd, netbsd, openbsd",
-                other
-            )),
+    fn to_possible_value<'a>(&self) -> Option<clap::builder::PossibleValue> {
+        match self {
+            Self::Linux => Some(clap::builder::PossibleValue::new("linux")),
+            Self::OsX => Some(clap::builder::PossibleValue::new("macos").alias("osx")),
+            Self::Windows => Some(clap::builder::PossibleValue::new("windows")),
+            Self::SunOs => Some(clap::builder::PossibleValue::new("sunos")),
+            Self::Android => Some(clap::builder::PossibleValue::new("android")),
+            Self::FreeBsd => Some(clap::builder::PossibleValue::new("freebsd")),
+            Self::NetBsd => Some(clap::builder::PossibleValue::new("netbsd")),
+            Self::OpenBsd => Some(clap::builder::PossibleValue::new("openbsd")),
         }
     }
 }
@@ -76,17 +82,17 @@ impl PlatformType {
         Self::Android
     }
 
-    #[cfg(any(target_os = "freebsd"))]
+    #[cfg(target_os = "freebsd")]
     pub fn current() -> Self {
         Self::FreeBsd
     }
 
-    #[cfg(any(target_os = "netbsd"))]
+    #[cfg(target_os = "netbsd")]
     pub fn current() -> Self {
         Self::NetBsd
     }
 
-    #[cfg(any(target_os = "openbsd"))]
+    #[cfg(target_os = "openbsd")]
     pub fn current() -> Self {
         Self::OpenBsd
     }
@@ -106,28 +112,12 @@ impl PlatformType {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Copy, Clone, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Copy, Clone, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "lowercase")]
 pub enum ColorOptions {
     Always,
     Auto,
     Never,
-}
-
-impl str::FromStr for ColorOptions {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        match s {
-            "always" => Ok(Self::Always),
-            "auto" => Ok(Self::Auto),
-            "never" => Ok(Self::Never),
-            other => Err(anyhow!(
-                "Unknown color option: {}. Possible values: always, auto, never",
-                other
-            )),
-        }
-    }
 }
 
 impl Default for ColorOptions {
