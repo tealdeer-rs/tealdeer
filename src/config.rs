@@ -6,7 +6,6 @@ use std::{
 };
 
 use anyhow::{bail, ensure, Context, Result};
-use app_dirs::{get_app_root, AppDataType};
 use log::debug;
 use serde_derive::{Deserialize, Serialize};
 use yansi::{Color, Style};
@@ -16,6 +15,10 @@ use crate::types::PathSource;
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
 const DEFAULT_UPDATE_INTERVAL_HOURS: u64 = MAX_CACHE_AGE.as_secs() / 3600; // 30 days
+
+fn project_dirs() -> Option<directories::ProjectDirs> {
+    directories::ProjectDirs::from("", crate::NAME, crate::NAME)
+}
 
 fn default_underline() -> bool {
     false
@@ -300,6 +303,8 @@ impl Config {
         let display = raw_config.display.into();
         let updates = raw_config.updates.into();
 
+        let project_dirs = project_dirs().context("Could not determine project directory")?;
+
         // Determine directories config. For this, we need to take some
         // additional factory into account, like env variables, or the
         // user config.
@@ -319,15 +324,12 @@ impl Config {
                 path: config_value,
                 source: PathSource::ConfigFile,
             }
-        } else if let Ok(default_dir) = get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
+        } else {
             // Otherwise, fall back to the default user cache directory.
             PathWithSource {
-                path: default_dir,
+                path: project_dirs.cache_dir().to_path_buf(),
                 source: PathSource::OsConvention,
             }
-        } else {
-            // If everything fails, give up
-            bail!("Could not determine user cache directory");
         };
         let custom_pages_dir = raw_config
             .directories
@@ -337,15 +339,13 @@ impl Config {
                 source: PathSource::ConfigFile,
             })
             .or_else(|| {
-                get_app_root(AppDataType::UserData, &crate::APP_INFO)
-                    .map(|path| {
-                        // Note: The `join("")` call ensures that there's a trailing slash
-                        PathWithSource {
-                            path: path.join("pages").join(""),
-                            source: PathSource::OsConvention,
-                        }
-                    })
-                    .ok()
+                Some({
+                    // Note: The `join("")` call ensures that there's a trailing slash
+                    PathWithSource {
+                        path: project_dirs.data_dir().join("pages").join(""),
+                        source: PathSource::OsConvention,
+                    }
+                })
             });
         let directories = DirectoriesConfig {
             cache_dir,
@@ -415,8 +415,10 @@ pub fn get_config_dir() -> Result<(PathBuf, PathSource)> {
     };
 
     // Otherwise, fall back to the user config directory.
-    let dirs = get_app_root(AppDataType::UserConfig, &crate::APP_INFO)
-        .context("Failed to determine the user config directory")?;
+    let dirs = directories::ProjectDirs::from("", crate::NAME, crate::NAME)
+        .context("Failed to determine the user config directory")?
+        .config_dir()
+        .to_path_buf();
     Ok((dirs, PathSource::OsConvention))
 }
 
