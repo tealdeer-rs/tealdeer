@@ -12,7 +12,7 @@ pub enum TldrFormat {
     Undecided,
     /// The original format
     V1,
-    /// The new format (see https://github.com/tldr-pages/tldr/pull/958)
+    /// The new format (see <https://github.com/tldr-pages/tldr/pull/958>)
     V2,
 }
 
