@@ -77,7 +77,7 @@ impl PageLookupResult {
 }
 
 pub enum CacheFreshness {
-    /// The cache is still fresh (less than MAX_CACHE_AGE old)
+    /// The cache is still fresh (less than `MAX_CACHE_AGE` old)
     Fresh,
     /// The cache is stale and should be updated
     Stale(Duration),
@@ -184,7 +184,7 @@ impl Cache {
 
         // Extract archive into pages dir
         archive
-            .extract(&self.pages_dir())
+            .extract(self.pages_dir())
             .context("Could not unpack compressed data")?;
 
         Ok(())
