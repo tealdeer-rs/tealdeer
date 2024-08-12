@@ -29,7 +29,7 @@ log = "0.4"
 reqwest = { version = "0.12.5", features = ["blocking"], default-features = false }
 serde = "1.0.21"
 serde_derive = "1.0.21"
-toml = "0.5.1"
+toml = "0.8.19"
 walkdir = "2.0.1"
 yansi = "0.5"
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
