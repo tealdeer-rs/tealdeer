@@ -41,10 +41,11 @@ pub(crate) struct Cli {
     )]
     pub render: Option<PathBuf>,
 
-    /// Override the operating system
+    /// Override the operating system, can be specified multiple times in order of preference
     #[arg(
         short = 'p',
         long = "platform",
+        value_name = "PLATFORM",
         action = ArgAction::Append,
     )]
     pub platforms: Option<Vec<PlatformType>>,
