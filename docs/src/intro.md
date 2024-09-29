@@ -10,5 +10,5 @@ This documentation shows how to install, use and configure tealdeer.
 
 ## Links
 
-- [GitHub Project Page](https://github.com/dbrgn/tealdeer)
+- [GitHub Project Page](https://github.com/tealdeer-rs/tealdeer)
 - [TLDR Pages Project](https://tldr.sh/)

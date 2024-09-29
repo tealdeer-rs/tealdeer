@@ -14,12 +14,12 @@ Rust: Simplified, example based and community-driven man pages.
 If you pronounce "tldr" in English, it sounds somewhat like "tealdeer". Hence the project name :)
 
 In case you're in a hurry and just want to quickly try tealdeer, you can find static
-binaries on the [GitHub releases page](https://github.com/dbrgn/tealdeer/releases/)!
+binaries on the [GitHub releases page](https://github.com/tealdeer-rs/tealdeer/releases/)!
 
 
 ## Docs (Installing, Usage, Configuration)
 
-User documentation is available at <https://dbrgn.github.io/tealdeer/>!
+User documentation is available at <https://tealdeer-rs.github.io/tealdeer/>!
 
 The docs are generated using [mdbook](https://rust-lang.github.io/mdBook/index.html).
 They can be edited through the markdown files in the `docs/src/` directory.
@@ -120,13 +120,13 @@ Thanks to @severen for coming up with the name "tealdeer"!
 [outfieldr-gh]: https://gitlab.com/ve-nt/outfieldr
 [python-gh]: https://github.com/tldr-pages/tldr-python-client
 
-[benchmark-dockerfile]: https://github.com/dbrgn/tealdeer/blob/main/benchmarks/Dockerfile
+[benchmark-dockerfile]: https://github.com/tealdeer-rs/tealdeer/blob/main/benchmarks/Dockerfile
 [client-spec]: https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md
 [hyperfine-gh]: https://github.com/sharkdp/hyperfine
-[outfieldr-comment-tls]: https://github.com/dbrgn/tealdeer/issues/129#issuecomment-833596765
+[outfieldr-comment-tls]: https://github.com/tealdeer-rs/tealdeer/issues/129#issuecomment-833596765
 
 <!-- Badges -->
-[github-actions]: https://github.com/dbrgn/tealdeer/actions?query=branch%3Amain
-[github-actions-badge]: https://github.com/dbrgn/tealdeer/actions/workflows/ci.yml/badge.svg?branch=main
+[github-actions]: https://github.com/tealdeer-rs/tealdeer/actions?query=branch%3Amain
+[github-actions-badge]: https://github.com/tealdeer-rs/tealdeer/actions/workflows/ci.yml/badge.svg?branch=main
 [crates-io]: https://crates.io/crates/tealdeer
 [crates-io-badge]: https://img.shields.io/crates/v/tealdeer.svg

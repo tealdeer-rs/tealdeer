@@ -18,7 +18,7 @@ use crate::types::{ColorOptions, PlatformType};
 {usage-heading} {usage}
 
 {all-args}{after-help}",
-    after_help = "To view the user documentation, please visit https://dbrgn.github.io/tealdeer/.",
+    after_help = "To view the user documentation, please visit https://tealdeer-rs.github.io/tealdeer/.",
     arg_required_else_help = true,
     help_expected = true,
     group = ArgGroup::new("command_or_file").args(&["command", "render"]),

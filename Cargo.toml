@@ -4,12 +4,12 @@ authors = [
     "Niklas Mohrin <dev@niklasmohrin.de>",
 ]
 description = "Fetch and show tldr help pages for many CLI commands. Full featured offline client with caching support."
-homepage = "https://github.com/dbrgn/tealdeer/"
+homepage = "https://github.com/tealdeer-rs/tealdeer/"
 license = "MIT OR Apache-2.0"
 name = "tealdeer"
 readme = "README.md"
-repository = "https://github.com/dbrgn/tealdeer/"
-documentation = "https://dbrgn.github.io/tealdeer/"
+repository = "https://github.com/tealdeer-rs/tealdeer/"
+documentation = "https://tealdeer-rs.github.io/tealdeer/"
 version = "1.6.1"
 include = ["/src/**/*", "/tests/**/*", "/Cargo.toml", "/README.md", "/LICENSE-*", "/screenshot.png", "completion/*"]
 rust-version = "1.75"

@@ -110,7 +110,7 @@ fn check_cache(cache: &Cache, args: &Cli, enable_styles: bool) -> CheckCacheResu
             println!("The path to your config file can be looked up with `tldr --show-paths`.");
             println!("To create an initial config file, use `tldr --seed-config`.\n");
             println!("You can find more tips and tricks in our docs:\n");
-            println!("  https://dbrgn.github.io/tealdeer/config_updates.html");
+            println!("  https://tealdeer-rs.github.io/tealdeer/config_updates.html");
             CheckCacheResult::CacheMissing
         }
     }

@@ -49,4 +49,4 @@ every page, so the script may take a couple of seconds to finish.
 ## Extending this chapter
 
 If you have an interesting setup with Tealdeer, feel free to share your
-configuration on [our Github repository](https://github.com/dbrgn/tealdeer).
+configuration on [our Github repository](https://github.com/tealdeer-rs/tealdeer).
