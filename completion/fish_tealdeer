@@ -1,6 +1,6 @@
 #
 # Completions for the tealdeer implementation of tldr
-# https://github.com/dbrgn/tealdeer/
+# https://github.com/tealdeer-rs/tealdeer/
 #
 
 complete -c tldr -s h -l help           -d 'Print the help message.' -f

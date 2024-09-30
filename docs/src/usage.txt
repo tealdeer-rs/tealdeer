@@ -25,4 +25,4 @@ Options:
   -v, --version              Print the version
   -h, --help                 Print help
 
-To view the user documentation, please visit https://dbrgn.github.io/tealdeer/.
+To view the user documentation, please visit https://tealdeer-rs.github.io/tealdeer/.

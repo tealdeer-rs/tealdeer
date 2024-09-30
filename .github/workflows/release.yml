@@ -14,7 +14,7 @@ jobs:
         run: |
           source ./scripts/upload-asset.sh
           # Create:      <token>                     <repo>                   <tag>
-          create_release ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} ${GITHUB_REF#refs/*/} "Tealdeer version ${GITHUB_REF#refs/*/v}.\n\nFor the full changelog, see https://github.com/dbrgn/tealdeer/blob/main/CHANGELOG.md.\n\nBinaries were generated automatically in CI, and are therefore unsigned. For a fully trusted release, please build from source."
+          create_release ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} ${GITHUB_REF#refs/*/} "Tealdeer version ${GITHUB_REF#refs/*/v}.\n\nFor the full changelog, see https://github.com/tealdeer-rs/tealdeer/blob/main/CHANGELOG.md.\n\nBinaries were generated automatically in CI, and are therefore unsigned. For a fully trusted release, please build from source."
 
   upload-completions:
     needs:

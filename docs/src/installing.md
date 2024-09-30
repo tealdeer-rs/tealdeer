@@ -31,7 +31,7 @@ Tealdeer has been added to a few package managers:
 ## Static Binaries (Linux)
 
 Static binary builds (currently for Linux only) are available on the
-[GitHub releases page](https://github.com/dbrgn/tealdeer/releases).
+[GitHub releases page](https://github.com/tealdeer-rs/tealdeer/releases).
 Simply download the binary for your platform and run it!
 
 ## Through `cargo install`

@@ -18,7 +18,7 @@
 FROM rust AS tealdeer-builder
 
 WORKDIR /build
-RUN git clone https://github.com/dbrgn/tealdeer.git \
+RUN git clone https://github.com/tealdeer-rs/tealdeer.git \
         && cd tealdeer \
         && cargo build --release \
         && mkdir /build-outputs \

@@ -88,7 +88,7 @@ The highlights:
 - **Custom pages and patches**: You can now create your own local-only tldr
   pages. But not just that, you can also extend existing upstream pages with
   your own examples. For more details, see
-  [the docs](https://dbrgn.github.io/tealdeer/usage_custom_pages.html).
+  [the docs](https://tealdeer-rs.github.io/tealdeer/usage_custom_pages.html).
 - **Change argument parsing from docopt to clap**: We replaced docopt.rs as
   argument parsing library with clap v3, resulting in almost 1 MiB smaller
   binaries and a 22% speed increase when rendering a tldr page.
@@ -99,7 +99,7 @@ The highlights:
   `-p/--platform` and implemented transparent lowercasing of the page names.
 - **Docs**: The README based documentation has reached its limits. There are
   now new mdbook based docs over at
-  [dbrgn.github.io/tealdeer/](https://dbrgn.github.io/tealdeer/), we hope these
+  [tealdeer-rs.github.io/tealdeer/](https://tealdeer-rs.github.io/tealdeer/), we hope these
   make using tealdeer easier. Of course, documentation improvements are
   welcome! Also, if you're confused about how to use a certain feature, feel
   free to open an issue, this way we can improve the docs.
@@ -133,8 +133,8 @@ Changes:
 - [deprecated] The `--config-path` command is deprecated, use `--show-paths` instead ([#162][i162])
 - [deprecated] The `-o/--os` command is deprecated, use `-p/--platform` instead ([#217][i217])
 - [deprecated] The `-m/--markdown` command is deprecated, use `-r/--raw` instead ([#108][i108])
-- [docs] New docs at [dbrgn.github.io/tealdeer/](https://dbrgn.github.io/tealdeer/)
-- [docs] Add comparative benchmarks with hyperfine ([#163][i163], [README](https://github.com/dbrgn/tealdeer#goals))
+- [docs] New docs at [tealdeer-rs.github.io/tealdeer/](https://tealdeer-rs.github.io/tealdeer/)
+- [docs] Add comparative benchmarks with hyperfine ([#163][i163], [README](https://github.com/tealdeer-rs/tealdeer#goals))
 - [chore] Download tldr pages archive from their website, not from GitHub ([#213][i213])
 - [chore] Bump MSRV to 1.54 and change MSRV policy ([#190][i190])
 - [chore] The `master` branch was renamed to `main`
@@ -345,78 +345,78 @@ Thanks!
 [@tveness]: https://github.com/tveness
 [@Voultapher]: https://github.com/Voultapher
 
-[v1.0.0]: https://github.com/dbrgn/tealdeer/compare/v0.4.0...v1.0.0
-[v1.1.0]: https://github.com/dbrgn/tealdeer/compare/v1.0.0...v1.1.0
-[v1.2.0]: https://github.com/dbrgn/tealdeer/compare/v1.1.0...v1.2.0
-[v1.3.0]: https://github.com/dbrgn/tealdeer/compare/v1.2.0...v1.3.0
-[v1.4.0]: https://github.com/dbrgn/tealdeer/compare/v1.3.0...v1.4.0
-[v1.4.1]: https://github.com/dbrgn/tealdeer/compare/v1.4.0...v1.4.1
-[v1.5.0]: https://github.com/dbrgn/tealdeer/compare/v1.4.1...v1.5.0
-[v1.6.0]: https://github.com/dbrgn/tealdeer/compare/v1.5.0...v1.6.0
-[v1.6.1]: https://github.com/dbrgn/tealdeer/compare/v1.6.0...v1.6.1
+[v1.0.0]: https://github.com/tealdeer-rs/tealdeer/compare/v0.4.0...v1.0.0
+[v1.1.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.0.0...v1.1.0
+[v1.2.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.1.0...v1.2.0
+[v1.3.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.2.0...v1.3.0
+[v1.4.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.3.0...v1.4.0
+[v1.4.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.4.0...v1.4.1
+[v1.5.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.4.1...v1.5.0
+[v1.6.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.5.0...v1.6.0
+[v1.6.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.6.0...v1.6.1
 
-[i34]: https://github.com/dbrgn/tealdeer/issues/34
-[i43]: https://github.com/dbrgn/tealdeer/issues/43
-[i44]: https://github.com/dbrgn/tealdeer/issues/44
-[i47]: https://github.com/dbrgn/tealdeer/issues/47
-[i48]: https://github.com/dbrgn/tealdeer/issues/48
-[i57]: https://github.com/dbrgn/tealdeer/issues/57
-[i58]: https://github.com/dbrgn/tealdeer/issues/58
-[i61]: https://github.com/dbrgn/tealdeer/issues/61
-[i68]: https://github.com/dbrgn/tealdeer/issues/68
-[i69]: https://github.com/dbrgn/tealdeer/issues/69
-[i71]: https://github.com/dbrgn/tealdeer/issues/71
-[i75]: https://github.com/dbrgn/tealdeer/issues/75
-[i77]: https://github.com/dbrgn/tealdeer/issues/77
-[i84]: https://github.com/dbrgn/tealdeer/issues/84
-[i86]: https://github.com/dbrgn/tealdeer/issues/86
-[i87]: https://github.com/dbrgn/tealdeer/issues/87
-[i89]: https://github.com/dbrgn/tealdeer/issues/89
-[i95]: https://github.com/dbrgn/tealdeer/issues/95
-[i97]: https://github.com/dbrgn/tealdeer/issues/97
-[i99]: https://github.com/dbrgn/tealdeer/issues/99
-[i108]: https://github.com/dbrgn/tealdeer/pull/108
-[i111]: https://github.com/dbrgn/tealdeer/issues/111
-[i112]: https://github.com/dbrgn/tealdeer/issues/112
-[i113]: https://github.com/dbrgn/tealdeer/issues/113
-[i115]: https://github.com/dbrgn/tealdeer/issues/115
-[i125]: https://github.com/dbrgn/tealdeer/pull/125
-[i138]: https://github.com/dbrgn/tealdeer/issues/138
-[i142]: https://github.com/dbrgn/tealdeer/pull/142
-[i148]: https://github.com/dbrgn/tealdeer/pull/148
-[i157]: https://github.com/dbrgn/tealdeer/pull/157
-[i161]: https://github.com/dbrgn/tealdeer/pull/161
-[i162]: https://github.com/dbrgn/tealdeer/pull/162
-[i163]: https://github.com/dbrgn/tealdeer/pull/163
-[i168]: https://github.com/dbrgn/tealdeer/pull/168
-[i171]: https://github.com/dbrgn/tealdeer/pull/171
-[i174]: https://github.com/dbrgn/tealdeer/pull/174
-[i176]: https://github.com/dbrgn/tealdeer/pull/176
-[i187]: https://github.com/dbrgn/tealdeer/pull/187
-[i190]: https://github.com/dbrgn/tealdeer/issues/190
-[i197]: https://github.com/dbrgn/tealdeer/pull/197
-[i210]: https://github.com/dbrgn/tealdeer/pull/210
-[i213]: https://github.com/dbrgn/tealdeer/pull/213
-[i215]: https://github.com/dbrgn/tealdeer/pull/215
-[i217]: https://github.com/dbrgn/tealdeer/pull/217
-[i227]: https://github.com/dbrgn/tealdeer/pull/227
-[#231]: https://github.com/dbrgn/tealdeer/pull/231
-[i240]: https://github.com/dbrgn/tealdeer/pull/240
-[#247]: https://github.com/dbrgn/tealdeer/pull/247
-[#249]: https://github.com/dbrgn/tealdeer/pull/249
-[#253]: https://github.com/dbrgn/tealdeer/pull/253
-[#254]: https://github.com/dbrgn/tealdeer/pull/254
-[#257]: https://github.com/dbrgn/tealdeer/pull/257
-[#259]: https://github.com/dbrgn/tealdeer/pull/259
-[#262]: https://github.com/dbrgn/tealdeer/pull/262
-[#271]: https://github.com/dbrgn/tealdeer/pull/271
-[#272]: https://github.com/dbrgn/tealdeer/pull/272
-[#274]: https://github.com/dbrgn/tealdeer/pull/274
-[#276]: https://github.com/dbrgn/tealdeer/pull/276
-[#284]: https://github.com/dbrgn/tealdeer/pull/284
-[#285]: https://github.com/dbrgn/tealdeer/pull/285
-[#287]: https://github.com/dbrgn/tealdeer/pull/287
-[#290]: https://github.com/dbrgn/tealdeer/pull/290
-[#291]: https://github.com/dbrgn/tealdeer/pull/291
-[#297]: https://github.com/dbrgn/tealdeer/pull/297
-[#299]: https://github.com/dbrgn/tealdeer/pull/299
+[i34]: https://github.com/tealdeer-rs/tealdeer/issues/34
+[i43]: https://github.com/tealdeer-rs/tealdeer/issues/43
+[i44]: https://github.com/tealdeer-rs/tealdeer/issues/44
+[i47]: https://github.com/tealdeer-rs/tealdeer/issues/47
+[i48]: https://github.com/tealdeer-rs/tealdeer/issues/48
+[i57]: https://github.com/tealdeer-rs/tealdeer/issues/57
+[i58]: https://github.com/tealdeer-rs/tealdeer/issues/58
+[i61]: https://github.com/tealdeer-rs/tealdeer/issues/61
+[i68]: https://github.com/tealdeer-rs/tealdeer/issues/68
+[i69]: https://github.com/tealdeer-rs/tealdeer/issues/69
+[i71]: https://github.com/tealdeer-rs/tealdeer/issues/71
+[i75]: https://github.com/tealdeer-rs/tealdeer/issues/75
+[i77]: https://github.com/tealdeer-rs/tealdeer/issues/77
+[i84]: https://github.com/tealdeer-rs/tealdeer/issues/84
+[i86]: https://github.com/tealdeer-rs/tealdeer/issues/86
+[i87]: https://github.com/tealdeer-rs/tealdeer/issues/87
+[i89]: https://github.com/tealdeer-rs/tealdeer/issues/89
+[i95]: https://github.com/tealdeer-rs/tealdeer/issues/95
+[i97]: https://github.com/tealdeer-rs/tealdeer/issues/97
+[i99]: https://github.com/tealdeer-rs/tealdeer/issues/99
+[i108]: https://github.com/tealdeer-rs/tealdeer/pull/108
+[i111]: https://github.com/tealdeer-rs/tealdeer/issues/111
+[i112]: https://github.com/tealdeer-rs/tealdeer/issues/112
+[i113]: https://github.com/tealdeer-rs/tealdeer/issues/113
+[i115]: https://github.com/tealdeer-rs/tealdeer/issues/115
+[i125]: https://github.com/tealdeer-rs/tealdeer/pull/125
+[i138]: https://github.com/tealdeer-rs/tealdeer/issues/138
+[i142]: https://github.com/tealdeer-rs/tealdeer/pull/142
+[i148]: https://github.com/tealdeer-rs/tealdeer/pull/148
+[i157]: https://github.com/tealdeer-rs/tealdeer/pull/157
+[i161]: https://github.com/tealdeer-rs/tealdeer/pull/161
+[i162]: https://github.com/tealdeer-rs/tealdeer/pull/162
+[i163]: https://github.com/tealdeer-rs/tealdeer/pull/163
+[i168]: https://github.com/tealdeer-rs/tealdeer/pull/168
+[i171]: https://github.com/tealdeer-rs/tealdeer/pull/171
+[i174]: https://github.com/tealdeer-rs/tealdeer/pull/174
+[i176]: https://github.com/tealdeer-rs/tealdeer/pull/176
+[i187]: https://github.com/tealdeer-rs/tealdeer/pull/187
+[i190]: https://github.com/tealdeer-rs/tealdeer/issues/190
+[i197]: https://github.com/tealdeer-rs/tealdeer/pull/197
+[i210]: https://github.com/tealdeer-rs/tealdeer/pull/210
+[i213]: https://github.com/tealdeer-rs/tealdeer/pull/213
+[i215]: https://github.com/tealdeer-rs/tealdeer/pull/215
+[i217]: https://github.com/tealdeer-rs/tealdeer/pull/217
+[i227]: https://github.com/tealdeer-rs/tealdeer/pull/227
+[#231]: https://github.com/tealdeer-rs/tealdeer/pull/231
+[i240]: https://github.com/tealdeer-rs/tealdeer/pull/240
+[#247]: https://github.com/tealdeer-rs/tealdeer/pull/247
+[#249]: https://github.com/tealdeer-rs/tealdeer/pull/249
+[#253]: https://github.com/tealdeer-rs/tealdeer/pull/253
+[#254]: https://github.com/tealdeer-rs/tealdeer/pull/254
+[#257]: https://github.com/tealdeer-rs/tealdeer/pull/257
+[#259]: https://github.com/tealdeer-rs/tealdeer/pull/259
+[#262]: https://github.com/tealdeer-rs/tealdeer/pull/262
+[#271]: https://github.com/tealdeer-rs/tealdeer/pull/271
+[#272]: https://github.com/tealdeer-rs/tealdeer/pull/272
+[#274]: https://github.com/tealdeer-rs/tealdeer/pull/274
+[#276]: https://github.com/tealdeer-rs/tealdeer/pull/276
+[#284]: https://github.com/tealdeer-rs/tealdeer/pull/284
+[#285]: https://github.com/tealdeer-rs/tealdeer/pull/285
+[#287]: https://github.com/tealdeer-rs/tealdeer/pull/287
+[#290]: https://github.com/tealdeer-rs/tealdeer/pull/290
+[#291]: https://github.com/tealdeer-rs/tealdeer/pull/291
+[#297]: https://github.com/tealdeer-rs/tealdeer/pull/297
+[#299]: https://github.com/tealdeer-rs/tealdeer/pull/299
