@@ -30,10 +30,13 @@ compile_error!(
     "exactly one of the features \"native-roots\", \"webpki-roots\" or \"native-tls\" must be enabled"
 );
 
-use std::{env, process};
+use std::{
+    env,
+    io::{self, IsTerminal},
+    process,
+};
 
 use app_dirs::AppInfo;
-use atty::Stream;
 use clap::Parser;
 
 mod cache;
@@ -258,7 +261,7 @@ fn main() {
         // * NO_COLOR env var isn't set: https://no-color.org/
         // * The output stream is stdout (not being piped)
         ColorOptions::Auto => {
-            ansi_support && env::var_os("NO_COLOR").is_none() && atty::is(Stream::Stdout)
+            ansi_support && env::var_os("NO_COLOR").is_none() && io::stdout().is_terminal()
         }
         // Disable styling
         ColorOptions::Never => false,
