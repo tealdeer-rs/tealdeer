@@ -7,15 +7,12 @@ Run linting:
 Set variables:
 
     $ export VERSION=X.Y.Z
-    $ export GPG_KEY=EA456E8BAF0109429583EED83578F667F2F3A5FA
+    $ export GPG_KEY=20EE002D778AE197EF7D0D2CB993FF98A90C9AB1
 
 Update version numbers:
 
     $ vim Cargo.toml
     $ cargo update -p tealdeer
-
-For release 1.7.0: Remove this note and uncomment warning in
-`docs/src/usage_custom_pages.md`.
 
 Update docs:
 
