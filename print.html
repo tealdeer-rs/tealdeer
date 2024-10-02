@@ -173,7 +173,7 @@ and community-driven man pages.</p>
 <p>This documentation shows how to install, use and configure tealdeer.</p>
 <h2><a class="header" href="#links" id="links">Links</a></h2>
 <ul>
-<li><a href="https://github.com/dbrgn/tealdeer">GitHub Project Page</a></li>
+<li><a href="https://github.com/tealdeer-rs/tealdeer">GitHub Project Page</a></li>
 <li><a href="https://tldr.sh/">TLDR Pages Project</a></li>
 </ul>
 <h1><a class="header" href="#installing" id="installing">Installing</a></h1>
@@ -205,7 +205,7 @@ autocompletions</a>.</p>
 </ul>
 <h2><a class="header" href="#static-binaries-linux" id="static-binaries-linux">Static Binaries (Linux)</a></h2>
 <p>Static binary builds (currently for Linux only) are available on the
-<a href="https://github.com/dbrgn/tealdeer/releases">GitHub releases page</a>.
+<a href="https://github.com/tealdeer-rs/tealdeer/releases">GitHub releases page</a>.
 Simply download the binary for your platform and run it!</p>
 <h2><a class="header" href="#through-cargo-install" id="through-cargo-install">Through <code>cargo install</code></a></h2>
 <p>Build and install the tool via cargo...</p>
@@ -234,48 +234,45 @@ Just copy them to their designated location:</p>
 <p>Tealdeer is straightforward to use, through the binary named <code>tldr</code>.</p>
 <p>You can view the available options using <code>tldr --help</code>:</p>
 <!-- Note: To update the file below, run `cargo run -- --help > docs/src/usage.txt`. -->
-<pre><code>tealdeer 1.6.1
+<pre><code>tealdeer 1.7.0: A fast TLDR client
 Danilo Bargen &lt;mail@dbrgn.ch&gt;, Niklas Mohrin &lt;dev@niklasmohrin.de&gt;
-A fast TLDR client
 
-USAGE:
-    tldr [OPTIONS] [COMMAND]...
+Usage: tldr [OPTIONS] [COMMAND]...
 
-ARGS:
-    &lt;COMMAND&gt;...    The command to show (e.g. `tar` or `git log`)
+Arguments:
+  [COMMAND]...  The command to show (e.g. `tar` or `git log`)
 
-OPTIONS:
-    -l, --list                    List all commands in the cache
-    -f, --render &lt;FILE&gt;           Render a specific markdown file
-    -p, --platform &lt;PLATFORMS&gt;    Override the operating system [possible values: linux, macos,
-                                  windows, sunos, osx, android, freebsd, netbsd, openbsd]
-    -L, --language &lt;LANGUAGE&gt;     Override the language
-    -u, --update                  Update the local cache
-        --no-auto-update          If auto update is configured, disable it for this run
-    -c, --clear-cache             Clear the local cache
-        --pager                   Use a pager to page output
-    -r, --raw                     Display the raw markdown instead of rendering it
-    -q, --quiet                   Suppress informational messages
-        --show-paths              Show file and directory paths used by tealdeer
-        --seed-config             Create a basic config
-        --color &lt;WHEN&gt;            Control whether to use color [possible values: always, auto,
-                                  never]
-    -v, --version                 Print the version
-    -h, --help                    Print help information
+Options:
+  -l, --list                 List all commands in the cache
+  -f, --render &lt;FILE&gt;        Render a specific markdown file
+  -p, --platform &lt;PLATFORM&gt;  Override the operating system, can be specified multiple times in order
+                             of preference [possible values: linux, macos, sunos, windows, android,
+                             freebsd, netbsd, openbsd]
+  -L, --language &lt;LANGUAGE&gt;  Override the language
+  -u, --update               Update the local cache
+      --no-auto-update       If auto update is configured, disable it for this run
+  -c, --clear-cache          Clear the local cache
+      --pager                Use a pager to page output
+  -r, --raw                  Display the raw markdown instead of rendering it
+  -q, --quiet                Suppress informational messages
+      --show-paths           Show file and directory paths used by tealdeer
+      --seed-config          Create a basic config
+      --color &lt;WHEN&gt;         Control whether to use color [possible values: always, auto, never]
+  -v, --version              Print the version
+  -h, --help                 Print help
 
-To view the user documentation, please visit https://dbrgn.github.io/tealdeer/.
+To view the user documentation, please visit https://tealdeer-rs.github.io/tealdeer/.
 </code></pre>
 <h1><a class="header" href="#custom-pages-and-patches" id="custom-pages-and-patches">Custom Pages and Patches</a></h1>
-<!--
-TODO: Uncomment when releasing 1.7.0.
-> ⚠️ **Breaking change in version 1.7.0:** The file name extension for custom
-> pages and patches was changed:
->
-> - `<name>.page` → `<name>.page.md`
-> - `<name>.patch` → `<name>.patch.md`
->
-> If you have custom pages or patches, you need to rename them.
--->
+<blockquote>
+<p>⚠️ <strong>Breaking change in version 1.7.0:</strong> The file name extension for custom
+pages and patches was changed:</p>
+<ul>
+<li><code>&lt;name&gt;.page</code> → <code>&lt;name&gt;.page.md</code></li>
+<li><code>&lt;name&gt;.patch</code> → <code>&lt;name&gt;.patch.md</code></li>
+</ul>
+<p>If you have custom pages or patches, you need to rename them.</p>
+</blockquote>
 <p>Tealdeer allows creating new custom pages, overriding existing pages as well as
 extending existing pages.</p>
 <p>The directory, where these custom pages and patches can be placed, follows OS
@@ -481,7 +478,7 @@ for command in commands:
 every page, so the script may take a couple of seconds to finish.</p>
 <h2><a class="header" href="#extending-this-chapter" id="extending-this-chapter">Extending this chapter</a></h2>
 <p>If you have an interesting setup with Tealdeer, feel free to share your
-configuration on <a href="https://github.com/dbrgn/tealdeer">our Github repository</a>.</p>
+configuration on <a href="https://github.com/tealdeer-rs/tealdeer">our Github repository</a>.</p>
 
                     </main>
 
