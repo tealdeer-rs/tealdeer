@@ -19,9 +19,10 @@ pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 
 #[derive(Debug)]
-pub struct Cache {
+pub struct Cache<'a> {
     cache_dir: PathBuf,
     enable_styles: bool,
+    tls_backend: &'a str, // for setting up reqwest client
 }
 
 #[derive(Debug)]
@@ -85,14 +86,15 @@ pub enum CacheFreshness {
     Missing,
 }
 
-impl Cache {
-    pub fn new<P>(cache_dir: P, enable_styles: bool) -> Self
+impl<'a> Cache<'a> {
+    pub fn new<P>(cache_dir: P, enable_styles: bool, tls_backend: &'a str) -> Self
     where
         P: Into<PathBuf>,
     {
         Self {
             cache_dir: cache_dir.into(),
             enable_styles,
+            tls_backend,
         }
     }
 
@@ -135,9 +137,17 @@ impl Cache {
         self.cache_dir.join(TLDR_PAGES_DIR)
     }
 
-    /// Download the archive from the specified URL.
-    fn download(archive_url: &str) -> Result<Vec<u8>> {
+    /// Builds HTTPS client based on configuration.
+    ///
+    /// Note that `Cargo.toml` also defines default feature .
+    fn build_client(&self) -> Result<Client> {
         let mut builder = Client::builder();
+        builder = match self.tls_backend {
+            "native-roots" => builder.use_rustls_tls().tls_built_in_native_certs(true),
+            "webpki-roots" => builder.use_rustls_tls().tls_built_in_webpki_certs(true),
+            "native-tls" => builder.use_native_tls().tls_built_in_native_certs(true),
+            _ => builder, // TLS backend defaults to the compiled feature
+        };
         if let Ok(ref host) = env::var("HTTP_PROXY") {
             if let Ok(proxy) = Proxy::http(host) {
                 builder = builder.proxy(proxy);
@@ -148,9 +158,11 @@ impl Cache {
                 builder = builder.proxy(proxy);
             }
         }
-        let client = builder
-            .build()
-            .context("Could not instantiate HTTP client")?;
+        builder.build().context("Could not instantiate HTTP client")
+    }
+
+    /// Download the archive from the specified URL.
+    fn download(client: &Client, archive_url: &str) -> Result<Vec<u8>> {
         let mut resp = client
             .get(archive_url)
             .send()?
@@ -166,8 +178,9 @@ impl Cache {
     pub fn update(&self, archive_url: &str) -> Result<()> {
         self.ensure_cache_dir_exists()?;
 
+        let client = self.build_client()?;
         // First, download the compressed data
-        let bytes: Vec<u8> = Self::download(archive_url)?;
+        let bytes: Vec<u8> = Self::download(&client, archive_url)?;
 
         // Decompress the response body into an `Archive`
         let mut archive = ZipArchive::new(Cursor::new(bytes))
@@ -176,7 +189,7 @@ impl Cache {
         // Clear cache directory
         // Note: This is not the best solution. Ideally we would download the
         // archive to a temporary directory and then swap the two directories.
-        // But renaming a directory doesn't work across filesystems and Rust
+        // But renaming a directory doesn't work across file systems and Rust
         // does not yet offer a recursive directory copying function. So for
         // now, we'll use this approach.
         self.clear()
@@ -503,5 +516,31 @@ mod tests {
         reader.read_to_end(&mut buf).unwrap();
 
         assert_eq!(&buf, b"Hello\n");
+    }
+
+    macro_rules! https_client_tests {
+        ($($name:ident: $backend:expr),* $(,)?) => {
+            $(
+                #[test]
+                fn $name() {
+                    let dir = tempfile::tempdir().unwrap();
+
+                    let _ = Cache::build_client(&Cache {
+                        cache_dir: dir.into_path(),
+                        enable_styles: false,
+                        tls_backend: $backend,
+                    });
+
+                    // intentionally empty, assumes we have built the client.
+                }
+            )*
+        }
+    }
+
+    https_client_tests! {
+        tests_https_client_with_native_roots: "native-roots",
+        tests_https_client_with_wekpki_roots: "wekpki-roots",
+        tests_https_client_with_native_tls: "native-tls",
+        tests_https_client_with_default_backend: "default",
     }
 }

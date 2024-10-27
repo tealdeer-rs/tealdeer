@@ -25,7 +25,7 @@ app_dirs = { version = "2", package = "app_dirs2" }
 clap = { version = "4", features = ["std", "derive", "help", "usage", "cargo", "error-context", "color", "wrap_help"], default-features = false }
 env_logger = { version = "0.11", optional = true }
 log = "0.4"
-reqwest = { version = "0.12.5", features = ["blocking"], default-features = false }
+reqwest = { version = "0.12.5", features = ["blocking", "native-tls", "rustls-tls", "rustls-tls-native-roots", "rustls-tls-webpki-roots"], default-features = false }
 serde = "1.0.21"
 serde_derive = "1.0.21"
 toml = "0.8.19"
@@ -56,6 +56,7 @@ logging = ["env_logger"]
 #
 # Exactly one of the three variants must be selected. By default, Rustls with
 # native roots is enabled.
+# When you compile the crate, you should also set the `tls_backend` config with the default feature.
 native-roots = ["reqwest/rustls-tls-native-roots"]
 webpki-roots = ["reqwest/rustls-tls-webpki-roots"]
 native-tls = ["reqwest/native-tls"]

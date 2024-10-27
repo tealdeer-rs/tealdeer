@@ -304,7 +304,11 @@ fn main() {
     }
 
     // Instantiate cache. This will not yet create the cache directory!
-    let cache = Cache::new(&config.directories.cache_dir.path, enable_styles);
+    let cache = Cache::new(
+        &config.directories.cache_dir.path,
+        enable_styles,
+        &config.updates.tls_backend,
+    );
 
     // Clear cache, pass through
     if args.clear_cache {
