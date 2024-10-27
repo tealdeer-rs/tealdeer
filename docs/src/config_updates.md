@@ -32,3 +32,21 @@ fetched from the latest `tldr-pages/tldr` GitHub release.
     [updates]
     archive_source = https://my-company.example.com/tldr/
 
+### `tls_backend`
+
+An advance option. Specifies which TLS backend to use. Only modify this if you encounter certificate errors.
+
+Available options:
+- `rusttls-with-native-roots` - [Rustls][rustls] (a TLS library in Rust) with native roots
+- `rusttls-with-webpki-roots` - Rustls with [WebPKI][rustls-webpki] roots
+- `native-tls` - Native TLS
+  - SChannel on Windows
+  - Secure Transport on macOS
+  - OpenSSL on other platforms
+
+    [updates]
+    tls_backend = "native-tls"
+
+
+[rustls]: https://github.com/rustls/rustls
+[rustls-webpki]: https://github.com/rustls/webpki

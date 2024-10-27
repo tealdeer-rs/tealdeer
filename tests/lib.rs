@@ -220,7 +220,31 @@ fn test_update_cache_default_features() {
 fn test_update_cache_rustls_webpki() {
     let testenv = TestEnv::new()
         .no_default_features()
-        .with_feature("webpki-roots");
+        .with_feature("rustls-with-webpki-roots");
+
+    testenv
+        .command()
+        .args(["sl"])
+        .assert()
+        .failure()
+        .stderr(contains("Page cache not found. Please run `tldr --update`"));
+
+    testenv
+        .command()
+        .args(["--update"])
+        .assert()
+        .success()
+        .stderr(contains("Successfully updated cache."));
+
+    testenv.command().args(["sl"]).assert().success();
+}
+
+#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
+#[test]
+fn test_update_cache_native_tls() {
+    let testenv = TestEnv::new()
+        .no_default_features()
+        .with_feature("rustls-with-native-roots");
 
     testenv
         .command()
@@ -256,6 +280,23 @@ fn test_quiet_cache() {
         .assert()
         .success()
         .stdout(is_empty());
+}
+
+#[test]
+fn test_warn_invalid_tls_backend() {
+    let testenv = TestEnv::new()
+        .no_default_features()
+        .with_feature("rustls-with-webpki-roots")
+        .remove_initial_config();
+
+    testenv.append_to_config("updates.tls_backend = 'invalid-tls-backend'\n");
+
+    testenv
+        .command()
+        .args(["sl"])
+        .assert()
+        .failure()
+        .stderr(contains("unknown variant `invalid-tls-backend`, expected one of `native-tls`, `rustls-with-webpki-roots`, `rustls-with-native-roots`"));
 }
 
 #[test]
