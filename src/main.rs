@@ -251,7 +251,10 @@ fn main() {
     // Determine the usage of styles
     let enable_styles = match args.color.unwrap_or_default() {
         // Attempt to use styling if instructed
-        ColorOptions::Always => true,
+        ColorOptions::Always => {
+            yansi::enable(); // disable yansi's automatic detection for ANSI support on Windows
+            true
+        }
         // Enable styling if:
         // * NO_COLOR env var isn't set: https://no-color.org/
         // * The output stream is stdout (not being piped)
