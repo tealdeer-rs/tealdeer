@@ -13,16 +13,16 @@ use reqwest::{blocking::Client, Proxy};
 use walkdir::{DirEntry, WalkDir};
 use zip::ZipArchive;
 
-use crate::{types::PlatformType, utils::print_warning};
+use crate::{config::TlsBackend, types::PlatformType, utils::print_warning};
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 
 #[derive(Debug)]
-pub struct Cache<'a> {
+pub struct Cache {
     cache_dir: PathBuf,
     enable_styles: bool,
-    tls_backend: &'a str, // for setting up reqwest client
+    tls_backend: TlsBackend, // for setting up reqwest client
 }
 
 #[derive(Debug)]
@@ -86,8 +86,8 @@ pub enum CacheFreshness {
     Missing,
 }
 
-impl<'a> Cache<'a> {
-    pub fn new<P>(cache_dir: P, enable_styles: bool, tls_backend: &'a str) -> Self
+impl Cache {
+    pub fn new<P>(cache_dir: P, enable_styles: bool, tls_backend: TlsBackend) -> Self
     where
         P: Into<PathBuf>,
     {
@@ -140,13 +140,21 @@ impl<'a> Cache<'a> {
     /// Builds HTTPS client based on configuration.
     ///
     /// Note that `Cargo.toml` also defines default feature .
-    fn build_client(&self) -> Result<Client> {
-        let mut builder = Client::builder();
-        builder = match self.tls_backend {
-            "native-roots" => builder.use_rustls_tls().tls_built_in_native_certs(true),
-            "webpki-roots" => builder.use_rustls_tls().tls_built_in_webpki_certs(true),
-            "native-tls" => builder.use_native_tls().tls_built_in_native_certs(true),
-            _ => builder, // TLS backend defaults to the compiled feature
+    fn build_client(&self, tls_backend: TlsBackend) -> Result<Client> {
+        let mut builder: reqwest::blocking::ClientBuilder = Client::builder();
+        builder = match tls_backend {
+            #[cfg(feature = "native-tls")]
+            TlsBackend::NativeTLS => builder.use_native_tls(),
+            #[cfg(feature = "native-tls-with-webpki-roots")]
+            TlsBackend::NativeTLSWithWebPKIRoots => {
+                builder.use_native_tls().tls_built_in_webpki_certs(true)
+            }
+            #[cfg(feature = "rustls")]
+            TlsBackend::Rustls => builder.use_native_tls().tls_built_in_webpki_certs(true),
+            #[cfg(feature = "rustls-with-native-roots")]
+            TlsBackend::RustlsWithNativeRoots => {
+                builder.use_native_tls().tls_built_in_native_certs(true)
+            }
         };
         if let Ok(ref host) = env::var("HTTP_PROXY") {
             if let Ok(proxy) = Proxy::http(host) {
@@ -178,7 +186,7 @@ impl<'a> Cache<'a> {
     pub fn update(&self, archive_url: &str) -> Result<()> {
         self.ensure_cache_dir_exists()?;
 
-        let client = self.build_client()?;
+        let client = self.build_client(self.tls_backend)?;
         // First, download the compressed data
         let bytes: Vec<u8> = Self::download(&client, archive_url)?;
 
@@ -519,8 +527,12 @@ mod tests {
     }
 
     macro_rules! https_client_tests {
-        ($($name:ident: $backend:expr),* $(,)?) => {
+        // Define each test with an optional cfg attribute for conditional compilation
+        ($(
+            $(#[$cfg:meta])? $name:ident: $backend:expr
+        ),* $(,)?) => {
             $(
+                $( #[$cfg] )?
                 #[test]
                 fn $name() {
                     let dir = tempfile::tempdir().unwrap();
@@ -529,18 +541,26 @@ mod tests {
                         cache_dir: dir.into_path(),
                         enable_styles: false,
                         tls_backend: $backend,
-                    });
+                    }, $backend);
 
                     // intentionally empty, assumes we have built the client.
                 }
             )*
-        }
+        };
     }
 
+    // Use the macro with conditional compilation attributes
     https_client_tests! {
-        tests_https_client_with_native_roots: "native-roots",
-        tests_https_client_with_wekpki_roots: "wekpki-roots",
-        tests_https_client_with_native_tls: "native-tls",
-        tests_https_client_with_default_backend: "default",
+        #[cfg(feature = "native-tls")]
+        tests_https_client_with_native_tls: TlsBackend::NativeTLS,
+
+        #[cfg(feature = "native-tls-with-webpki-roots")]
+        tests_https_client_with_webpki_roots: TlsBackend::NativeTLSWithWebPKIRoots,
+
+        #[cfg(feature = "rustls")]
+        tests_https_client_with_rustls: TlsBackend::Rustls,
+
+        #[cfg(feature = "rustls-with-native-roots")]
+        tests_https_client_with_rustls_and_native_roots: TlsBackend::RustlsWithNativeRoots,
     }
 }

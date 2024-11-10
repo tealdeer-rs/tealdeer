@@ -16,10 +16,6 @@ use crate::types::PathSource;
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
 const DEFAULT_UPDATE_INTERVAL_HOURS: u64 = MAX_CACHE_AGE.as_secs() / 3600; // 30 days
-                                                                           // Chooses a default TLS backend.
-                                                                           // `default` will choose a backend based on the compiled default TLS backend feature.
-                                                                           // Read more in `Cargo.toml'.
-const DEFAULT_TLS_BACKEND: &str = "default";
 
 fn default_underline() -> bool {
     false
@@ -170,9 +166,7 @@ const fn default_auto_update_interval_hours() -> u64 {
     DEFAULT_UPDATE_INTERVAL_HOURS
 }
 
-fn default_tls_backend() -> String {
-    DEFAULT_TLS_BACKEND.to_string()
-}
+const DEFAULT_TLS_BACKEND: RawTlsBackend = RawTlsBackend::NativeTLS;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 struct RawUpdatesConfig {
@@ -180,8 +174,8 @@ struct RawUpdatesConfig {
     pub auto_update: bool,
     #[serde(default = "default_auto_update_interval_hours")]
     pub auto_update_interval_hours: u64,
-    #[serde(default = "default_tls_backend")]
-    pub tls_backend: String,
+    #[serde(default)]
+    pub tls_backend: RawTlsBackend,
 }
 
 impl Default for RawUpdatesConfig {
@@ -189,7 +183,7 @@ impl Default for RawUpdatesConfig {
         Self {
             auto_update: false,
             auto_update_interval_hours: DEFAULT_UPDATE_INTERVAL_HOURS,
-            tls_backend: DEFAULT_TLS_BACKEND.to_string(),
+            tls_backend: DEFAULT_TLS_BACKEND,
         }
     }
 }
@@ -201,7 +195,7 @@ impl From<RawUpdatesConfig> for UpdatesConfig {
             auto_update_interval: Duration::from_secs(
                 raw_updates_config.auto_update_interval_hours * 3600,
             ),
-            tls_backend: DEFAULT_TLS_BACKEND.to_string(),
+            tls_backend: TlsBackend::from(raw_updates_config.tls_backend),
         }
     }
 }
@@ -268,12 +262,7 @@ pub struct DisplayConfig {
 pub struct UpdatesConfig {
     pub auto_update: bool,
     pub auto_update_interval: Duration,
-    /// Allows choosing a TLS backend supported by `reqwest`. Available TLS backends:
-    /// # - `native-roots`: Rustls with native roots
-    /// # - `webpki-roots`: Rustls with `WebPK` roots
-    /// # - `native-tls`: Native TLS (`SChannel` on Windows, Secure Transport on macOS and OpenSSL otherwise)
-    /// Read more in `Cargo.toml`
-    pub tls_backend: String,
+    pub tls_backend: TlsBackend,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -298,6 +287,65 @@ impl fmt::Display for PathWithSource {
 pub struct DirectoriesConfig {
     pub cache_dir: PathWithSource,
     pub custom_pages_dir: Option<PathWithSource>,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+pub enum RawTlsBackend {
+    /// Native TLS (`SChannel` on Windows, Secure Transport on macOS and OpenSSL otherwise)
+    #[cfg(feature = "native-tls")]
+    #[serde(rename = "native-tls")]
+    NativeTLS,
+    /// NativeTLS but using WebPKI roots from `tealdeer`.
+    #[cfg(feature = "native-tls-with-webpki-roots")]
+    #[serde(rename = "native-tls-with-webpki-roots")]
+    NativeTLSWithWebPKIRoots,
+    /// Rustls with WebPKI roots.
+    #[cfg(feature = "rustls")]
+    #[serde(rename = "rustls")]
+    Rustls,
+    /// Rustls with native roots.
+    #[cfg(feature = "rustls-with-native-roots")]
+    #[serde(rename = "rustls-with-native-roots")]
+    RustlsWithNativeRoots,
+}
+
+impl Default for RawTlsBackend {
+    fn default() -> Self {
+        return Self::NativeTLS;
+    }
+}
+
+impl From<RawTlsBackend> for TlsBackend {
+    fn from(raw_tls_backend: RawTlsBackend) -> Self {
+        match raw_tls_backend {
+            #[cfg(feature = "native-tls")]
+            RawTlsBackend::NativeTLS => Self::NativeTLS,
+            #[cfg(feature = "native-tls-with-webpki-roots")]
+            RawTlsBackend::NativeTLSWithWebPKIRoots => Self::NativeTLSWithWebPKIRoots,
+            #[cfg(feature = "rustls")]
+            RawTlsBackend::Rustls => Self::Rustls,
+            #[cfg(feature = "rustls-with-native-roots")]
+            RawTlsBackend::RustlsWithNativeRoots => Self::RustlsWithNativeRoots,
+        }
+    }
+}
+
+/// Allows choosing a `reqwest`'s TLS backend. Available TLS backends:
+/// Read more in `Cargo.toml`
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum TlsBackend {
+    /// Native TLS (`SChannel` on Windows, Secure Transport on macOS and OpenSSL otherwise)
+    #[cfg(feature = "native-tls")]
+    NativeTLS,
+    /// NativeTLS but using WebPKI roots from `tealdeer`.
+    #[cfg(feature = "native-tls-with-webpki-roots")]
+    NativeTLSWithWebPKIRoots,
+    /// Rustls with WebPKI roots.
+    #[cfg(feature = "rustls")]
+    Rustls,
+    /// Rustls with native roots.
+    #[cfg(feature = "rustls-with-native-roots")]
+    RustlsWithNativeRoots,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
