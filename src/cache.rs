@@ -541,7 +541,7 @@ mod tests {
                         cache_dir: dir.into_path(),
                         enable_styles: false,
                         tls_backend: $backend,
-                    }, $backend);
+                    }, $backend).context("Expect built the client.");
 
                     // intentionally empty, assumes we have built the client.
                 }
