@@ -16,18 +16,14 @@
 #![allow(clippy::struct_excessive_bools)]
 #![allow(clippy::too_many_lines)]
 
-#[cfg(any(
-    all(feature = "native-roots", feature = "webpki-roots"),
-    all(feature = "native-roots", feature = "native-tls"),
-    all(feature = "webpki-roots", feature = "native-tls"),
-    not(any(
-        feature = "native-roots",
-        feature = "webpki-roots",
-        feature = "native-tls"
-    )),
-))]
+#[cfg(not(any(
+    feature = "native-tls",
+    feature = "native-tls-with-webpki-roots",
+    feature = "rustls",
+    feature = "rustls-with-native-roots",
+)))]
 compile_error!(
-    "exactly one of the features \"native-roots\", \"webpki-roots\" or \"native-tls\" must be enabled"
+    "at least one of the features \"native-tls\", \"native-tls-with-webpki-roots\", \"rustls\" or \"rustls-with-native-roots\" must be enabled"
 );
 
 use std::{
@@ -300,7 +296,11 @@ fn main() {
     }
 
     // Instantiate cache. This will not yet create the cache directory!
-    let cache = Cache::new(&config.directories.cache_dir.path, enable_styles);
+    let cache = Cache::new(
+        &config.directories.cache_dir.path,
+        enable_styles,
+        config.updates.tls_backend,
+    );
 
     // Clear cache, pass through
     if args.clear_cache {
