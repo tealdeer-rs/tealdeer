@@ -13,6 +13,21 @@ Possible log types:
 - `[docs]` for documentation changes.
 - `[chore]` for maintenance work.
 
+### [v1.7.1][v1.7.1] (2024-11-14)
+
+This patch release updates the `yansi` dependency to version 1, so that the
+previous versions of `yansi` can be removed from the package sets of Linux
+distributions. This change should not impact the behavior of tealdeer.
+
+Changes:
+
+- [chore] Upgrade yansi: 0.5.1 -> 1.0.1 ([#389])
+
+Contributors to this version:
+
+- [Blair Noctis][@nc7s]
+
+Thanks!
 
 ### [v1.7.0][v1.7.0] (2024-10-02)
 
@@ -441,6 +456,7 @@ Thanks!
 [v1.6.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.5.0...v1.6.0
 [v1.6.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.6.0...v1.6.1
 [v1.7.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.6.1...v1.7.0
+[v1.7.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.7.0...v1.7.1
 
 [i34]: https://github.com/tealdeer-rs/tealdeer/issues/34
 [i43]: https://github.com/tealdeer-rs/tealdeer/issues/43
@@ -524,3 +540,4 @@ Thanks!
 [#354]: https://github.com/tealdeer-rs/tealdeer/pull/354
 [#355]: https://github.com/tealdeer-rs/tealdeer/pull/355
 [#362]: https://github.com/tealdeer-rs/tealdeer/pull/362
+[#389]: https://github.com/tealdeer-rs/tealdeer/pull/389
