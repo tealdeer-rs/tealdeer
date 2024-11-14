@@ -249,20 +249,16 @@ fn main() {
     let args = Cli::parse();
 
     // Determine the usage of styles
-    #[cfg(target_os = "windows")]
-    let ansi_support = yansi::Paint::enable_windows_ascii();
-    #[cfg(not(target_os = "windows"))]
-    let ansi_support = true;
     let enable_styles = match args.color.unwrap_or_default() {
         // Attempt to use styling if instructed
-        ColorOptions::Always => true,
+        ColorOptions::Always => {
+            yansi::enable(); // disable yansi's automatic detection for ANSI support on Windows
+            true
+        }
         // Enable styling if:
-        // * There is `ansi_support`
         // * NO_COLOR env var isn't set: https://no-color.org/
         // * The output stream is stdout (not being piped)
-        ColorOptions::Auto => {
-            ansi_support && env::var_os("NO_COLOR").is_none() && io::stdout().is_terminal()
-        }
+        ColorOptions::Auto => env::var_os("NO_COLOR").is_none() && io::stdout().is_terminal(),
         // Disable styling
         ColorOptions::Never => false,
     };

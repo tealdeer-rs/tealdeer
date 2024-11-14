@@ -30,7 +30,7 @@ serde = "1.0.21"
 serde_derive = "1.0.21"
 toml = "0.8.19"
 walkdir = "2.0.1"
-yansi = "0.5"
+yansi = "1"
 zip = { version = "2.1.6", default-features = false, features = ["deflate"] }
 
 [target.'cfg(not(windows))'.dependencies]
