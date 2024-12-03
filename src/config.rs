@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{bail, ensure, Context, Result};
+use anyhow::{anyhow, bail, ensure, Context, Result};
 use app_dirs::{get_app_root, AppDataType};
 use log::debug;
 use serde_derive::{Deserialize, Serialize};
@@ -16,6 +16,21 @@ use crate::types::PathSource;
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
 const DEFAULT_UPDATE_INTERVAL_HOURS: u64 = MAX_CACHE_AGE.as_secs() / 3600; // 30 days
+const SUPPORTED_NUM_TLS_BACKENDS: usize = if cfg!(feature = "native-tls") { 1 } else { 0 }
+    + if cfg!(feature = "rustls") { 1 } else { 0 }
+    + if cfg!(feature = "rustls-with-native-roots") {
+        1
+    } else {
+        0
+    };
+const SUPPORTED_TLS_BACKENDS: [RawTlsBackend; SUPPORTED_NUM_TLS_BACKENDS] = [
+    #[cfg(feature = "native-tls")]
+    RawTlsBackend::NativeTls,
+    #[cfg(feature = "rustls")]
+    RawTlsBackend::Rustls,
+    #[cfg(feature = "rustls-with-native-roots")]
+    RawTlsBackend::RustlsWithNativeRoots,
+];
 
 fn default_underline() -> bool {
     false
@@ -166,9 +181,7 @@ const fn default_auto_update_interval_hours() -> u64 {
     DEFAULT_UPDATE_INTERVAL_HOURS
 }
 
-const DEFAULT_TLS_BACKEND: RawTlsBackend = RawTlsBackend::NativeTLS;
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 struct RawUpdatesConfig {
     #[serde(default)]
     pub auto_update: bool,
@@ -183,7 +196,7 @@ impl Default for RawUpdatesConfig {
         Self {
             auto_update: false,
             auto_update_interval_hours: DEFAULT_UPDATE_INTERVAL_HOURS,
-            tls_backend: DEFAULT_TLS_BACKEND,
+            tls_backend: RawTlsBackend::default(),
         }
     }
 }
@@ -195,7 +208,6 @@ impl From<RawUpdatesConfig> for UpdatesConfig {
             auto_update_interval: Duration::from_secs(
                 raw_updates_config.auto_update_interval_hours * 3600,
             ),
-            tls_backend: TlsBackend::from(raw_updates_config.tls_backend),
         }
     }
 }
@@ -262,7 +274,6 @@ pub struct DisplayConfig {
 pub struct UpdatesConfig {
     pub auto_update: bool,
     pub auto_update_interval: Duration,
-    pub tls_backend: TlsBackend,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -292,54 +303,35 @@ pub struct DirectoriesConfig {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub enum RawTlsBackend {
     /// Native TLS (`SChannel` on Windows, Secure Transport on macOS and OpenSSL otherwise)
-    #[cfg(feature = "native-tls")]
-    #[serde(rename = "native-tls")]
-    NativeTLS,
-    /// NativeTLS but using WebPKI roots from `tealdeer`.
-    #[cfg(feature = "native-tls-with-webpki-roots")]
-    #[serde(rename = "native-tls-with-webpki-roots")]
-    NativeTLSWithWebPKIRoots,
+    NativeTls,
     /// Rustls with WebPKI roots.
-    #[cfg(feature = "rustls")]
-    #[serde(rename = "rustls")]
     Rustls,
     /// Rustls with native roots.
-    #[cfg(feature = "rustls-with-native-roots")]
-    #[serde(rename = "rustls-with-native-roots")]
     RustlsWithNativeRoots,
 }
 
 impl Default for RawTlsBackend {
     fn default() -> Self {
-        return Self::NativeTLS;
+        *SUPPORTED_TLS_BACKENDS.first().unwrap()
     }
 }
 
-impl From<RawTlsBackend> for TlsBackend {
-    fn from(raw_tls_backend: RawTlsBackend) -> Self {
-        match raw_tls_backend {
-            #[cfg(feature = "native-tls")]
-            RawTlsBackend::NativeTLS => Self::NativeTLS,
-            #[cfg(feature = "native-tls-with-webpki-roots")]
-            RawTlsBackend::NativeTLSWithWebPKIRoots => Self::NativeTLSWithWebPKIRoots,
-            #[cfg(feature = "rustls")]
-            RawTlsBackend::Rustls => Self::Rustls,
-            #[cfg(feature = "rustls-with-native-roots")]
-            RawTlsBackend::RustlsWithNativeRoots => Self::RustlsWithNativeRoots,
+impl std::fmt::Display for RawTlsBackend {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            RawTlsBackend::NativeTls => write!(f, "native-tls"),
+            RawTlsBackend::Rustls => write!(f, "rustls"),
+            RawTlsBackend::RustlsWithNativeRoots => write!(f, "rustls-with-native-roots"),
         }
     }
 }
 
 /// Allows choosing a `reqwest`'s TLS backend. Available TLS backends:
-/// Read more in `Cargo.toml`
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TlsBackend {
     /// Native TLS (`SChannel` on Windows, Secure Transport on macOS and OpenSSL otherwise)
     #[cfg(feature = "native-tls")]
-    NativeTLS,
-    /// NativeTLS but using WebPKI roots from `tealdeer`.
-    #[cfg(feature = "native-tls-with-webpki-roots")]
-    NativeTLSWithWebPKIRoots,
+    NativeTls,
     /// Rustls with WebPKI roots.
     #[cfg(feature = "rustls")]
     Rustls,
@@ -353,6 +345,7 @@ pub struct Config {
     pub style: StyleConfig,
     pub display: DisplayConfig,
     pub updates: UpdatesConfig,
+    pub tls_backend: TlsBackend,
     pub directories: DirectoriesConfig,
 }
 
@@ -395,6 +388,21 @@ impl Config {
             // If everything fails, give up
             bail!("Could not determine user cache directory");
         };
+        let tls_backend = match raw_config.updates.tls_backend {
+            #[cfg(feature = "native-tls")]
+            RawTlsBackend::NativeTls => TlsBackend::NativeTls,
+            #[cfg(feature = "rustls")]
+            RawTlsBackend::Rustls => TlsBackend::Rustls,
+            #[cfg(feature = "rustls-with-native-roots")]
+            RawTlsBackend::RustlsWithNativeRoots => TlsBackend::RustlsWithNativeRoots,
+            // when compiling without all TLS backend features, we want to handle config error.
+            #[allow(unreachable_patterns)]
+            _ => return Err(anyhow!(
+                    "Unsupported TLS backend: {}. This tealdeer build has support for the following options: {}",
+                 raw_config.updates.tls_backend,
+                 SUPPORTED_TLS_BACKENDS.map(|b| b.to_string()).join(", ")
+                ))
+        };
         let custom_pages_dir = raw_config
             .directories
             .custom_pages_dir
@@ -422,6 +430,7 @@ impl Config {
             style,
             display,
             updates,
+            tls_backend,
             directories,
         })
     }

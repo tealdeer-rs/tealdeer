@@ -18,12 +18,11 @@
 
 #[cfg(not(any(
     feature = "native-tls",
-    feature = "native-tls-with-webpki-roots",
     feature = "rustls",
     feature = "rustls-with-native-roots",
 )))]
 compile_error!(
-    "at least one of the features \"native-tls\", \"native-tls-with-webpki-roots\", \"rustls\" or \"rustls-with-native-roots\" must be enabled"
+    "at least one of the features \"native-tls\", \"rustls\" or \"rustls-with-native-roots\" must be enabled"
 );
 
 use std::{
@@ -303,7 +302,7 @@ fn main() {
     let cache = Cache::new(
         &config.directories.cache_dir.path,
         enable_styles,
-        config.updates.tls_backend,
+        config.tls_backend,
     );
 
     // Clear cache, pass through

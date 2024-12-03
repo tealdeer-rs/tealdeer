@@ -44,7 +44,7 @@ tempfile = "3.1.0"
 filetime = "0.2.10"
 
 [features]
-default = ["native-tls"]
+default = ["native-tls", "rustls", "rustls-with-native-roots"]
 logging = ["env_logger"]
 
 # Reqwest (the HTTP client library) can handle TLS connections in four
@@ -55,14 +55,12 @@ logging = ["env_logger"]
 #   - WebPK roots
 # - Native TLS (SChannel on Windows, Secure Transport on macOS and OpenSSL otherwise) with:
 #   - native roots
-#   - WebPK roots
+#   - WebPK roots (not implemented in tealdeer)
 #
-# Exactly one of the four variants must be selected. By default, uses native TLS and native roots.
-# When you compile the crate, you should also set the `tls_backend` config with the default feature.
-native-tls = ["reqwest/native-tls"]
-native-tls-with-webpki-roots = ["reqwest/native-tls", "reqwest/rustls-tls-webpki-roots-no-provider"]
-rustls = ["reqwest/rustls-tls-webpki-roots"]
-rustls-with-native-roots = ["reqwest/rustls-tls-native-roots"]
+# At least one of variants must be selected. By default, uses native TLS and native roots.
+native-tls = ["reqwest/rustls-tls-native-roots-no-provider", "reqwest/rustls-tls-webpki-roots-no-provider", "reqwest/native-tls"]
+rustls = ["reqwest/rustls-tls-native-roots-no-provider", "reqwest/rustls-tls-webpki-roots"]
+rustls-with-native-roots = ["reqwest/rustls-tls-webpki-roots-no-provider", "reqwest/rustls-tls-native-roots"]
 
 [profile.release]
 strip = true
