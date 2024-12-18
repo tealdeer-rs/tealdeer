@@ -34,13 +34,14 @@ pub fn print_page(
     enable_markdown: bool,
     enable_styles: bool,
     use_pager: bool,
+    not_use_pager: bool,
     config: &Config,
 ) -> Result<()> {
     // Create reader from file(s)
     let reader = lookup_result.reader()?;
 
     // Configure pager if applicable
-    if use_pager || config.display.use_pager {
+    if (use_pager || config.display.use_pager) && !not_use_pager {
         configure_pager(enable_styles);
     }
 

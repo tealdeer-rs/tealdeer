@@ -30,6 +30,7 @@ _tealdeer() {
         "($I)--no-auto-update[If auto update is configured, disable it for this run]"
         "($I -c --clear-cache)"{-c,--clear-cache}"[Clear the local cache]"
         "($I)--pager[Use a pager to page output]"
+        "($I)--no-pager[Do not use a pager to page output, overrides --pager and config]"
         "($I -r --raw)"{-r,--raw}"[Display the raw markdown instead of rendering it]"
         "($I -q --quiet)"{-q,--quiet}"[Suppress informational messages]"
         "($I)--show-paths[Show file and directory paths used by tealdeer]"
