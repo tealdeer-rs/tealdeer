@@ -186,6 +186,7 @@ fn test_missing_cache() {
         .stderr(contains("Page cache not found. Please run `tldr --update`"));
 }
 
+#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_update_cache_default_features() {
     let testenv = TestEnv::new();
@@ -207,6 +208,7 @@ fn test_update_cache_default_features() {
     testenv.command().args(["sl"]).assert().success();
 }
 
+#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_update_cache_rustls_webpki() {
     let testenv = TestEnv::new()
@@ -230,6 +232,7 @@ fn test_update_cache_rustls_webpki() {
     testenv.command().args(["sl"]).assert().success();
 }
 
+#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_quiet_cache() {
     let testenv = TestEnv::new();
@@ -285,6 +288,7 @@ fn test_quiet_old_cache() {
         .stderr(contains("The cache hasn't been updated for ").not());
 }
 
+#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_create_cache_directory_path() {
     let testenv = TestEnv::new();
@@ -297,7 +301,7 @@ fn test_create_cache_directory_path() {
     assert!(!internal_cache_dir.exists());
 
     command
-        .arg("-u")
+        .arg("--update")
         .assert()
         .success()
         .stderr(contains(format!(
@@ -309,6 +313,7 @@ fn test_create_cache_directory_path() {
     assert!(internal_cache_dir.is_dir());
 }
 
+#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_cache_location_not_a_directory() {
     let testenv = TestEnv::new();
@@ -320,7 +325,7 @@ fn test_cache_location_not_a_directory() {
     command.env(CACHE_DIR_ENV_VAR, internal_file.to_str().unwrap());
 
     command
-        .arg("-u")
+        .arg("--update")
         .assert()
         .failure()
         .stderr(contains(format!(
@@ -743,6 +748,7 @@ fn test_multi_platform_list_flag_rendering() {
         .stdout("common\ndel\ndir\nls\nrm\nwinux\n");
 }
 
+#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_autoupdate_cache() {
     let testenv = TestEnv::new();
