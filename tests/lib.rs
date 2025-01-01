@@ -97,14 +97,12 @@ impl TestEnv {
     }
 
     /// Disable default features.
-    #[allow(dead_code)] // Might be useful in the future
     fn no_default_features(mut self) -> Self {
         self.default_features = false;
         self
     }
 
     /// Add the specified feature.
-    #[allow(dead_code)] // Might be useful in the future
     fn with_feature<S: Into<String>>(mut self, feature: S) -> Self {
         self.features.push(feature.into());
         self
@@ -114,15 +112,16 @@ impl TestEnv {
     fn command(&self) -> Command {
         let mut build = escargot::CargoBuild::new()
             .bin("tldr")
+            .arg("--color=never")
             .current_release()
             .current_target();
         if !self.default_features {
-            build = build.arg("--no-default-features");
+            build = build.no_default_features();
         }
         if !self.features.is_empty() {
-            build = build.arg(format!("--feature {}", self.features.join(",")));
+            build = build.features(self.features.join(" "))
         }
-        let run = build.run().unwrap();
+        let run = build.run().expect("Failed to build tealdeer for testing");
         let mut cmd = run.command();
         cmd.env(CACHE_DIR_ENV_VAR, self.cache_dir.path().to_str().unwrap());
         cmd.env(
@@ -131,6 +130,12 @@ impl TestEnv {
         );
         cmd
     }
+}
+
+#[test]
+#[should_panic]
+fn test_cannot_build_without_tls_feature() {
+    let _ = TestEnv::new().no_default_features().command();
 }
 
 #[test]
@@ -144,8 +149,31 @@ fn test_missing_cache() {
 }
 
 #[test]
-fn test_update_cache() {
+fn test_update_cache_default_features() {
     let testenv = TestEnv::new();
+
+    testenv
+        .command()
+        .args(["sl"])
+        .assert()
+        .failure()
+        .stderr(contains("Page cache not found. Please run `tldr --update`"));
+
+    testenv
+        .command()
+        .args(["--update"])
+        .assert()
+        .success()
+        .stderr(contains("Successfully updated cache."));
+
+    testenv.command().args(["sl"]).assert().success();
+}
+
+#[test]
+fn test_update_cache_rustls_webpki() {
+    let testenv = TestEnv::new()
+        .no_default_features()
+        .with_feature("webpki-roots");
 
     testenv
         .command()
