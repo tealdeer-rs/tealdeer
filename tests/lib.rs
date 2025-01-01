@@ -1,8 +1,9 @@
 //! Integration tests.
 
 use std::{
-    fs::{create_dir_all, File},
-    io::Write,
+    fs::{self, create_dir_all, File},
+    io::{self, Write},
+    path::{Path, PathBuf},
     process::Command,
     time::{Duration, SystemTime},
 };
@@ -23,7 +24,6 @@ struct TestEnv {
     pub cache_dir: TempDir,
     pub custom_pages_dir: TempDir,
     pub config_dir: TempDir,
-    pub input_dir: TempDir,
     pub default_features: bool,
     pub features: Vec<String>,
 }
@@ -43,10 +43,6 @@ impl TestEnv {
                 .prefix(".tldr.test.custom-pages")
                 .tempdir()
                 .unwrap(),
-            input_dir: TempfileBuilder::new()
-                .prefix(".tldr.test.input")
-                .tempdir()
-                .unwrap(),
             default_features: true,
             features: vec![],
         }
@@ -57,8 +53,7 @@ impl TestEnv {
         let config_file_name = self.config_dir.path().join("config.toml");
         println!("Config path: {config_file_name:?}");
 
-        let mut config_file = File::create(&config_file_name).unwrap();
-        config_file.write_all(content.as_ref().as_bytes()).unwrap();
+        fs::write(config_file_name, content.as_ref().as_bytes()).unwrap();
     }
 
     /// Add entry for that environment to the "common" pages.
@@ -130,6 +125,49 @@ impl TestEnv {
         );
         cmd
     }
+
+    fn install_default_cache(self) -> Self {
+        copy_recursively(
+            &PathBuf::from_iter([env!("CARGO_MANIFEST_DIR"), "tests", "cache"]),
+            &self.cache_dir.path().join(TLDR_PAGES_DIR),
+        )
+        .expect("Failed to copy the cache to the test environment");
+
+        self
+    }
+
+    fn install_default_custom_pages(self) -> Self {
+        copy_recursively(
+            &PathBuf::from_iter([env!("CARGO_MANIFEST_DIR"), "tests", "custom-pages"]),
+            self.custom_pages_dir.path(),
+        )
+        .expect("Failed to copy the custom pages to the test environment");
+
+        self.write_custom_pages_config()
+    }
+
+    fn write_custom_pages_config(self) -> Self {
+        self.write_config(format!(
+            "[directories]\ncustom_pages_dir = '{}'",
+            self.custom_pages_dir.path().to_str().unwrap()
+        ));
+
+        self
+    }
+}
+
+fn copy_recursively(source: &Path, destination: &Path) -> io::Result<()> {
+    if source.is_dir() {
+        fs::create_dir_all(destination)?;
+        for entry in fs::read_dir(source)? {
+            let entry = entry?;
+            copy_recursively(&entry.path(), &destination.join(entry.file_name()))?;
+        }
+    } else {
+        fs::copy(source, destination)?;
+    }
+
+    Ok(())
 }
 
 #[test]
@@ -212,14 +250,7 @@ fn test_quiet_cache() {
 
 #[test]
 fn test_quiet_failures() {
-    let testenv = TestEnv::new();
-
-    testenv
-        .command()
-        .args(["--update", "-q"])
-        .assert()
-        .success()
-        .stdout(is_empty());
+    let testenv = TestEnv::new().install_default_cache();
 
     testenv
         .command()
@@ -231,14 +262,7 @@ fn test_quiet_failures() {
 
 #[test]
 fn test_quiet_old_cache() {
-    let testenv = TestEnv::new();
-
-    testenv
-        .command()
-        .args(["--update", "-q"])
-        .assert()
-        .success()
-        .stdout(is_empty());
+    let testenv = TestEnv::new().install_default_cache();
 
     filetime::set_file_mtime(
         testenv.cache_dir.path().join(TLDR_PAGES_DIR),
@@ -248,14 +272,14 @@ fn test_quiet_old_cache() {
 
     testenv
         .command()
-        .args(["tldr"])
+        .args(["which"])
         .assert()
         .success()
         .stderr(contains("The cache hasn't been updated for "));
 
     testenv
         .command()
-        .args(["tldr", "--quiet"])
+        .args(["which", "--quiet"])
         .assert()
         .success()
         .stderr(contains("The cache hasn't been updated for ").not());
@@ -359,6 +383,8 @@ fn test_setup_seed_config() {
         .assert()
         .success()
         .stderr(contains("Successfully created seed config file here"));
+
+    assert!(testenv.config_dir.path().join("config.toml").is_file());
 }
 
 #[test]
@@ -431,11 +457,9 @@ fn test_os_specific_page() {
 
 #[test]
 fn test_markdown_rendering() {
-    let testenv = TestEnv::new();
+    let testenv = TestEnv::new().install_default_cache();
 
-    testenv.add_entry("which", include_str!("which-markdown.expected"));
-
-    let expected = include_str!("which-markdown.expected");
+    let expected = include_str!("cache/pages/common/which.md");
     testenv
         .command()
         .args(["--raw", "which"])
@@ -444,23 +468,13 @@ fn test_markdown_rendering() {
         .stdout(diff(expected));
 }
 
-fn _test_correct_rendering(
-    input_file: &str,
-    filename: &str,
-    expected: &'static str,
-    color_option: &str,
-) {
-    let testenv = TestEnv::new();
-
-    // Create input file
-    let file_path = testenv.input_dir.path().join(filename);
-    println!("Testfile path: {file_path:?}");
-    let mut file = File::create(&file_path).unwrap();
-    file.write_all(input_file.as_bytes()).unwrap();
+fn _test_correct_rendering(page: &str, expected: &'static str, additional_args: &[&str]) {
+    let testenv = TestEnv::new().install_default_cache();
 
     testenv
         .command()
-        .args(["--color", color_option, "-f", file_path.to_str().unwrap()])
+        .args(additional_args)
+        .arg(page)
         .assert()
         .success()
         .stdout(diff(expected));
@@ -470,10 +484,9 @@ fn _test_correct_rendering(
 #[test]
 fn test_correct_rendering_v1() {
     _test_correct_rendering(
-        include_str!("inkscape-v1.md"),
-        "inkscape-v1.md",
-        include_str!("inkscape-default.expected"),
-        "always",
+        "inkscape-v1",
+        include_str!("rendered/inkscape-default.expected"),
+        &["--color", "always"],
     );
 }
 
@@ -481,10 +494,9 @@ fn test_correct_rendering_v1() {
 #[test]
 fn test_correct_rendering_v2() {
     _test_correct_rendering(
-        include_str!("inkscape-v2.md"),
-        "inkscape-v2.md",
-        include_str!("inkscape-default.expected"),
-        "always",
+        "inkscape-v2",
+        include_str!("rendered/inkscape-default.expected"),
+        &["--color", "always"],
     );
 }
 
@@ -493,10 +505,9 @@ fn test_correct_rendering_v2() {
 /// will not use styling since output is not stdout.
 fn test_rendering_color_auto() {
     _test_correct_rendering(
-        include_str!("inkscape-v2.md"),
-        "inkscape-v2.md",
-        include_str!("inkscape-default-no-color.expected"),
-        "auto",
+        "inkscape-v2",
+        include_str!("rendered/inkscape-default-no-color.expected"),
+        &["--color", "auto"],
     );
 }
 
@@ -504,51 +515,39 @@ fn test_rendering_color_auto() {
 /// An end-to-end integration test for direct file rendering with the `--color never` option.
 fn test_rendering_color_never() {
     _test_correct_rendering(
-        include_str!("inkscape-v2.md"),
-        "inkscape-v2.md",
-        include_str!("inkscape-default-no-color.expected"),
-        "never",
+        "inkscape-v2",
+        include_str!("rendered/inkscape-default-no-color.expected"),
+        &["--color", "never"],
     );
 }
 
 #[test]
 fn test_rendering_i18n() {
     _test_correct_rendering(
-        include_str!("chmod.ru.md"),
-        "chmod.ru.md",
-        include_str!("chmod.ru.expected"),
-        "always",
+        "apt",
+        include_str!("rendered/apt.ja.expected"),
+        &["--color", "always", "--language", "ja"],
     );
 }
 
 /// An end-to-end integration test for rendering with custom syntax config.
 #[test]
 fn test_correct_rendering_with_config() {
-    let testenv = TestEnv::new();
+    let testenv = TestEnv::new().install_default_cache();
 
     // Setup config file
     // TODO should be config::CONFIG_FILE_NAME
-    let config_file_path = testenv.config_dir.path().join("config.toml");
-    println!("Config path: {config_file_path:?}");
+    fs::write(
+        testenv.config_dir.path().join("config.toml"),
+        include_bytes!("config.toml"),
+    )
+    .unwrap();
 
-    let mut config_file = File::create(&config_file_path).unwrap();
-    config_file
-        .write_all(include_bytes!("config.toml"))
-        .unwrap();
-
-    // Create input file
-    let file_path = testenv.input_dir.path().join("inkscape-v2.md");
-    println!("Testfile path: {file_path:?}");
-
-    let mut file = File::create(&file_path).unwrap();
-    file.write_all(include_bytes!("inkscape-v2.md")).unwrap();
-
-    // Load expected output
-    let expected = include_str!("inkscape-with-config.expected");
+    let expected = include_str!("rendered/inkscape-with-config.expected");
 
     testenv
         .command()
-        .args(["--color", "always", "-f", file_path.to_str().unwrap()])
+        .args(["--color", "always", "inkscape-v2"])
         .assert()
         .success()
         .stdout(diff(expected));
@@ -556,14 +555,7 @@ fn test_correct_rendering_with_config() {
 
 #[test]
 fn test_spaces_find_command() {
-    let testenv = TestEnv::new();
-
-    testenv
-        .command()
-        .args(["--update"])
-        .assert()
-        .success()
-        .stderr(contains("Successfully updated cache."));
+    let testenv = TestEnv::new().install_default_cache();
 
     testenv
         .command()
@@ -574,14 +566,7 @@ fn test_spaces_find_command() {
 
 #[test]
 fn test_pager_flag_enable() {
-    let testenv = TestEnv::new();
-
-    testenv
-        .command()
-        .args(["--update"])
-        .assert()
-        .success()
-        .stderr(contains("Successfully updated cache."));
+    let testenv = TestEnv::new().install_default_cache();
 
     testenv
         .command()
@@ -657,13 +642,7 @@ fn test_multiple_platform_command_search_not_found() {
 
 #[test]
 fn test_list_flag_rendering() {
-    let testenv = TestEnv::new();
-
-    // set custom pages directory
-    testenv.write_config(format!(
-        "[directories]\ncustom_pages_dir = '{}'",
-        testenv.custom_pages_dir.path().to_str().unwrap()
-    ));
+    let testenv = TestEnv::new().write_custom_pages_config();
 
     testenv
         .command()
@@ -699,13 +678,7 @@ fn test_list_flag_rendering() {
 
 #[test]
 fn test_multi_platform_list_flag_rendering() {
-    let testenv = TestEnv::new();
-
-    // set custom pages directory
-    testenv.write_config(format!(
-        "[directories]\ncustom_pages_dir = '{}'",
-        testenv.custom_pages_dir.path().to_str().unwrap()
-    ));
+    let testenv = TestEnv::new().write_custom_pages_config();
 
     testenv.add_entry("common", "");
 
@@ -829,21 +802,18 @@ fn test_autoupdate_cache() {
 /// End-end test to ensure .page.md files overwrite pages in cache_dir
 #[test]
 fn test_custom_page_overwrites() {
-    let testenv = TestEnv::new();
-
-    // set custom pages directory
-    testenv.write_config(format!(
-        "[directories]\ncustom_pages_dir = '{}'",
-        testenv.custom_pages_dir.path().to_str().unwrap()
-    ));
+    let testenv = TestEnv::new().write_custom_pages_config();
 
     // Add file that should be ignored to the cache dir
     testenv.add_entry("inkscape-v2", "");
     // Add .page.md file to custom_pages_dir
-    testenv.add_page_entry("inkscape-v2", include_str!("inkscape-v2.md"));
+    testenv.add_page_entry(
+        "inkscape-v2",
+        include_str!("cache/pages/common/inkscape-v2.md"),
+    );
 
     // Load expected output
-    let expected = include_str!("inkscape-default-no-color.expected");
+    let expected = include_str!("rendered/inkscape-default-no-color.expected");
 
     testenv
         .command()
@@ -856,21 +826,12 @@ fn test_custom_page_overwrites() {
 /// End-End test to ensure that .patch.md files are appended to pages in the cache_dir
 #[test]
 fn test_custom_patch_appends_to_common() {
-    let testenv = TestEnv::new();
-
-    // set custom pages directory
-    testenv.write_config(format!(
-        "[directories]\ncustom_pages_dir = '{}'",
-        testenv.custom_pages_dir.path().to_str().unwrap()
-    ));
-
-    // Add page to the cache dir
-    testenv.add_entry("inkscape-v2", include_str!("inkscape-v2.md"));
-    // Add .page.md file to custom_pages_dir
-    testenv.add_patch_entry("inkscape-v2", include_str!("inkscape-v2.patch.md"));
+    let testenv = TestEnv::new()
+        .install_default_cache()
+        .install_default_custom_pages();
 
     // Load expected output
-    let expected = include_str!("inkscape-patched-no-color.expected");
+    let expected = include_str!("rendered/inkscape-patched-no-color.expected");
 
     testenv
         .command()
@@ -884,23 +845,18 @@ fn test_custom_patch_appends_to_common() {
 /// Maybe this interaction should change but I put this test here for the coverage
 #[test]
 fn test_custom_patch_does_not_append_to_custom() {
-    let testenv = TestEnv::new();
+    let testenv = TestEnv::new()
+        .install_default_cache()
+        .install_default_custom_pages();
 
-    // set custom pages directory
-    testenv.write_config(format!(
-        "[directories]\ncustom_pages_dir = '{}'",
-        testenv.custom_pages_dir.path().to_str().unwrap()
-    ));
-
-    testenv.add_entry("test", "");
-
-    // Add page to the cache dir
-    testenv.add_page_entry("inkscape-v2", include_str!("inkscape-v2.md"));
-    // Add .page.md file to custom_pages_dir
-    testenv.add_patch_entry("inkscape-v2", include_str!("inkscape-v2.patch.md"));
+    // In addition to the page in the cache, add the same page as a custom page.
+    testenv.add_page_entry(
+        "inkscape-v2",
+        include_str!("cache/pages/common/inkscape-v2.md"),
+    );
 
     // Load expected output
-    let expected = include_str!("inkscape-default-no-color.expected");
+    let expected = include_str!("rendered/inkscape-default-no-color.expected");
 
     testenv
         .command()
@@ -913,13 +869,7 @@ fn test_custom_patch_does_not_append_to_custom() {
 #[test]
 #[cfg(target_os = "windows")]
 fn test_pager_warning() {
-    let testenv = TestEnv::new();
-    testenv
-        .command()
-        .args(["--update"])
-        .assert()
-        .success()
-        .stderr(contains("Successfully updated cache."));
+    let testenv = TestEnv::new().install_default_cache();
 
     // Regular call should not show a "pager flag not available on windows" warning
     testenv
@@ -960,15 +910,14 @@ fn test_lowercased_page_lookup() {
 /// Regression test for #219: It should be possible to combine `--raw` and `-f`.
 #[test]
 fn test_raw_render_file() {
-    let testenv = TestEnv::new();
+    let testenv = TestEnv::new().install_default_cache();
 
-    // Create input file
-    let file_path = testenv.input_dir.path().join("inkscape.md");
-    let mut file = File::create(&file_path).unwrap();
-    file.write_all(include_bytes!("inkscape-v1.md")).unwrap();
-
-    // Base args
-    let mut args = vec!["--color", "never", "-f", file_path.to_str().unwrap()];
+    let path = testenv
+        .cache_dir
+        .path()
+        .join(TLDR_PAGES_DIR)
+        .join("pages/common/inkscape-v1.md");
+    let mut args = vec!["--color", "never", "-f", &path.to_str().unwrap()];
 
     // Default render
     testenv
@@ -976,7 +925,9 @@ fn test_raw_render_file() {
         .args(&args)
         .assert()
         .success()
-        .stdout(diff(include_str!("inkscape-default-no-color.expected")));
+        .stdout(diff(include_str!(
+            "rendered/inkscape-default-no-color.expected"
+        )));
 
     // Raw render
     args.push("--raw");
@@ -985,5 +936,5 @@ fn test_raw_render_file() {
         .args(&args)
         .assert()
         .success()
-        .stdout(diff(include_str!("inkscape-v1.md")));
+        .stdout(diff(include_str!("cache/pages/common/inkscape-v1.md")));
 }
