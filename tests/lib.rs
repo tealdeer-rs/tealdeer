@@ -15,9 +15,6 @@ use predicates::{
 };
 use tempfile::{Builder as TempfileBuilder, TempDir};
 
-// TODO: Should be 'cache::CACHE_DIR_ENV_VAR'. This requires to have a library crate for the logic.
-static CACHE_DIR_ENV_VAR: &str = "TEALDEER_CACHE_DIR";
-
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 
 struct TestEnv {
@@ -30,7 +27,7 @@ struct TestEnv {
 
 impl TestEnv {
     fn new() -> Self {
-        TestEnv {
+        let this = TestEnv {
             cache_dir: TempfileBuilder::new()
                 .prefix(".tldr.test.cache")
                 .tempdir()
@@ -45,15 +42,29 @@ impl TestEnv {
                 .unwrap(),
             default_features: true,
             features: vec![],
-        }
+        };
+
+        this.append_to_config(format!(
+            "directories.cache_dir = '{}'\n",
+            this.cache_dir.path().to_str().unwrap(),
+        ));
+
+        this
     }
 
-    /// Write `content` to "config.toml" in the `config_dir` directory
-    fn write_config(&self, content: impl AsRef<str>) {
-        let config_file_name = self.config_dir.path().join("config.toml");
-        println!("Config path: {config_file_name:?}");
+    fn append_to_config(&self, content: impl AsRef<str>) {
+        File::options()
+            .create(true)
+            .append(true)
+            .open(self.config_dir.path().join("config.toml"))
+            .expect("Failed to open config file")
+            .write_all(content.as_ref().as_bytes())
+            .expect("Failed to append to config file.");
+    }
 
-        fs::write(config_file_name, content.as_ref().as_bytes()).unwrap();
+    fn remove_initial_config(self) -> Self {
+        let _ = fs::remove_file(self.config_dir.path().join("config.toml"));
+        self
     }
 
     /// Add entry for that environment to the "common" pages.
@@ -71,24 +82,21 @@ impl TestEnv {
             .join(os);
         create_dir_all(&dir).unwrap();
 
-        let mut file = File::create(dir.join(format!("{name}.md"))).unwrap();
-        file.write_all(contents.as_bytes()).unwrap();
+        fs::write(dir.join(format!("{name}.md")), contents.as_bytes()).unwrap();
     }
 
     /// Add custom patch entry to the custom_pages_dir
     fn add_page_entry(&self, name: &str, contents: &str) {
         let dir = self.custom_pages_dir.path();
         create_dir_all(dir).unwrap();
-        let mut file = File::create(dir.join(format!("{name}.page.md"))).unwrap();
-        file.write_all(contents.as_bytes()).unwrap();
+        fs::write(dir.join(format!("{name}.page.md")), contents.as_bytes()).unwrap();
     }
 
     /// Add custom patch entry to the custom_pages_dir
     fn add_patch_entry(&self, name: &str, contents: &str) {
         let dir = self.custom_pages_dir.path();
         create_dir_all(dir).unwrap();
-        let mut file = File::create(dir.join(format!("{name}.patch.md"))).unwrap();
-        file.write_all(contents.as_bytes()).unwrap();
+        fs::write(dir.join(format!("{name}.patch.md")), contents.as_bytes()).unwrap();
     }
 
     /// Disable default features.
@@ -118,7 +126,6 @@ impl TestEnv {
         }
         let run = build.run().expect("Failed to build tealdeer for testing");
         let mut cmd = run.command();
-        cmd.env(CACHE_DIR_ENV_VAR, self.cache_dir.path().to_str().unwrap());
         cmd.env(
             "TEALDEER_CONFIG_DIR",
             self.config_dir.path().to_str().unwrap(),
@@ -147,8 +154,8 @@ impl TestEnv {
     }
 
     fn write_custom_pages_config(self) -> Self {
-        self.write_config(format!(
-            "[directories]\ncustom_pages_dir = '{}'",
+        self.append_to_config(format!(
+            "directories.custom_pages_dir = '{}'\n",
             self.custom_pages_dir.path().to_str().unwrap()
         ));
 
@@ -291,12 +298,15 @@ fn test_quiet_old_cache() {
 #[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_create_cache_directory_path() {
-    let testenv = TestEnv::new();
+    let testenv = TestEnv::new().remove_initial_config();
     let cache_dir = testenv.cache_dir.path();
     let internal_cache_dir = cache_dir.join("internal");
+    testenv.append_to_config(format!(
+        "directories.cache_dir = '{}'\n",
+        internal_cache_dir.to_str().unwrap()
+    ));
 
     let mut command = testenv.command();
-    command.env(CACHE_DIR_ENV_VAR, internal_cache_dir.to_str().unwrap());
 
     assert!(!internal_cache_dir.exists());
 
@@ -316,30 +326,30 @@ fn test_create_cache_directory_path() {
 #[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_cache_location_not_a_directory() {
-    let testenv = TestEnv::new();
+    let testenv = TestEnv::new().remove_initial_config();
     let cache_dir = testenv.cache_dir.path();
     let internal_file = cache_dir.join("internal");
     File::create(&internal_file).unwrap();
 
-    let mut command = testenv.command();
-    command.env(CACHE_DIR_ENV_VAR, internal_file.to_str().unwrap());
+    testenv.append_to_config(format!(
+        "directories.cache_dir = '{}'\n",
+        internal_file.to_str().unwrap()
+    ));
 
-    command
+    testenv
+        .command()
         .arg("--update")
         .assert()
         .failure()
         .stderr(contains(format!(
             "Cache directory path `{}` is not a directory",
             internal_file.display(),
-        )))
-        .stderr(contains(
-            "Warning: The $TEALDEER_CACHE_DIR env variable is deprecated",
-        ));
+        )));
 }
 
 #[test]
 fn test_cache_location_source() {
-    let testenv = TestEnv::new();
+    let testenv = TestEnv::new().remove_initial_config();
     let default_cache_dir = testenv.cache_dir.path();
     let tmp_cache_dir = TempfileBuilder::new()
         .prefix(".tldr.test.cache_dir")
@@ -348,7 +358,6 @@ fn test_cache_location_source() {
 
     // Source: Default (OS convention)
     let mut command = testenv.command();
-    command.env_remove(CACHE_DIR_ENV_VAR);
     command
         .arg("--show-paths")
         .assert()
@@ -357,9 +366,8 @@ fn test_cache_location_source() {
 
     // Source: Config variable
     let mut command = testenv.command();
-    command.env_remove(CACHE_DIR_ENV_VAR);
-    testenv.write_config(format!(
-        "[directories]\ncache_dir = '{}'",
+    testenv.append_to_config(format!(
+        "directories.cache_dir = '{}'\n",
         tmp_cache_dir.path().to_str().unwrap(),
     ));
     command
@@ -370,7 +378,7 @@ fn test_cache_location_source() {
 
     // Source: Env var
     let mut command = testenv.command();
-    command.env(CACHE_DIR_ENV_VAR, default_cache_dir.to_str().unwrap());
+    command.env("TEALDEER_CACHE_DIR", default_cache_dir.to_str().unwrap());
     command
         .arg("--show-paths")
         .assert()
@@ -381,6 +389,15 @@ fn test_cache_location_source() {
 #[test]
 fn test_setup_seed_config() {
     let testenv = TestEnv::new();
+
+    testenv
+        .command()
+        .args(["--seed-config"])
+        .assert()
+        .failure()
+        .stderr(contains("A configuration file already exists"));
+
+    let testenv = testenv.remove_initial_config();
 
     testenv
         .command()
@@ -429,11 +446,7 @@ fn test_show_paths() {
                 .unwrap(),
         )));
 
-    // Set custom pages directory
-    testenv.write_config(format!(
-        "[directories]\ncustom_pages_dir = '{}'",
-        testenv.custom_pages_dir.path().to_str().unwrap()
-    ));
+    let testenv = testenv.write_custom_pages_config();
 
     // Now ensure that this path is contained in the output
     testenv
@@ -540,13 +553,7 @@ fn test_rendering_i18n() {
 fn test_correct_rendering_with_config() {
     let testenv = TestEnv::new().install_default_cache();
 
-    // Setup config file
-    // TODO should be config::CONFIG_FILE_NAME
-    fs::write(
-        testenv.config_dir.path().join("config.toml"),
-        include_bytes!("config.toml"),
-    )
-    .unwrap();
+    testenv.append_to_config(include_str!("style-config.toml"));
 
     let expected = include_str!("rendered/inkscape-with-config.expected");
 
@@ -761,15 +768,10 @@ fn test_autoupdate_cache() {
         .failure()
         .stderr(contains("Page cache not found. Please run `tldr --update`"));
 
-    let config_file_path = testenv.config_dir.path().join("config.toml");
     let cache_file_path = testenv.cache_dir.path().join(TLDR_PAGES_DIR);
 
-    // Activate automatic updates, set the auto-update interval to 24 hours
-    let mut config_file = File::create(config_file_path).unwrap();
-    config_file
-        .write_all(b"[updates]\nauto_update = true\nauto_update_interval_hours = 24")
-        .unwrap();
-    config_file.flush().unwrap();
+    testenv
+        .append_to_config("updates.auto_update = true\nupdates.auto_update_interval_hours = 24\n");
 
     // Helper function that runs `tldr --list` and asserts that the cache is automatically updated
     // or not, depending on the value of `expected`.

@@ -19,11 +19,3 @@ underline = false
 underline = true
 bold = false
 italic = true
-
-[display]
-use_pager = false
-compact = false
-
-[updates]
-auto_update = false
-auto_update_interval_hours = 720
