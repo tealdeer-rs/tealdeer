@@ -13,6 +13,7 @@ complete -c tldr -s u -l update         -d 'Update the local cache.' -f
 complete -c tldr      -l no-auto-update -d 'If auto update is configured, disable it for this run.' -f
 complete -c tldr -s c -l clear-cache    -d 'Clear the local cache.' -f
 complete -c tldr      -l pager          -d 'Use a pager to page output.' -f
+complete -c tldr      -l no-pager       -d 'Do not use a pager to page output, overrides --pager and config.' -f
 complete -c tldr -s r -l raw            -d 'Display the raw markdown instead of rendering it.' -f
 complete -c tldr -s q -l quiet          -d 'Suppress informational messages.' -f
 complete -c tldr      -l show-paths     -d 'Show file and directory paths used by tealdeer.' -f

@@ -70,6 +70,10 @@ pub(crate) struct Cli {
     #[arg(long = "pager", requires = "command_or_file")]
     pub pager: bool,
 
+    /// Do not use a pager to page output, overrides `--pager` and config
+    #[arg(long = "no-pager")]
+    pub no_pager: bool,
+
     /// Display the raw markdown instead of rendering it
     #[arg(short = 'r', long = "raw", requires = "command_or_file")]
     pub raw: bool,
