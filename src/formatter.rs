@@ -15,7 +15,7 @@ pub enum PageSnippet<'a> {
     Linebreak,
 }
 
-impl<'a> PageSnippet<'a> {
+impl PageSnippet<'_> {
     pub fn is_empty(&self) -> bool {
         use PageSnippet::*;
 
