@@ -60,6 +60,8 @@ native-roots = ["reqwest/rustls-tls-native-roots"]
 webpki-roots = ["reqwest/rustls-tls-webpki-roots"]
 native-tls = ["reqwest/native-tls"]
 
+ignore-online-tests = []
+
 [profile.release]
 strip = true
 opt-level = 3
