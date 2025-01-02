@@ -959,3 +959,45 @@ fn test_raw_render_file() {
         .success()
         .stdout(diff(include_str!("inkscape-v1.md")));
 }
+
+#[test]
+fn test_edit_page() {
+    let testenv = TestEnv::new();
+    testenv.write_config(format!(
+        "[directories]\ncustom_pages_dir = '{}'",
+        testenv.custom_pages_dir.path().to_str().unwrap()
+    ));
+
+    let args = vec!["--edit-page", "foo"];
+
+    testenv
+        .command()
+        .args(&args)
+        .env("EDITOR", "touch")
+        .assert()
+        .success();
+    assert!(testenv.custom_pages_dir.path().join("foo.page.md").exists());
+}
+
+#[test]
+fn test_edit_patch() {
+    let testenv = TestEnv::new();
+    testenv.write_config(format!(
+        "[directories]\ncustom_pages_dir = '{}'",
+        testenv.custom_pages_dir.path().to_str().unwrap()
+    ));
+
+    let args = vec!["--edit-patch", "foo"];
+
+    testenv
+        .command()
+        .args(&args)
+        .env("EDITOR", "touch")
+        .assert()
+        .success();
+    assert!(testenv
+        .custom_pages_dir
+        .path()
+        .join("foo.patch.md")
+        .exists());
+}
