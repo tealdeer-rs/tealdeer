@@ -295,7 +295,7 @@ impl Config {
     ///
     /// For this, some values need to be converted to other types and some
     /// defaults need to be set (sometimes based on env variables).
-    fn from_raw(raw_config: RawConfig) -> Result<Self> {
+    fn from_raw(raw_config: RawConfig, relative_path_root: &Path) -> Result<Self> {
         let style = raw_config.style.into();
         let display = raw_config.display.into();
         let updates = raw_config.updates.into();
@@ -316,7 +316,9 @@ impl Config {
         } else if let Some(config_value) = raw_config.directories.cache_dir {
             // If the user explicitly configured a cache directory, use that.
             PathWithSource {
-                path: config_value,
+                // Resolve possible relative path. It would be nicer to clean up the path, but Rust stdlib
+                // does not give any method for that that does not need the paths to exist.
+                path: relative_path_root.join(config_value),
                 source: PathSource::ConfigFile,
             }
         } else if let Ok(default_dir) = get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
@@ -333,7 +335,8 @@ impl Config {
             .directories
             .custom_pages_dir
             .map(|path| PathWithSource {
-                path,
+                // Resolve possible relative path.
+                path: relative_path_root.join(path),
                 source: PathSource::ConfigFile,
             })
             .or_else(|| {
@@ -382,8 +385,12 @@ impl Config {
             RawConfig::new()
         };
 
-        // Convert to config
-        let mut config = Self::from_raw(raw_config).context("Could not process raw config")?;
+        // Safe to unwrap, it's a file path, so it should have a directory component
+        let config_file_dir = config_file_path.parent().unwrap();
+
+        // Convert to config, resolve relative paths from the config file dir
+        let mut config =
+            Self::from_raw(raw_config, config_file_dir).context("Could not process raw config")?;
 
         // Potentially override styles
         if !enable_styles {
@@ -473,4 +480,22 @@ fn test_serialize_deserialize() {
     let serialized = toml::to_string(&raw_config).unwrap();
     let deserialized: RawConfig = toml::from_str(&serialized).unwrap();
     assert_eq!(raw_config, deserialized);
+}
+
+#[test]
+fn test_relative_path_resolution() {
+    let mut raw_config = RawConfig::new();
+    raw_config.directories.cache_dir = Some("../cache".into());
+    raw_config.directories.custom_pages_dir = Some("../custom_pages".into());
+
+    let config = Config::from_raw(raw_config, Path::new("/path/to/config")).unwrap();
+
+    assert_eq!(
+        config.directories.cache_dir.path(),
+        Path::new("/path/to/config/../cache")
+    );
+    assert_eq!(
+        config.directories.custom_pages_dir.unwrap().path(),
+        Path::new("/path/to/config/../custom_pages")
+    );
 }
