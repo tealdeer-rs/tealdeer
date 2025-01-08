@@ -16,6 +16,7 @@ pub enum PlatformType {
     FreeBsd,
     NetBsd,
     OpenBsd,
+    Common
 }
 
 impl fmt::Display for PlatformType {
@@ -29,6 +30,7 @@ impl fmt::Display for PlatformType {
             Self::FreeBsd => write!(f, "FreeBSD"),
             Self::NetBsd => write!(f, "NetBSD"),
             Self::OpenBsd => write!(f, "OpenBSD"),
+            Self::Common => write!(f, "Common"),
         }
     }
 }
@@ -44,6 +46,7 @@ impl clap::ValueEnum for PlatformType {
             Self::FreeBsd,
             Self::NetBsd,
             Self::OpenBsd,
+            Self::Common,
         ]
     }
 
@@ -57,6 +60,7 @@ impl clap::ValueEnum for PlatformType {
             Self::FreeBsd => Some(clap::builder::PossibleValue::new("freebsd")),
             Self::NetBsd => Some(clap::builder::PossibleValue::new("netbsd")),
             Self::OpenBsd => Some(clap::builder::PossibleValue::new("openbsd")),
+            Self::Common => Some(clap::builder::PossibleValue::new("common")),
         }
     }
 }

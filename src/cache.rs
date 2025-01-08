@@ -221,6 +221,7 @@ impl Cache {
             PlatformType::FreeBsd => "freebsd",
             PlatformType::NetBsd => "netbsd",
             PlatformType::OpenBsd => "openbsd",
+            PlatformType::Common => "common",
         }
     }
 
