@@ -16,7 +16,7 @@ pub enum PlatformType {
     FreeBsd,
     NetBsd,
     OpenBsd,
-    Common
+    Common,
 }
 
 impl fmt::Display for PlatformType {
