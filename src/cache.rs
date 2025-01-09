@@ -370,7 +370,7 @@ impl Cache {
                         .path()
                         .file_name()
                         .and_then(OsStr::to_str)
-                        .map_or(false, |file_name| file_name.ends_with(".page.md"))
+                        .is_some_and(|file_name| file_name.ends_with(".page.md"))
             };
 
             let custom_pages = WalkDir::new(custom_pages_dir)
