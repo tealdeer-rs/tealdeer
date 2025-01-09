@@ -282,7 +282,7 @@ fn main() {
         create_config_and_exit(enable_styles);
     }
 
-    let fallback_platforms: &[PlatformType] = &[PlatformType::current()];
+    let fallback_platforms: &[PlatformType] = &[PlatformType::current(), PlatformType::Common];
     let platforms = args
         .platforms
         .as_ref()

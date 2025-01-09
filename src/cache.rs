@@ -293,9 +293,7 @@ impl Cache {
             }
         }
 
-        // Did not find platform specific results, fall back to "common"
-        Self::find_page_for_platform(&page_filename, &pages_dir, "common", &lang_dirs)
-            .map(|page| PageLookupResult::with_page(page).with_optional_patch(patch_path))
+        None
     }
 
     /// Return the available pages.
