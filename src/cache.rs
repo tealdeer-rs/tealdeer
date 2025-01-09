@@ -302,6 +302,12 @@ impl Cache {
         custom_pages_dir: Option<&Path>,
         platforms: &[PlatformType],
     ) -> Vec<String> {
+        let mut platforms = platforms.to_vec();
+        // Every platform other than "common" implies "common"
+        if !platforms.contains(&PlatformType::Common) {
+            platforms.push(PlatformType::Common);
+        }
+
         // Determine platforms directory and platform
         let platforms_dir = self.pages_dir().join("pages");
         let platform_dirs: Vec<&'static str> = platforms
@@ -310,14 +316,14 @@ impl Cache {
             .collect();
 
         // Closure that allows the WalkDir instance to traverse platform
-        // specific and common page directories, but not others.
+        // relevant page directories, but not others.
         let should_walk = |entry: &DirEntry| -> bool {
             let file_type = entry.file_type();
             let Some(file_name) = entry.file_name().to_str() else {
                 return false;
             };
             if file_type.is_dir() {
-                return file_name == "common" || platform_dirs.contains(&file_name);
+                return platform_dirs.contains(&file_name);
             } else if file_type.is_file() {
                 return true;
             }
@@ -341,7 +347,7 @@ impl Cache {
                 .map(str::to_string)
         };
 
-        // Recursively walk through common and (if applicable) platform specific directory
+        // Recursively walk through platform specific directory
         let mut pages = WalkDir::new(platforms_dir)
             .min_depth(1) // Skip root directory
             .into_iter()
