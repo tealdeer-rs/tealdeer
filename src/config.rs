@@ -16,7 +16,6 @@ use crate::types::PathSource;
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
 const DEFAULT_UPDATE_INTERVAL_HOURS: u64 = MAX_CACHE_AGE.as_secs() / 3600; // 30 days
-const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
 
 fn default_underline() -> bool {
     false
@@ -168,7 +167,7 @@ const fn default_auto_update_interval_hours() -> u64 {
 }
 
 fn default_archive_url() -> String {
-    ARCHIVE_URL.to_owned()
+    "https://github.com/tldr-pages/tldr/releases/latest/download/tldr.zip".to_owned()
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
