@@ -26,9 +26,9 @@ is set to `false`.
 
 ### archive_source
 
-URL for the location of tldr pages archive. By default is the pages are
-fetched from the latest `tldr-pages/thdr` GitHub release.
+URL for the location of tldr pages archive. By default the pages are
+fetched from the latest `tldr-pages/tldr` GitHub release.
 
     [updates]
-    archive_url = https://my-company.example.com/tldr.zip
+    archive_source = https://my-company.example.com/tldr/
 
