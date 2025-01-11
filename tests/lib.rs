@@ -653,6 +653,35 @@ fn test_multiple_platform_command_search_not_found() {
 }
 
 #[test]
+fn test_osx_is_alias_for_macos() {
+    let testenv = TestEnv::new();
+    testenv.add_os_entry("osx", "maconly", "this command only exists on mac");
+
+    testenv
+        .command()
+        .args(["--platform", "macos", "maconly"])
+        .assert()
+        .success();
+    testenv
+        .command()
+        .args(["--platform", "osx", "maconly"])
+        .assert()
+        .success();
+
+    testenv
+        .command()
+        .args(["--platform", "macos", "--list"])
+        .assert()
+        .stdout("maconly\n");
+
+    testenv
+        .command()
+        .args(["--platform", "osx", "--list"])
+        .assert()
+        .stdout("maconly\n");
+}
+
+#[test]
 fn test_list_flag_rendering() {
     let testenv = TestEnv::new().write_custom_pages_config();
 
