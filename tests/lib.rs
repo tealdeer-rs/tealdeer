@@ -653,6 +653,22 @@ fn test_multiple_platform_command_search_not_found() {
 }
 
 #[test]
+fn test_common_platform_is_used_as_fallback() {
+    let testenv = TestEnv::new();
+    testenv.add_entry("in-common", "this command comes from common");
+
+    // No platform specified
+    testenv.command().args(["in-common"]).assert().success();
+
+    // Platform specified
+    testenv
+        .command()
+        .args(["--platform", "linux", "in-common"])
+        .assert()
+        .success();
+}
+
+#[test]
 fn test_list_flag_rendering() {
     let testenv = TestEnv::new().write_custom_pages_config();
 
