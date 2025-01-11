@@ -302,12 +302,6 @@ impl Cache {
         custom_pages_dir: Option<&Path>,
         platforms: &[PlatformType],
     ) -> Vec<String> {
-        let mut platforms = platforms.to_vec();
-        // Every platform other than "common" implies "common"
-        if !platforms.contains(&PlatformType::Common) {
-            platforms.push(PlatformType::Common);
-        }
-
         // Determine platforms directory and platform
         let platforms_dir = self.pages_dir().join("pages");
         let platform_dirs: Vec<&'static str> = platforms
