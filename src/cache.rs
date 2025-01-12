@@ -166,7 +166,7 @@ impl Cache {
     pub fn update(&self, archive_source: &str) -> Result<()> {
         self.ensure_cache_dir_exists()?;
 
-        let archive_url = format!("{}{}", archive_source, "tldr.zip");
+        let archive_url = format!("{}/tldr.zip", archive_source);
 
         // First, download the compressed data
         let bytes: Vec<u8> = Self::download(&archive_url)?;
