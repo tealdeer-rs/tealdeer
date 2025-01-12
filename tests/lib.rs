@@ -653,7 +653,7 @@ fn test_multiple_platform_command_search_not_found() {
 }
 
 #[test]
-fn test_osx_is_alias_for_macos() {
+fn test_macos_is_alias_for_osx() {
     let testenv = TestEnv::new();
     testenv.add_os_entry("osx", "maconly", "this command only exists on mac");
 
