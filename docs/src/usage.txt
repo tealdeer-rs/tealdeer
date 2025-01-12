@@ -17,6 +17,7 @@ Options:
       --no-auto-update       If auto update is configured, disable it for this run
   -c, --clear-cache          Clear the local cache
       --pager                Use a pager to page output
+      --no-pager             Do not use a pager to page output, overrides `--pager` and config
   -r, --raw                  Display the raw markdown instead of rendering it
   -q, --quiet                Suppress informational messages
       --show-paths           Show file and directory paths used by tealdeer

@@ -286,7 +286,7 @@ fn main() {
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
         let path = PageLookupResult::with_page(file);
-        if let Err(ref e) = print_page(&path, args.raw, enable_styles, args.pager, &config) {
+        if let Err(ref e) = print_page(&path, args.raw, enable_styles, args.pager, args.no_pager, &config) {
             print_error(enable_styles, e);
             process::exit(1);
         } else {
@@ -357,7 +357,7 @@ fn main() {
             &platforms,
         ) {
             if let Err(ref e) =
-                print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)
+                print_page(&lookup_result, args.raw, enable_styles, args.pager, args.no_pager, &config)
             {
                 print_error(enable_styles, e);
                 process::exit(1);

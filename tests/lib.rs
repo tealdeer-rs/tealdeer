@@ -585,6 +585,18 @@ fn test_pager_flag_enable() {
         .args(["--pager", "which"])
         .assert()
         .success();
+
+    testenv
+        .command()
+        .args(["--no-pager", "which"])
+        .assert()
+        .success();
+
+    testenv
+        .command()
+        .args(["--pager", "--no-pager", "which"])
+        .assert()
+        .success();
 }
 
 #[test]
@@ -938,6 +950,13 @@ fn test_pager_warning() {
         .assert()
         .success()
         .stderr(contains("pager flag not available on Windows"));
+
+    // no-pager flag should not cause issues
+    testenv
+        .command()
+        .args(["--no-pager", "which"])
+        .assert()
+        .success()
 }
 
 /// Ensure that page lookup is case insensitive, so a page lookup for `eyed3`
