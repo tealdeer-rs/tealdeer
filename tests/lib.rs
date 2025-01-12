@@ -680,6 +680,7 @@ fn test_macos_is_alias_for_osx() {
         .stdout("maconly\n");
 }
 
+#[test]
 fn test_common_platform_is_used_as_fallback() {
     let testenv = TestEnv::new();
     testenv.add_entry("in-common", "this command comes from common");
