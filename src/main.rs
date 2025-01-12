@@ -282,11 +282,7 @@ fn main() {
         create_config_and_exit(enable_styles);
     }
 
-    let fallback_platforms: &[PlatformType] = &[PlatformType::current()];
-    let platforms = args
-        .platforms
-        .as_ref()
-        .map_or(fallback_platforms, Vec::as_slice);
+    let platforms = compute_platforms(args.platforms.as_ref());
 
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
@@ -332,7 +328,7 @@ fn main() {
             .map(PathWithSource::path);
         println!(
             "{}",
-            cache.list_pages(custom_pages_dir, platforms).join("\n")
+            cache.list_pages(custom_pages_dir, &platforms).join("\n")
         );
         process::exit(0);
     }
@@ -358,7 +354,7 @@ fn main() {
                 .custom_pages_dir
                 .as_ref()
                 .map(PathWithSource::path),
-            platforms,
+            &platforms,
         ) {
             if let Err(ref e) =
                 print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)
@@ -381,6 +377,20 @@ fn main() {
             }
             process::exit(1);
         }
+    }
+}
+
+/// Returns the passed or default platform types and appends `PlatformType::Common` as fallback.
+fn compute_platforms(platforms: Option<&Vec<PlatformType>>) -> Vec<PlatformType> {
+    match platforms {
+        Some(p) => {
+            let mut result = p.clone();
+            if !result.contains(&PlatformType::Common) {
+                result.push(PlatformType::Common);
+            }
+            result
+        }
+        None => vec![PlatformType::current(), PlatformType::Common],
     }
 }
 
