@@ -221,6 +221,7 @@ impl Cache {
             PlatformType::FreeBsd => "freebsd",
             PlatformType::NetBsd => "netbsd",
             PlatformType::OpenBsd => "openbsd",
+            PlatformType::Common => "common",
         }
     }
 
@@ -292,9 +293,7 @@ impl Cache {
             }
         }
 
-        // Did not find platform specific results, fall back to "common"
-        Self::find_page_for_platform(&page_filename, &pages_dir, "common", &lang_dirs)
-            .map(|page| PageLookupResult::with_page(page).with_optional_patch(patch_path))
+        None
     }
 
     /// Return the available pages.
@@ -311,14 +310,14 @@ impl Cache {
             .collect();
 
         // Closure that allows the WalkDir instance to traverse platform
-        // specific and common page directories, but not others.
+        // relevant page directories, but not others.
         let should_walk = |entry: &DirEntry| -> bool {
             let file_type = entry.file_type();
             let Some(file_name) = entry.file_name().to_str() else {
                 return false;
             };
             if file_type.is_dir() {
-                return file_name == "common" || platform_dirs.contains(&file_name);
+                return platform_dirs.contains(&file_name);
             } else if file_type.is_file() {
                 return true;
             }
@@ -342,7 +341,7 @@ impl Cache {
                 .map(str::to_string)
         };
 
-        // Recursively walk through common and (if applicable) platform specific directory
+        // Recursively walk through platform specific directory
         let mut pages = WalkDir::new(platforms_dir)
             .min_depth(1) // Skip root directory
             .into_iter()
@@ -365,7 +364,7 @@ impl Cache {
                         .path()
                         .file_name()
                         .and_then(OsStr::to_str)
-                        .map_or(false, |file_name| file_name.ends_with(".page.md"))
+                        .is_some_and(|file_name| file_name.ends_with(".page.md"))
             };
 
             let custom_pages = WalkDir::new(custom_pages_dir)

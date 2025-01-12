@@ -673,12 +673,26 @@ fn test_macos_is_alias_for_osx() {
         .args(["--platform", "macos", "--list"])
         .assert()
         .stdout("maconly\n");
-
     testenv
         .command()
         .args(["--platform", "osx", "--list"])
         .assert()
         .stdout("maconly\n");
+}
+
+fn test_common_platform_is_used_as_fallback() {
+    let testenv = TestEnv::new();
+    testenv.add_entry("in-common", "this command comes from common");
+
+    // No platform specified
+    testenv.command().args(["in-common"]).assert().success();
+
+    // Platform specified
+    testenv
+        .command()
+        .args(["--platform", "linux", "in-common"])
+        .assert()
+        .success();
 }
 
 #[test]
