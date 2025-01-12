@@ -13,15 +13,15 @@ use reqwest::{blocking::Client, Proxy};
 use walkdir::{DirEntry, WalkDir};
 use zip::ZipArchive;
 
-use crate::types::PlatformType;
+use crate::{types::PlatformType, utils::print_warning};
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 
 #[derive(Debug)]
 pub struct Cache {
-    platform: PlatformType,
     cache_dir: PathBuf,
+    enable_styles: bool,
 }
 
 #[derive(Debug)]
@@ -77,7 +77,7 @@ impl PageLookupResult {
 }
 
 pub enum CacheFreshness {
-    /// The cache is still fresh (less than MAX_CACHE_AGE old)
+    /// The cache is still fresh (less than `MAX_CACHE_AGE` old)
     Fresh,
     /// The cache is stale and should be updated
     Stale(Duration),
@@ -86,13 +86,13 @@ pub enum CacheFreshness {
 }
 
 impl Cache {
-    pub fn new<P>(platform: PlatformType, cache_dir: P) -> Self
+    pub fn new<P>(cache_dir: P, enable_styles: bool) -> Self
     where
         P: Into<PathBuf>,
     {
         Self {
-            platform,
             cache_dir: cache_dir.into(),
+            enable_styles,
         }
     }
 
@@ -186,7 +186,7 @@ impl Cache {
 
         // Extract archive into pages dir
         archive
-            .extract(&self.pages_dir())
+            .extract(self.pages_dir())
             .context("Could not unpack compressed data")?;
 
         Ok(())
@@ -213,13 +213,17 @@ impl Cache {
     }
 
     /// Return the platform directory.
-    fn get_platform_dir(&self) -> &'static str {
-        match self.platform {
+    fn get_platform_dir(platform: PlatformType) -> &'static str {
+        match platform {
             PlatformType::Linux => "linux",
             PlatformType::OsX => "osx",
             PlatformType::SunOs => "sunos",
             PlatformType::Windows => "windows",
             PlatformType::Android => "android",
+            PlatformType::FreeBsd => "freebsd",
+            PlatformType::NetBsd => "netbsd",
+            PlatformType::OpenBsd => "openbsd",
+            PlatformType::Common => "common",
         }
     }
 
@@ -236,7 +240,7 @@ impl Cache {
             .find(|path| path.exists() && path.is_file())
     }
 
-    /// Look up custom patch (<name>.patch). If it exists, store it in a variable.
+    /// Look up custom patch (<name>.patch.md). If it exists, store it in a variable.
     fn find_patch(patch_name: &str, custom_pages_dir: Option<&Path>) -> Option<PathBuf> {
         custom_pages_dir
             .map(|custom_dir| custom_dir.join(patch_name))
@@ -249,10 +253,11 @@ impl Cache {
         name: &str,
         languages: &[String],
         custom_pages_dir: Option<&Path>,
+        platforms: &[PlatformType],
     ) -> Option<PageLookupResult> {
         let page_filename = format!("{name}.md");
-        let patch_filename = format!("{name}.patch");
-        let custom_filename = format!("{name}.page");
+        let patch_filename = format!("{name}.patch.md");
+        let custom_filename = format!("{name}.page.md");
 
         // Determine directory paths
         let pages_dir = self.pages_dir();
@@ -267,8 +272,11 @@ impl Cache {
             })
             .collect();
 
-        // Look up custom page (<name>.page). If it exists, return it directly
+        // Look up custom page (<name>.page.md). If it exists, return it directly
         if let Some(config_dir) = custom_pages_dir {
+            // TODO: Remove this check 1 year after version 1.7.0 was released
+            self.check_for_old_custom_pages(config_dir);
+
             let custom_page = config_dir.join(custom_filename);
             if custom_page.exists() && custom_page.is_file() {
                 return Some(PageLookupResult::with_page(custom_page));
@@ -277,35 +285,41 @@ impl Cache {
 
         let patch_path = Self::find_patch(&patch_filename, custom_pages_dir);
 
-        // Try to find a platform specific path next, append custom patch to it.
-        let platform_dir = self.get_platform_dir();
-        if let Some(page) =
-            Self::find_page_for_platform(&page_filename, &pages_dir, platform_dir, &lang_dirs)
-        {
-            return Some(PageLookupResult::with_page(page).with_optional_patch(patch_path));
+        // Try to find a platform specific path next, in the order supplied by the user, and append custom patch to it.
+        for &platform in platforms {
+            let platform_dir = Cache::get_platform_dir(platform);
+            if let Some(page) =
+                Self::find_page_for_platform(&page_filename, &pages_dir, platform_dir, &lang_dirs)
+            {
+                return Some(PageLookupResult::with_page(page).with_optional_patch(patch_path));
+            }
         }
 
-        // Did not find platform specific results, fall back to "common"
-        Self::find_page_for_platform(&page_filename, &pages_dir, "common", &lang_dirs)
-            .map(|page| PageLookupResult::with_page(page).with_optional_patch(patch_path))
+        None
     }
 
     /// Return the available pages.
-    pub fn list_pages(&self, custom_pages_dir: Option<&Path>) -> Vec<String> {
+    pub fn list_pages(
+        &self,
+        custom_pages_dir: Option<&Path>,
+        platforms: &[PlatformType],
+    ) -> Vec<String> {
         // Determine platforms directory and platform
         let platforms_dir = self.pages_dir().join("pages");
-        let platform_dir = self.get_platform_dir();
+        let platform_dirs: Vec<&'static str> = platforms
+            .iter()
+            .map(|&p| Self::get_platform_dir(p))
+            .collect();
 
         // Closure that allows the WalkDir instance to traverse platform
-        // specific and common page directories, but not others.
+        // relevant page directories, but not others.
         let should_walk = |entry: &DirEntry| -> bool {
             let file_type = entry.file_type();
-            let file_name = match entry.file_name().to_str() {
-                Some(name) => name,
-                None => return false,
+            let Some(file_name) = entry.file_name().to_str() else {
+                return false;
             };
             if file_type.is_dir() {
-                return file_name == "common" || file_name == platform_dir;
+                return platform_dirs.contains(&file_name);
             } else if file_type.is_file() {
                 return true;
             }
@@ -320,7 +334,16 @@ impl Cache {
                 .map(str::to_string)
         };
 
-        // Recursively walk through common and (if applicable) platform specific directory
+        let to_stem_custom = |entry: DirEntry| -> Option<String> {
+            entry
+                .path()
+                .file_name()
+                .and_then(OsStr::to_str)
+                .and_then(|s| s.strip_suffix(".page.md"))
+                .map(str::to_string)
+        };
+
+        // Recursively walk through platform specific directory
         let mut pages = WalkDir::new(platforms_dir)
             .min_depth(1) // Skip root directory
             .into_iter()
@@ -338,8 +361,12 @@ impl Cache {
 
         if let Some(custom_pages_dir) = custom_pages_dir {
             let is_page = |entry: &DirEntry| -> bool {
-                let extension = entry.path().extension().unwrap_or_default();
-                entry.file_type().is_file() && extension == "page"
+                entry.file_type().is_file()
+                    && entry
+                        .path()
+                        .file_name()
+                        .and_then(OsStr::to_str)
+                        .is_some_and(|file_name| file_name.ends_with(".page.md"))
             };
 
             let custom_pages = WalkDir::new(custom_pages_dir)
@@ -348,7 +375,7 @@ impl Cache {
                 .into_iter()
                 .filter_entry(is_page)
                 .filter_map(Result::ok)
-                .filter_map(to_stem);
+                .filter_map(to_stem_custom);
 
             pages.extend(custom_pages);
         }
@@ -389,6 +416,39 @@ impl Cache {
 
         Ok(true)
     }
+
+    /// Check for old custom pages (without .md suffix) and print a warning.
+    fn check_for_old_custom_pages(&self, custom_pages_dir: &Path) {
+        let old_custom_pages_exist = WalkDir::new(custom_pages_dir)
+            .min_depth(1)
+            .max_depth(1)
+            .into_iter()
+            .filter_entry(|entry| entry.file_type().is_file())
+            .any(|entry| {
+                if let Ok(entry) = entry {
+                    let extension = entry.path().extension();
+                    if let Some(extension) = extension {
+                        extension == "page" || extension == "patch"
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            });
+        if old_custom_pages_exist {
+            print_warning(
+                self.enable_styles,
+                &format!(
+                    "Custom pages using the old naming convention were found in {}.\n\
+                     Please rename them to follow the new convention:\n\
+                     - `<name>.page` → `<name>.page.md`\n\
+                     - `<name>.patch` → `<name>.patch.md`",
+                    custom_pages_dir.display()
+                ),
+            );
+        }
+    }
 }
 
 /// Unit Tests for cache module
@@ -405,8 +465,8 @@ mod tests {
     fn test_reader_with_patch() {
         // Write test files
         let dir = tempfile::tempdir().unwrap();
-        let page_path = dir.path().join("test.page");
-        let patch_path = dir.path().join("test.patch");
+        let page_path = dir.path().join("test.page.md");
+        let patch_path = dir.path().join("test.patch.md");
         {
             let mut f1 = File::create(&page_path).unwrap();
             f1.write_all(b"Hello\n").unwrap();
@@ -429,7 +489,7 @@ mod tests {
     fn test_reader_without_patch() {
         // Write test file
         let dir = tempfile::tempdir().unwrap();
-        let page_path = dir.path().join("test.page");
+        let page_path = dir.path().join("test.page.md");
         {
             let mut f = File::create(&page_path).unwrap();
             f.write_all(b"Hello\n").unwrap();

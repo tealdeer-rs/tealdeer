@@ -3,6 +3,7 @@
 use std::io::{self, BufRead, Write};
 
 use anyhow::{Context, Result};
+use yansi::Paint;
 
 use crate::{
     cache::PageLookupResult,
@@ -86,11 +87,11 @@ fn print_snippet(
     use PageSnippet::*;
 
     match snip {
-        CommandName(s) => write!(writer, "{}", style.command_name.paint(s)),
-        Variable(s) => write!(writer, "{}", style.example_variable.paint(s)),
-        NormalCode(s) => write!(writer, "{}", style.example_code.paint(s)),
-        Description(s) => writeln!(writer, "  {}", style.description.paint(s)),
-        Text(s) => writeln!(writer, "  {}", style.example_text.paint(s)),
+        CommandName(s) => write!(writer, "{}", s.paint(style.command_name)),
+        Variable(s) => write!(writer, "{}", s.paint(style.example_variable)),
+        NormalCode(s) => write!(writer, "{}", s.paint(style.example_code)),
+        Description(s) => writeln!(writer, "  {}", s.paint(style.description)),
+        Text(s) => writeln!(writer, "  {}", s.paint(style.example_text)),
         Linebreak => writeln!(writer),
     }
 }

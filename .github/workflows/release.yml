@@ -1,3 +1,4 @@
+name: Release
 on:
   push:
     tags:
@@ -7,13 +8,13 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Create release for tag
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           source ./scripts/upload-asset.sh
           # Create:      <token>                     <repo>                   <tag>
-          create_release ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} ${GITHUB_REF#refs/*/} "Tealdeer version ${GITHUB_REF#refs/*/v}.\n\nFor the full changelog, see https://github.com/dbrgn/tealdeer/blob/main/CHANGELOG.md.\n\nBinaries were generated automatically in CI, and are therefore unsigned. For a fully trusted release, please build from source."
+          create_release ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} ${GITHUB_REF#refs/*/} "Tealdeer version ${GITHUB_REF#refs/*/v}.\n\nFor the full changelog, see https://github.com/tealdeer-rs/tealdeer/blob/main/CHANGELOG.md.\n\nBinaries were generated automatically in CI, and are therefore unsigned. For a fully trusted release, please build from source."
 
   upload-completions:
     needs:
@@ -23,7 +24,7 @@ jobs:
       matrix:
         target: ["bash", "fish", "zsh"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Upload completion
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -39,7 +40,7 @@ jobs:
       matrix:
         target: ["MIT", "APACHE"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Upload license
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -54,6 +55,8 @@ jobs:
         include:
           - arch: "x86_64"
             libc: "musl"
+          - arch: "aarch64"
+            libc: "musl"
           - arch: "i686"
             libc: "musl"
           - arch: "armv7"
@@ -63,44 +66,50 @@ jobs:
           - arch: "arm"
             libc: "musleabihf"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Pull Docker image
         run: docker pull messense/rust-musl-cross:${{ matrix.arch }}-${{ matrix.libc }}
       - name: Build in Docker
         run: docker run --rm -i -v "$(pwd)":/home/rust/src messense/rust-musl-cross:${{ matrix.arch }}-${{ matrix.libc }} cargo build --release
       - name: Strip binary
         run: docker run --rm -i -v "$(pwd)":/home/rust/src messense/rust-musl-cross:${{ matrix.arch }}-${{ matrix.libc }} musl-strip -s /home/rust/src/target/${{ matrix.arch }}-unknown-linux-${{ matrix.libc }}/release/tldr
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: "tealdeer-linux-${{ matrix.arch }}-${{ matrix.libc }}"
           path: "target/${{ matrix.arch }}-unknown-linux-${{ matrix.libc }}/release/tldr"
 
   build-macos:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - arch: "x86_64"
+          - arch: "aarch64"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
+          targets: "${{ matrix.arch }}-apple-darwin"
       - name: Build
-        run: cargo build --release --target x86_64-apple-darwin --no-default-features --features webpki-roots
-      - uses: actions/upload-artifact@v3
+        run: cargo build --release --target ${{ matrix.arch }}-apple-darwin --no-default-features --features webpki-roots
+      - uses: actions/upload-artifact@v4
         with:
-          name: "tealdeer-macos-x86_64"
-          path: "target/x86_64-apple-darwin/release/tldr"
+          name: "tealdeer-macos-${{ matrix.arch }}"
+          path: "target/${{ matrix.arch }}-apple-darwin/release/tldr"
 
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@master
         with:
             toolchain: stable
       - name: Build
         run: cargo build --release --target x86_64-pc-windows-msvc
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: "tealdeer-windows-x86_64-msvc"
           path: "target/x86_64-pc-windows-msvc/release/tldr.exe"
@@ -116,15 +125,17 @@ jobs:
       matrix:
         target:
           - linux-x86_64-musl
+          - linux-aarch64-musl
           - linux-i686-musl
           - linux-armv7-musleabihf
           - linux-arm-musleabi
           - linux-arm-musleabihf
           - macos-x86_64
+          - macos-aarch64
           - windows-x86_64-msvc
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
       - name: Upload binary
         if: startsWith(github.ref, 'refs/tags/')
         run: |

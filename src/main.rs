@@ -30,10 +30,13 @@ compile_error!(
     "exactly one of the features \"native-roots\", \"webpki-roots\" or \"native-tls\" must be enabled"
 );
 
-use std::{env, process};
+use std::{
+    env,
+    io::{self, IsTerminal},
+    process,
+};
 
 use app_dirs::AppInfo;
-use atty::Stream;
 use clap::Parser;
 
 mod cache;
@@ -48,7 +51,7 @@ mod utils;
 
 use crate::{
     cache::{Cache, CacheFreshness, PageLookupResult, TLDR_PAGES_DIR},
-    cli::Args,
+    cli::Cli,
     config::{get_config_dir, get_config_path, make_default_config, Config, PathWithSource},
     extensions::Dedup,
     output::print_page,
@@ -64,7 +67,7 @@ const APP_INFO: AppInfo = AppInfo {
 
 /// The cache should be updated if it was explicitly requested,
 /// or if an automatic update is due and allowed.
-fn should_update_cache(cache: &Cache, args: &Args, config: &Config) -> bool {
+fn should_update_cache(cache: &Cache, args: &Cli, config: &Config) -> bool {
     args.update
         || (!args.no_auto_update
             && config.updates.auto_update
@@ -80,7 +83,7 @@ enum CheckCacheResult {
 }
 
 /// Check the cache for freshness. If it's stale or missing, show a warning.
-fn check_cache(cache: &Cache, args: &Args, enable_styles: bool) -> CheckCacheResult {
+fn check_cache(cache: &Cache, args: &Cli, enable_styles: bool) -> CheckCacheResult {
     match cache.freshness() {
         CacheFreshness::Fresh => CheckCacheResult::CacheFound,
         CacheFreshness::Stale(_) if args.quiet => CheckCacheResult::CacheFound,
@@ -109,7 +112,7 @@ fn check_cache(cache: &Cache, args: &Args, enable_styles: bool) -> CheckCacheRes
             println!("The path to your config file can be looked up with `tldr --show-paths`.");
             println!("To create an initial config file, use `tldr --seed-config`.\n");
             println!("You can find more tips and tricks in our docs:\n");
-            println!("  https://dbrgn.github.io/tealdeer/config_updates.html");
+            println!("  https://tealdeer-rs.github.io/tealdeer/config_updates.html");
             CheckCacheResult::CacheMissing
         }
     }
@@ -242,23 +245,19 @@ fn main() {
     init_log();
 
     // Parse arguments
-    let args = Args::parse();
+    let args = Cli::parse();
 
     // Determine the usage of styles
-    #[cfg(target_os = "windows")]
-    let ansi_support = yansi::Paint::enable_windows_ascii();
-    #[cfg(not(target_os = "windows"))]
-    let ansi_support = true;
     let enable_styles = match args.color.unwrap_or_default() {
         // Attempt to use styling if instructed
-        ColorOptions::Always => true,
+        ColorOptions::Always => {
+            yansi::enable(); // disable yansi's automatic detection for ANSI support on Windows
+            true
+        }
         // Enable styling if:
-        // * There is `ansi_support`
         // * NO_COLOR env var isn't set: https://no-color.org/
         // * The output stream is stdout (not being piped)
-        ColorOptions::Auto => {
-            ansi_support && env::var_os("NO_COLOR").is_none() && atty::is(Stream::Stdout)
-        }
+        ColorOptions::Auto => env::var_os("NO_COLOR").is_none() && io::stdout().is_terminal(),
         // Disable styling
         ColorOptions::Never => false,
     };
@@ -282,8 +281,7 @@ fn main() {
         create_config_and_exit(enable_styles);
     }
 
-    // Specify target OS
-    let platform: PlatformType = args.platform.unwrap_or_else(PlatformType::current);
+    let platforms = compute_platforms(args.platforms.as_ref());
 
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
@@ -297,7 +295,7 @@ fn main() {
     }
 
     // Instantiate cache. This will not yet create the cache directory!
-    let cache = Cache::new(platform, &config.directories.cache_dir.path);
+    let cache = Cache::new(&config.directories.cache_dir.path, enable_styles);
 
     // Clear cache, pass through
     if args.clear_cache {
@@ -328,7 +326,10 @@ fn main() {
             .custom_pages_dir
             .as_ref()
             .map(PathWithSource::path);
-        println!("{}", cache.list_pages(custom_pages_dir).join("\n"));
+        println!(
+            "{}",
+            cache.list_pages(custom_pages_dir, &platforms).join("\n")
+        );
         process::exit(0);
     }
 
@@ -353,6 +354,7 @@ fn main() {
                 .custom_pages_dir
                 .as_ref()
                 .map(PathWithSource::path),
+            &platforms,
         ) {
             if let Err(ref e) =
                 print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)
@@ -375,6 +377,20 @@ fn main() {
             }
             process::exit(1);
         }
+    }
+}
+
+/// Returns the passed or default platform types and appends `PlatformType::Common` as fallback.
+fn compute_platforms(platforms: Option<&Vec<PlatformType>>) -> Vec<PlatformType> {
+    match platforms {
+        Some(p) => {
+            let mut result = p.clone();
+            if !result.contains(&PlatformType::Common) {
+                result.push(PlatformType::Common);
+            }
+            result
+        }
+        None => vec![PlatformType::current(), PlatformType::Common],
     }
 }
 

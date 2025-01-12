@@ -14,7 +14,7 @@ autocompletions](#autocompletion).
 
 Tealdeer has been added to a few package managers:
 
-- Arch Linux: [`tealdeer`](https://archlinux.org/packages/community/x86_64/tealdeer/)
+- Arch Linux: [`tealdeer`](https://archlinux.org/packages/extra/x86_64/tealdeer/)
 - Debian: [`tealdeer`](https://tracker.debian.org/tealdeer)
 - Fedora: [`tealdeer`](https://src.fedoraproject.org/rpms/rust-tealdeer)
 - FreeBSD: [`sysutils/tealdeer`](https://www.freshports.org/sysutils/tealdeer/)
@@ -22,7 +22,7 @@ Tealdeer has been added to a few package managers:
 - Homebrew: [`tealdeer`](https://formulae.brew.sh/formula/tealdeer)
 - MacPorts: [`tealdeer`](https://ports.macports.org/port/tealdeer/)
 - NetBSD: [`sysutils/tealdeer`](https://pkgsrc.se/sysutils/tealdeer)
-- Nix: [`tealdeer`](https://nixos.org/nixos/packages.html#tealdeer)
+- Nix: [`tealdeer`](https://search.nixos.org/packages?query=tealdeer)
 - openSUSE: [`tealdeer`](https://software.opensuse.org/package/tealdeer?search_term=tealdeer)
 - Scoop: [`tealdeer`](https://github.com/ScoopInstaller/Main/blob/master/bucket/tealdeer.json)
 - Solus: [`tealdeer`](https://packages.getsol.us/shannon/t/tealdeer/)
@@ -31,7 +31,7 @@ Tealdeer has been added to a few package managers:
 ## Static Binaries (Linux)
 
 Static binary builds (currently for Linux only) are available on the
-[GitHub releases page](https://github.com/dbrgn/tealdeer/releases).
+[GitHub releases page](https://github.com/tealdeer-rs/tealdeer/releases).
 Simply download the binary for your platform and run it!
 
 ## Through `cargo install`

@@ -4,15 +4,15 @@ authors = [
     "Niklas Mohrin <dev@niklasmohrin.de>",
 ]
 description = "Fetch and show tldr help pages for many CLI commands. Full featured offline client with caching support."
-homepage = "https://github.com/dbrgn/tealdeer/"
+homepage = "https://github.com/tealdeer-rs/tealdeer/"
 license = "MIT OR Apache-2.0"
 name = "tealdeer"
 readme = "README.md"
-repository = "https://github.com/dbrgn/tealdeer/"
-documentation = "https://dbrgn.github.io/tealdeer/"
-version = "1.6.1"
+repository = "https://github.com/tealdeer-rs/tealdeer/"
+documentation = "https://tealdeer-rs.github.io/tealdeer/"
+version = "1.7.1"
 include = ["/src/**/*", "/tests/**/*", "/Cargo.toml", "/README.md", "/LICENSE-*", "/screenshot.png", "completion/*"]
-rust-version = "1.62"
+rust-version = "1.75"
 edition = "2021"
 
 [[bin]]
@@ -22,17 +22,16 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1"
 app_dirs = { version = "2", package = "app_dirs2" }
-atty = "0.2"
-clap = { version = "3", features = ["std", "derive", "suggestions", "color"], default-features = false }
-env_logger = { version = "0.10", optional = true }
+clap = { version = "4", features = ["std", "derive", "help", "usage", "cargo", "error-context", "color", "wrap_help"], default-features = false }
+env_logger = { version = "0.11", optional = true }
 log = "0.4"
-reqwest = { version = "0.11.3", features = ["blocking"], default-features = false }
+reqwest = { version = "0.12.5", features = ["blocking"], default-features = false }
 serde = "1.0.21"
 serde_derive = "1.0.21"
-toml = "0.5.1"
+toml = "0.8.19"
 walkdir = "2.0.1"
-yansi = "0.5"
-zip = { version = "0.6", default-features = false, features = ["deflate"] }
+yansi = "1"
+zip = { version = "2.1.6", default-features = false, features = ["deflate"] }
 
 [target.'cfg(not(windows))'.dependencies]
 pager = "0.16"
@@ -40,7 +39,7 @@ pager = "0.16"
 [dev-dependencies]
 assert_cmd = "2.0.1"
 escargot = "0.5"
-predicates = "2.0.2"
+predicates = "3.1.2"
 tempfile = "3.1.0"
 filetime = "0.2.10"
 
@@ -61,5 +60,10 @@ native-roots = ["reqwest/rustls-tls-native-roots"]
 webpki-roots = ["reqwest/rustls-tls-webpki-roots"]
 native-tls = ["reqwest/native-tls"]
 
+ignore-online-tests = []
+
 [profile.release]
+strip = true
+opt-level = 3
 lto = true
+codegen-units = 1
