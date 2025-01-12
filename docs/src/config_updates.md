@@ -24,3 +24,11 @@ is set to `false`.
     auto_update = true
     auto_update_interval_hours = 24
 
+### archive_source
+
+URL for the location of the tldr pages archive. By default the pages are
+fetched from the latest `tldr-pages/tldr` GitHub release.
+
+    [updates]
+    archive_source = https://my-company.example.com/tldr/
+

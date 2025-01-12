@@ -166,12 +166,18 @@ const fn default_auto_update_interval_hours() -> u64 {
     DEFAULT_UPDATE_INTERVAL_HOURS
 }
 
+fn default_archive_source() -> String {
+    "https://github.com/tldr-pages/tldr/releases/latest/download/".to_owned()
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 struct RawUpdatesConfig {
     #[serde(default)]
     pub auto_update: bool,
     #[serde(default = "default_auto_update_interval_hours")]
     pub auto_update_interval_hours: u64,
+    #[serde(default = "default_archive_source")]
+    pub archive_source: String,
 }
 
 impl Default for RawUpdatesConfig {
@@ -179,6 +185,7 @@ impl Default for RawUpdatesConfig {
         Self {
             auto_update: false,
             auto_update_interval_hours: DEFAULT_UPDATE_INTERVAL_HOURS,
+            archive_source: default_archive_source(),
         }
     }
 }
@@ -190,6 +197,7 @@ impl From<RawUpdatesConfig> for UpdatesConfig {
             auto_update_interval: Duration::from_secs(
                 raw_updates_config.auto_update_interval_hours * 3600,
             ),
+            archive_source: raw_updates_config.archive_source,
         }
     }
 }
@@ -252,10 +260,11 @@ pub struct DisplayConfig {
     pub use_pager: bool,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UpdatesConfig {
     pub auto_update: bool,
     pub auto_update_interval: Duration,
+    pub archive_source: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

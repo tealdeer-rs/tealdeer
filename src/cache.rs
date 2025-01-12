@@ -163,11 +163,13 @@ impl Cache {
     }
 
     /// Update the pages cache from the specified URL.
-    pub fn update(&self, archive_url: &str) -> Result<()> {
+    pub fn update(&self, archive_source: &str) -> Result<()> {
         self.ensure_cache_dir_exists()?;
 
+        let archive_url = format!("{}/tldr.zip", archive_source);
+
         // First, download the compressed data
-        let bytes: Vec<u8> = Self::download(archive_url)?;
+        let bytes: Vec<u8> = Self::download(&archive_url)?;
 
         // Decompress the response body into an `Archive`
         let mut archive = ZipArchive::new(Cursor::new(bytes))
