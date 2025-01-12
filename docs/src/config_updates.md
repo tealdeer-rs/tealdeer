@@ -26,7 +26,7 @@ is set to `false`.
 
 ### archive_source
 
-URL for the location of tldr pages archive. By default the pages are
+URL for the location of the tldr pages archive. By default the pages are
 fetched from the latest `tldr-pages/tldr` GitHub release.
 
     [updates]
