@@ -1,0 +1,132 @@
+TEALDEER(1)                     User Commands                     TEALDEER(1)
+
+NAME
+       tldr - tealdeer, A fast TLDR client
+
+SYNOPSIS
+       tldr [OPTION] [COMMAND]...
+
+DESCRIPTION
+       tldr is a fast, modern client for the `tldr` project.
+
+OPTIONS
+       -h, --help
+           Show help message and exit.
+
+       -v, --version
+           Show version information.
+
+       -l, --list
+           List all available commands in the cache.
+
+       -f, --render
+           Render a specific markdown file. Takes a file path as argument.
+
+       -p, --platform PLATFORM
+           Override the platform for which the command is rendered.
+           Valid options: linux, macos, sunos, windows, android, freebsd,
+           netbsd, openbsd.
+
+       -L, --language LANGUAGE
+           Override the language used for the command documentation.
+
+       -u, --update
+           Update the local cache of command pages.
+
+       --no-auto-update
+           If auto-update is configured, disable it for this run.
+
+       -c, --clear-cache
+           Clear the local cache of command pages.
+
+       --pager
+           Use a pager to page through the output.
+
+       -r, --raw
+           Display the raw markdown content instead of rendering it.
+
+       -q, --quiet
+           Suppress informational messages.
+
+       --show-paths
+           Show file and directory paths used by tldr.
+
+       --seed-config
+           Create a basic configuration file for tldr.
+
+       --color WHEN
+           Control when to use color in the output.
+           Valid options: always, auto, never.
+
+COMMANDS
+       <COMMAND>
+           Display usage information for the specified command.
+           If no command is specified, tldr will show the general help.
+
+FILES
+       The following files and directories are used by tldr:
+
+       $CONFIG_DIR/tealdeer
+           Default configuration directory for Tealdeer.
+           (Typically defaults to ~/.config/tealdeer/)
+
+       $CONFIG_DIR/tealdeer/config.toml
+           Default configuration file for Tealdeer. This file contains
+           user-defined settings options.
+
+       $CACHE_DIR/tealdeer
+           Default cache directory for Tealdeer.
+           (Typically defaults to ~/.cache/tealdeer/)
+
+       $CACHE_DIR/tealdeer/tldr-pages
+           Default directory where Tealdeer stores cached tldr pages.
+           This is automatically updated when running `tldr --update`.
+
+       $DATA_DIR/tealdeer/pages
+           Directory for custom tldr pages. These are user-provided
+           pages stored separately from the default cache.
+           (Typically defaults to ~/.local/share/tealdeer/pages/)
+
+       Note:
+           The `$CONFIG_DIR`, `$CACHE_DIR`, and `$DATA_DIR` environment
+           variables follow the XDG Base Directory Specification. If
+           these are not set, the default locations are used:
+
+           - $HOME/.config for $CONFIG_DIR
+           - $HOME/.cache for $CACHE_DIR
+           - $HOME/.local/share for $DATA_DIR
+
+EXAMPLES
+       tldr tar
+           Show usage information for the `tar` command
+
+       tldr -v
+           Show the version of tldr.
+
+       tldr -l
+           List all commands in the cache.
+
+       tldr -p linux tar
+           Show usage information for the `tar` command, rendered for the Linux
+           platform.
+
+       tldr -f ~/path/to/file.md
+           Render the specified markdown file.
+
+       tldr -u
+           Update the local cache of command pages.
+
+       tldr --color auto
+           Enable color output based on terminal settings.
+
+LICENSE
+       Licensed under the Apache License, Version 2.0 and the MIT License.
+       You may obtain a copy of the licenses at:
+
+           http://www.apache.org/licenses/LICENSE-2.0
+           https://opensource.org/licenses/MIT
+
+SEE ALSO
+
+      Full documentation <https://tealdeer-rs.github.io/tealdeer>
+      TLDR project <https://github.com/tldr-pages/tldr>
