@@ -18,35 +18,35 @@ use tempfile::{Builder as TempfileBuilder, TempDir};
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 
 struct TestEnv {
-    pub cache_dir: TempDir,
-    pub custom_pages_dir: TempDir,
-    pub config_dir: TempDir,
+    pub cache_dir_path: PathBuf,
+    pub custom_pages_dir_path: PathBuf,
+    pub config_dir_path: PathBuf,
     pub default_features: bool,
     pub features: Vec<String>,
 }
 
 impl TestEnv {
     fn new() -> Self {
+        let test_dir: TempDir = TempfileBuilder::new()
+            .prefix(".tldr.test")
+            .tempdir()
+            .unwrap();
+
         let this = TestEnv {
-            cache_dir: TempfileBuilder::new()
-                .prefix(".tldr.test.cache")
-                .tempdir()
-                .unwrap(),
-            config_dir: TempfileBuilder::new()
-                .prefix(".tldr.test.conf")
-                .tempdir()
-                .unwrap(),
-            custom_pages_dir: TempfileBuilder::new()
-                .prefix(".tldr.test.custom-pages")
-                .tempdir()
-                .unwrap(),
+            cache_dir_path: test_dir.path().join(".cache"),
+            config_dir_path: test_dir.path().join(".config"),
+            custom_pages_dir_path: test_dir.path().join(".custom_pages"),
             default_features: true,
             features: vec![],
         };
 
+        create_dir_all(&this.cache_dir_path).unwrap();
+        create_dir_all(&this.config_dir_path).unwrap();
+        create_dir_all(&this.custom_pages_dir_path).unwrap();
+
         this.append_to_config(format!(
             "directories.cache_dir = '{}'\n",
-            this.cache_dir.path().to_str().unwrap(),
+            this.cache_dir_path.to_str().unwrap(),
         ));
 
         this
@@ -56,14 +56,14 @@ impl TestEnv {
         File::options()
             .create(true)
             .append(true)
-            .open(self.config_dir.path().join("config.toml"))
+            .open(self.config_dir_path.join("config.toml"))
             .expect("Failed to open config file")
             .write_all(content.as_ref().as_bytes())
             .expect("Failed to append to config file.");
     }
 
     fn remove_initial_config(self) -> Self {
-        let _ = fs::remove_file(self.config_dir.path().join("config.toml"));
+        let _ = fs::remove_file(self.config_dir_path.join("config.toml"));
         self
     }
 
@@ -75,8 +75,7 @@ impl TestEnv {
     /// Add entry for that environment to an OS-specific subfolder.
     fn add_os_entry(&self, os: &str, name: &str, contents: &str) {
         let dir = self
-            .cache_dir
-            .path()
+            .cache_dir_path
             .join(TLDR_PAGES_DIR)
             .join("pages")
             .join(os);
@@ -87,14 +86,14 @@ impl TestEnv {
 
     /// Add custom patch entry to the custom_pages_dir
     fn add_page_entry(&self, name: &str, contents: &str) {
-        let dir = self.custom_pages_dir.path();
+        let dir = &self.custom_pages_dir_path;
         create_dir_all(dir).unwrap();
         fs::write(dir.join(format!("{name}.page.md")), contents.as_bytes()).unwrap();
     }
 
     /// Add custom patch entry to the custom_pages_dir
     fn add_patch_entry(&self, name: &str, contents: &str) {
-        let dir = self.custom_pages_dir.path();
+        let dir = &self.custom_pages_dir_path;
         create_dir_all(dir).unwrap();
         fs::write(dir.join(format!("{name}.patch.md")), contents.as_bytes()).unwrap();
     }
@@ -128,7 +127,7 @@ impl TestEnv {
         let mut cmd = run.command();
         cmd.env(
             "TEALDEER_CONFIG_DIR",
-            self.config_dir.path().to_str().unwrap(),
+            self.config_dir_path.to_str().unwrap(),
         );
         cmd
     }
@@ -136,7 +135,7 @@ impl TestEnv {
     fn install_default_cache(self) -> Self {
         copy_recursively(
             &PathBuf::from_iter([env!("CARGO_MANIFEST_DIR"), "tests", "cache"]),
-            &self.cache_dir.path().join(TLDR_PAGES_DIR),
+            &self.cache_dir_path.join(TLDR_PAGES_DIR),
         )
         .expect("Failed to copy the cache to the test environment");
 
@@ -146,7 +145,7 @@ impl TestEnv {
     fn install_default_custom_pages(self) -> Self {
         copy_recursively(
             &PathBuf::from_iter([env!("CARGO_MANIFEST_DIR"), "tests", "custom-pages"]),
-            self.custom_pages_dir.path(),
+            self.custom_pages_dir_path.as_path(),
         )
         .expect("Failed to copy the custom pages to the test environment");
 
@@ -156,7 +155,7 @@ impl TestEnv {
     fn write_custom_pages_config(self) -> Self {
         self.append_to_config(format!(
             "directories.custom_pages_dir = '{}'\n",
-            self.custom_pages_dir.path().to_str().unwrap()
+            self.custom_pages_dir_path.to_str().unwrap()
         ));
 
         self
@@ -275,7 +274,7 @@ fn test_quiet_old_cache() {
     let testenv = TestEnv::new().install_default_cache();
 
     filetime::set_file_mtime(
-        testenv.cache_dir.path().join(TLDR_PAGES_DIR),
+        testenv.cache_dir_path.join(TLDR_PAGES_DIR),
         filetime::FileTime::from_unix_time(1, 0),
     )
     .unwrap();
@@ -299,7 +298,7 @@ fn test_quiet_old_cache() {
 #[test]
 fn test_create_cache_directory_path() {
     let testenv = TestEnv::new().remove_initial_config();
-    let cache_dir = testenv.cache_dir.path();
+    let cache_dir = &testenv.cache_dir_path;
     let internal_cache_dir = cache_dir.join("internal");
     testenv.append_to_config(format!(
         "directories.cache_dir = '{}'\n",
@@ -327,7 +326,7 @@ fn test_create_cache_directory_path() {
 #[test]
 fn test_cache_location_not_a_directory() {
     let testenv = TestEnv::new().remove_initial_config();
-    let cache_dir = testenv.cache_dir.path();
+    let cache_dir = &testenv.cache_dir_path;
     let internal_file = cache_dir.join("internal");
     File::create(&internal_file).unwrap();
 
@@ -350,7 +349,7 @@ fn test_cache_location_not_a_directory() {
 #[test]
 fn test_cache_location_source() {
     let testenv = TestEnv::new().remove_initial_config();
-    let default_cache_dir = testenv.cache_dir.path();
+    let default_cache_dir = &testenv.cache_dir_path;
     let tmp_cache_dir = TempfileBuilder::new()
         .prefix(".tldr.test.cache_dir")
         .tempdir()
@@ -406,7 +405,7 @@ fn test_setup_seed_config() {
         .success()
         .stderr(contains("Successfully created seed config file here"));
 
-    assert!(testenv.config_dir.path().join("config.toml").is_file());
+    assert!(testenv.config_dir_path.join("config.toml").is_file());
 }
 
 #[test]
@@ -421,26 +420,24 @@ fn test_show_paths() {
         .success()
         .stdout(contains(format!(
             "Config dir:       {}",
-            testenv.config_dir.path().to_str().unwrap(),
+            testenv.config_dir_path.to_str().unwrap(),
         )))
         .stdout(contains(format!(
             "Config path:      {}",
             testenv
-                .config_dir
-                .path()
+                .config_dir_path
                 .join("config.toml")
                 .to_str()
                 .unwrap(),
         )))
         .stdout(contains(format!(
             "Cache dir:        {}",
-            testenv.cache_dir.path().to_str().unwrap(),
+            testenv.cache_dir_path.to_str().unwrap(),
         )))
         .stdout(contains(format!(
             "Pages dir:        {}",
             testenv
-                .cache_dir
-                .path()
+                .cache_dir_path
                 .join(TLDR_PAGES_DIR)
                 .to_str()
                 .unwrap(),
@@ -456,7 +453,7 @@ fn test_show_paths() {
         .success()
         .stdout(contains(format!(
             "Custom pages dir: {}",
-            testenv.custom_pages_dir.path().to_str().unwrap(),
+            testenv.custom_pages_dir_path.to_str().unwrap(),
         )));
 }
 
@@ -812,7 +809,7 @@ fn test_autoupdate_cache() {
         .failure()
         .stderr(contains("Page cache not found. Please run `tldr --update`"));
 
-    let cache_file_path = testenv.cache_dir.path().join(TLDR_PAGES_DIR);
+    let cache_file_path = testenv.cache_dir_path.join(TLDR_PAGES_DIR);
 
     testenv
         .append_to_config("updates.auto_update = true\nupdates.auto_update_interval_hours = 24\n");
@@ -965,8 +962,7 @@ fn test_raw_render_file() {
     let testenv = TestEnv::new().install_default_cache();
 
     let path = testenv
-        .cache_dir
-        .path()
+        .cache_dir_path
         .join(TLDR_PAGES_DIR)
         .join("pages/common/inkscape-v1.md");
     let mut args = vec!["--color", "never", "-f", &path.to_str().unwrap()];
