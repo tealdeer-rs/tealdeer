@@ -18,6 +18,7 @@ use tempfile::{Builder as TempfileBuilder, TempDir};
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 
 struct TestEnv {
+    _test_dir: TempDir,
     pub cache_dir_path: PathBuf,
     pub custom_pages_dir_path: PathBuf,
     pub config_dir_path: PathBuf,
@@ -32,10 +33,15 @@ impl TestEnv {
                 .tempdir()
                 .unwrap();
 
+        let cache_dir_path = test_dir.path().join(".cache");
+        let config_dir_path = test_dir.path().join(".config");
+        let custom_pages_dir_path = test_dir.path().join(".custom_pages");
+
         let this = TestEnv {
-            cache_dir_path: test_dir.path().join(".cache"),
-            config_dir_path: test_dir.path().join(".config"),
-            custom_pages_dir_path: test_dir.path().join(".custom_pages"),
+            _test_dir: test_dir,
+            cache_dir_path,
+            config_dir_path,
+            custom_pages_dir_path,
             default_features: true,
             features: vec![],
         };
