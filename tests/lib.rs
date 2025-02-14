@@ -28,9 +28,9 @@ struct TestEnv {
 impl TestEnv {
     fn new() -> Self {
         let test_dir: TempDir = TempfileBuilder::new()
-            .prefix(".tldr.test")
-            .tempdir()
-            .unwrap();
+                .prefix(".tldr.test")
+                .tempdir()
+                .unwrap();
 
         let this = TestEnv {
             cache_dir_path: test_dir.path().join(".cache"),
