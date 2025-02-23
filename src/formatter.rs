@@ -140,7 +140,6 @@ fn is_freestanding_substring(surrounding: &str, substring: (usize, usize)) -> bo
 #[cfg(test)]
 mod tests {
     use super::*;
-    use PageSnippet::*;
 
     #[test]
     fn test_is_freestanding_substring() {
@@ -167,80 +166,170 @@ mod tests {
         ));
     }
 
-    fn run<'a>(cmd: &'a str, segment: &'a str) -> Vec<PageSnippet<'a>> {
-        let mut yielded = Vec::new();
-        let mut process_snippet = |snip: PageSnippet<'a>| {
-            if !snip.is_empty() {
-                yielded.push(snip);
-            }
-            Ok::<(), ()>(())
-        };
+    mod highlight_code_segment {
+        use super::*;
+        use PageSnippet::*;
 
-        highlight_code_segment(cmd, segment, &mut process_snippet)
-            .expect("highlight code segment failed");
-        yielded
+        fn run<'a>(cmd: &'a str, segment: &'a str) -> Vec<PageSnippet<'a>> {
+            let mut yielded = Vec::new();
+            let mut process_snippet = |snip: PageSnippet<'a>| {
+                if !snip.is_empty() {
+                    yielded.push(snip);
+                }
+                Ok::<(), ()>(())
+            };
+
+            highlight_code_segment(cmd, segment, &mut process_snippet)
+                .expect("highlight code segment failed");
+            yielded
+        }
+
+        #[test]
+        fn test_highlight_code_segment() {
+            assert!(run("make", "").is_empty());
+            assert_eq!(
+                &run("make", "make all CC=clang -q"),
+                &[CommandName("make"), NormalCode(" all CC=clang -q")]
+            );
+            assert_eq!(
+                &run("make", "  make money --always-make"),
+                &[
+                    NormalCode("  "),
+                    CommandName("make"),
+                    NormalCode(" money --always-make")
+                ]
+            );
+            assert_eq!(
+                &run("git commit", "git commit -m 'git commit'"),
+                &[CommandName("git commit"), NormalCode(" -m 'git commit'"),]
+            );
+        }
+
+        #[test]
+        fn test_i18n() {
+            assert_eq!(
+                &run("mäke", "mäke höhlenrätselbücher"),
+                &[CommandName("mäke"), NormalCode(" höhlenrätselbücher")]
+            );
+            assert_eq!(
+                &run(
+                    "Müll",
+                    "1000 Gründe warum Müll heute größer ist als Müll früher, ärgerlich"
+                ),
+                &[
+                    NormalCode("1000 Gründe warum "),
+                    CommandName("Müll"),
+                    NormalCode(" heute größer ist als "),
+                    CommandName("Müll"),
+                    NormalCode(" früher, ärgerlich")
+                ]
+            );
+            assert_eq!(
+                &run(
+                    "übergang",
+                    "die Zustandsübergangsfunktion übergang Änderungen",
+                ),
+                &[
+                    NormalCode("die Zustandsübergangsfunktion "),
+                    CommandName("übergang"),
+                    NormalCode(" Änderungen")
+                ],
+            );
+        }
+
+        #[test]
+        fn test_empty_command() {
+            let segment = "some code";
+            let snippets = [NormalCode(segment)];
+
+            assert_eq!(run("", segment), snippets);
+            assert_eq!(run(" ", segment), snippets);
+            assert_eq!(run("  \t ", segment), snippets);
+        }
     }
 
-    #[test]
-    fn test_highlight_code_segment() {
-        assert!(run("make", "").is_empty());
-        assert_eq!(
-            &run("make", "make all CC=clang -q"),
-            &[CommandName("make"), NormalCode(" all CC=clang -q")]
-        );
-        assert_eq!(
-            &run("make", "  make money --always-make"),
-            &[
-                NormalCode("  "),
-                CommandName("make"),
-                NormalCode(" money --always-make")
-            ]
-        );
-        assert_eq!(
-            &run("git commit", "git commit -m 'git commit'"),
-            &[CommandName("git commit"), NormalCode(" -m 'git commit'"),]
-        );
-    }
+    mod placeholders {
+        use super::*;
+        use PageSnippet::*;
 
-    #[test]
-    fn test_i18n() {
-        assert_eq!(
-            &run("mäke", "mäke höhlenrätselbücher"),
-            &[CommandName("mäke"), NormalCode(" höhlenrätselbücher")]
-        );
-        assert_eq!(
-            &run(
-                "Müll",
-                "1000 Gründe warum Müll heute größer ist als Müll früher, ärgerlich"
-            ),
-            &[
-                NormalCode("1000 Gründe warum "),
-                CommandName("Müll"),
-                NormalCode(" heute größer ist als "),
-                CommandName("Müll"),
-                NormalCode(" früher, ärgerlich")
-            ]
-        );
-        assert_eq!(
-            &run(
-                "übergang",
-                "die Zustandsübergangsfunktion übergang Änderungen",
-            ),
-            &[
-                NormalCode("die Zustandsübergangsfunktion "),
-                CommandName("übergang"),
-                NormalCode(" Änderungen")
-            ],
-        );
-    }
+        fn run<'a>(cmd: &'a str, segment: &'a str) -> Vec<PageSnippet<'a>> {
+            let mut yielded = Vec::new();
+            let mut process_snippet = |snip: PageSnippet<'a>| {
+                if !snip.is_empty() {
+                    yielded.push(snip);
+                }
+                Ok::<(), ()>(())
+            };
 
-    #[test]
-    fn test_empty_command() {
-        let segment = "some code";
-        let snippets = [NormalCode(segment)];
+            highlight_code(cmd, segment, &mut process_snippet)
+                .expect("highlight code segment failed");
+            yielded
+        }
 
-        assert_eq!(run("", segment), snippets);
-        assert_eq!(run(" ", segment), snippets);
-        assert_eq!(run("  \t ", segment), snippets);
+        #[test]
+        fn variable_vs_escaped() {
+            assert_eq!(
+                run("ping", "ping {{example.com}}"),
+                [
+                    CommandName("ping"),
+                    NormalCode(" "),
+                    Variable("example.com"),
+                ],
+            );
+            assert_eq!(
+                run(
+                    "docker inspect",
+                    r"docker inspect --format '\{\{range.NetworkSettings.Networks\}\}\{\{.IPAddress\}\}\{\{end\}\}' {{container}}"
+                ),
+                [
+                    CommandName("docker inspect"),
+                    NormalCode(
+                        " --format '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "
+                    ),
+                    Variable("container"),
+                ],
+            );
+            assert_eq!(
+                run("mount", r"mount \\{{computer_name}}\{{share_name}} Z:"),
+                [
+                    CommandName("mount"),
+                    NormalCode(r" \\"),
+                    Variable("computer_name"),
+                    NormalCode(r"\"),
+                    Variable("share_name"),
+                    NormalCode(" Z:"),
+                ],
+            );
+
+            assert_eq!(run("", r"\{"), [NormalCode(r"\{")]);
+            assert_eq!(run("", r"\{{a"), [NormalCode(r"\{{a")]);
+            assert_eq!(run("", r"\{{a}}"), [NormalCode(r"\"), Variable("a")]);
+
+            // Placeholder has begin marker, but no end marker
+            assert_eq!(run("", r"{{\}\}}"), [NormalCode("{{}}}")]);
+        }
+
+        #[test]
+        fn outer_precedence() {
+            assert_eq!(
+                run("git stash", "git stash show --patch {{stash@{0}}}"),
+                [
+                    CommandName("git stash"),
+                    NormalCode(" show --patch "),
+                    Variable("stash@{0}"),
+                ],
+            );
+
+            // The following is not listed in the specification, but this is the highlighting I would expect.
+            assert_eq!(
+                run("rg", "rg {{}}}"),
+                [CommandName("rg"), NormalCode(" "), Variable("}")]
+            );
+
+            // And these are just to document the current behavior
+            assert_eq!(run("", "{{{}}}"), [Variable("{}")]);
+            assert_eq!(run("", "{{{{}}}"), [Variable("{{}")]);
+            assert_eq!(run("", "{{{}}}}"), [Variable("{}}")]);
+        }
     }
 }
