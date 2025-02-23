@@ -56,7 +56,7 @@ pub fn print_page(
         }
     } else {
         // Closure that processes a page snippet and writes it to stdout
-        let mut process_snippet = |snip: PageSnippet<'_>| {
+        let mut process_snippet = |snip: PageSnippet<&str>| {
             if snip.is_empty() {
                 Ok(())
             } else {
@@ -82,7 +82,7 @@ pub fn print_page(
 
 fn print_snippet(
     writer: &mut impl Write,
-    snip: PageSnippet<'_>,
+    snip: PageSnippet<&str>,
     style: &StyleConfig,
 ) -> io::Result<()> {
     use PageSnippet::*;

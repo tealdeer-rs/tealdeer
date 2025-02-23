@@ -6,17 +6,32 @@ use crate::{extensions::FindFrom, types::LineType};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Represents a snippet from a page of a specific highlighting class.
-pub enum PageSnippet<'a> {
-    CommandName(&'a str),
-    Variable(&'a str),
-    NormalCode(&'a str),
-    Description(&'a str),
-    Text(&'a str),
-    Title(&'a str),
+pub enum PageSnippet<T> {
+    CommandName(T),
+    Variable(T),
+    NormalCode(T),
+    Description(T),
+    Text(T),
+    Title(T),
     Linebreak,
 }
 
-impl PageSnippet<'_> {
+impl<T> PageSnippet<T> {
+    pub fn map<F, U>(self, f: F) -> PageSnippet<U>
+    where
+        F: Fn(T) -> U,
+    {
+        todo!()
+    }
+}
+
+impl PartialEq<PageSnippet<&str>> for PageSnippet<String> {
+    fn eq(&self, other: &PageSnippet<&str>) -> bool {
+        todo!()
+    }
+}
+
+impl PageSnippet<&str> {
     pub fn is_empty(&self) -> bool {
         use PageSnippet::*;
 
@@ -38,7 +53,7 @@ pub fn highlight_lines<L, F, E>(
 ) -> Result<(), E>
 where
     L: Iterator<Item = LineType>,
-    F: for<'snip> FnMut(PageSnippet<'snip>) -> Result<(), E>,
+    F: for<'snip> FnMut(PageSnippet<&'snip str>) -> Result<(), E>,
 {
     let mut command = String::new();
     for line in lines {
@@ -79,7 +94,7 @@ where
 fn highlight_code<'a, E>(
     command: &'a str,
     text: &'a str,
-    process_snippet: &mut impl FnMut(PageSnippet<'a>) -> Result<(), E>,
+    process_snippet: &mut impl FnMut(PageSnippet<&str>) -> Result<(), E>,
 ) -> Result<(), E> {
     let variable_splits = text
         .split("}}")
@@ -97,7 +112,7 @@ fn highlight_code<'a, E>(
 fn highlight_code_segment<'a, E>(
     command_name: &'a str,
     mut segment: &'a str,
-    process_snippet: &mut impl FnMut(PageSnippet<'a>) -> Result<(), E>,
+    process_snippet: &mut impl FnMut(PageSnippet<&'a str>) -> Result<(), E>,
 ) -> Result<(), E> {
     if !command_name.is_empty() {
         let mut search_start = 0;
@@ -170,11 +185,11 @@ mod tests {
         use super::*;
         use PageSnippet::*;
 
-        fn run<'a>(cmd: &'a str, segment: &'a str) -> Vec<PageSnippet<'a>> {
+        fn run<'a>(cmd: &'a str, segment: &'a str) -> Vec<PageSnippet<String>> {
             let mut yielded = Vec::new();
-            let mut process_snippet = |snip: PageSnippet<'a>| {
+            let mut process_snippet = |snip: PageSnippet<_>| {
                 if !snip.is_empty() {
-                    yielded.push(snip);
+                    yielded.push(snip.map(str::to_string));
                 }
                 Ok::<(), ()>(())
             };
@@ -252,16 +267,16 @@ mod tests {
         use super::*;
         use PageSnippet::*;
 
-        fn run<'a>(cmd: &'a str, segment: &'a str) -> Vec<PageSnippet<'a>> {
+        fn run<'a>(cmd: &'a str, segment: &'a str) -> Vec<PageSnippet<String>> {
             let mut yielded = Vec::new();
-            let mut process_snippet = |snip: PageSnippet<'a>| {
+            let mut process_snippet = |snip: PageSnippet<&str>| {
                 if !snip.is_empty() {
-                    yielded.push(snip);
+                    yielded.push(snip.map(str::to_string));
                 }
                 Ok::<(), ()>(())
             };
 
-            highlight_code(cmd, segment, &mut process_snippet)
+            highlight_code(cmd, segment.to_string(), &mut process_snippet)
                 .expect("highlight code segment failed");
             yielded
         }
