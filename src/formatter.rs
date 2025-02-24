@@ -16,6 +16,7 @@ pub enum PageSnippet<T> {
     Linebreak,
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
 impl<T> PageSnippet<T> {
     pub fn map<F, U>(self, f: F) -> PageSnippet<U>
     where
