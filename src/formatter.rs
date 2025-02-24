@@ -21,13 +21,29 @@ impl<T> PageSnippet<T> {
     where
         F: Fn(T) -> U,
     {
-        todo!()
+        match self {
+            PageSnippet::CommandName(s) => PageSnippet::CommandName(f(s)),
+            PageSnippet::Variable(s) => PageSnippet::Variable(f(s)),
+            PageSnippet::NormalCode(s) => PageSnippet::NormalCode(f(s)),
+            PageSnippet::Description(s) => PageSnippet::Description(f(s)),
+            PageSnippet::Text(s) => PageSnippet::Text(f(s)),
+            PageSnippet::Title(s) => PageSnippet::Title(f(s)),
+            PageSnippet::Linebreak => PageSnippet::Linebreak,
+        }
     }
 }
 
 impl PartialEq<PageSnippet<&str>> for PageSnippet<String> {
     fn eq(&self, other: &PageSnippet<&str>) -> bool {
-        todo!()
+        match (self, other) {
+            (PageSnippet::CommandName(s), PageSnippet::CommandName(t)) => s == t,
+            (PageSnippet::Variable(s), PageSnippet::Variable(t)) => s == t,
+            (PageSnippet::NormalCode(s), PageSnippet::NormalCode(t)) => s == t,
+            (PageSnippet::Description(s), PageSnippet::Description(t)) => s == t,
+            (PageSnippet::Text(s), PageSnippet::Text(t)) => s == t,
+            (PageSnippet::Linebreak, PageSnippet::Linebreak) => true,
+            _ => false,
+        }
     }
 }
 
