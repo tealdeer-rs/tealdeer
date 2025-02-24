@@ -95,7 +95,7 @@ where
             LineType::ExampleText(text) => process_snippet(PageSnippet::Text(&text))?,
             LineType::ExampleCode(text) => {
                 process_snippet(PageSnippet::NormalCode("      "))?;
-                highlight_code(&command, &text, process_snippet)?;
+                highlight_code(&command, text, process_snippet)?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
 
@@ -107,18 +107,70 @@ where
 }
 
 /// Highlight code examples including user variables in {{ curly braces }}.
-fn highlight_code<'a, E>(
-    command: &'a str,
-    text: &'a str,
+fn highlight_code<E>(
+    command: &str,
+    mut text: String,
     process_snippet: &mut impl FnMut(PageSnippet<&str>) -> Result<(), E>,
 ) -> Result<(), E> {
-    let variable_splits = text
-        .split("}}")
-        .map(|s| s.split_once("{{").unwrap_or((s, "")));
-    for (code_segment, variable) in variable_splits {
-        highlight_code_segment(command, code_segment, process_snippet)?;
-        process_snippet(PageSnippet::Variable(variable))?;
+    fn find_marker(s: &str, marker: &str, forbidden_prefix: &str) -> Option<usize> {
+        assert_eq!(
+            marker.as_bytes()[0],
+            forbidden_prefix.as_bytes()[forbidden_prefix.len() - 1]
+        );
+
+        let mut search_start = 0;
+        while search_start < s.len() {
+            let Some(marker_index) = s.find_from(marker, search_start) else {
+                return None;
+            };
+
+            // Avoid matching the "{{" at the end of "\{\{{"
+            let prefix_start = marker_index as isize - forbidden_prefix.len() as isize + 1;
+            let overlaps_with_prefix =
+                0 <= prefix_start && &s[prefix_start as usize..=marker_index] == forbidden_prefix;
+            if !overlaps_with_prefix {
+                return Some(marker_index);
+            }
+
+            // The next valid marker cannot include the first character of the current match
+            search_start = marker_index + 1;
+        }
+
+        None
     }
+
+    // NOTE: This is not optimal, as it allocates one String for each `replace`
+    let replace_escaped = |s: &str| s.replace(r"\{\{", "{{").replace(r"\}\}", "}}");
+
+    while !text.is_empty() {
+        let Some(placeholder_start) = find_marker(&text, "{{", r"\{\{") else {
+            return highlight_code_segment(command, &replace_escaped(&text), process_snippet);
+        };
+        let Some(mut placeholder_end) = find_marker(&text[placeholder_start + 2..], "}}", r"\}\}")
+        else {
+            return highlight_code_segment(command, &replace_escaped(&text), process_snippet);
+        };
+        placeholder_end += placeholder_start + 2;
+
+        // Greedily extend matched range
+        while placeholder_end + 2 < text.len() && text.as_bytes()[placeholder_end + 2] == b'}' {
+            placeholder_end += 1;
+        }
+
+        let placeholder_content = &text[placeholder_start + 2..placeholder_end];
+
+        if placeholder_start > 0 {
+            highlight_code_segment(
+                command,
+                &replace_escaped(&text[..placeholder_start]),
+                process_snippet,
+            )?;
+        }
+        process_snippet(PageSnippet::Variable(&replace_escaped(placeholder_content)))?;
+
+        text.replace_range(..placeholder_end + 2, "");
+    }
+
     Ok(())
 }
 
