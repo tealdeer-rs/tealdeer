@@ -48,7 +48,7 @@ Release build:
 
 Release build with bundled CA roots:
 
-    $ cargo build --release --no-default-features --features webpki-roots
+    $ cargo build --release --no-default-features --features rustls-with-webpki-roots
 
 Debug build with logging support:
 
