@@ -4,7 +4,7 @@ use log::debug;
 
 use crate::{extensions::FindFrom, types::LineType};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Eq)]
 /// Represents a snippet from a page of a specific highlighting class.
 pub enum PageSnippet<T> {
     CommandName(T),
@@ -20,7 +20,7 @@ pub enum PageSnippet<T> {
 impl<T> PageSnippet<T> {
     pub fn map<F, U>(self, f: F) -> PageSnippet<U>
     where
-        F: Fn(T) -> U,
+        F: FnOnce(T) -> U,
     {
         match self {
             PageSnippet::CommandName(s) => PageSnippet::CommandName(f(s)),
@@ -34,14 +34,15 @@ impl<T> PageSnippet<T> {
     }
 }
 
-impl PartialEq<PageSnippet<&str>> for PageSnippet<String> {
-    fn eq(&self, other: &PageSnippet<&str>) -> bool {
+impl<T: PartialEq<U>, U> PartialEq<PageSnippet<U>> for PageSnippet<T> {
+    fn eq(&self, other: &PageSnippet<U>) -> bool {
         match (self, other) {
-            (PageSnippet::CommandName(s), PageSnippet::CommandName(t)) => s == t,
-            (PageSnippet::Variable(s), PageSnippet::Variable(t)) => s == t,
-            (PageSnippet::NormalCode(s), PageSnippet::NormalCode(t)) => s == t,
-            (PageSnippet::Description(s), PageSnippet::Description(t)) => s == t,
-            (PageSnippet::Text(s), PageSnippet::Text(t)) => s == t,
+            (PageSnippet::CommandName(s), PageSnippet::CommandName(t))
+            | (PageSnippet::Variable(s), PageSnippet::Variable(t))
+            | (PageSnippet::NormalCode(s), PageSnippet::NormalCode(t))
+            | (PageSnippet::Description(s), PageSnippet::Description(t))
+            | (PageSnippet::Text(s), PageSnippet::Text(t))
+            | (PageSnippet::Title(s), PageSnippet::Title(t)) => s == t,
             (PageSnippet::Linebreak, PageSnippet::Linebreak) => true,
             _ => false,
         }
@@ -120,15 +121,15 @@ fn highlight_code<E>(
         );
 
         let mut search_start = 0;
-        while search_start < s.len() {
-            let Some(marker_index) = s.find_from(marker, search_start) else {
-                return None;
-            };
+        loop {
+            let marker_index = s.find_from(marker, search_start)?;
 
-            // Avoid matching the "{{" at the end of "\{\{{"
-            let prefix_start = marker_index as isize - forbidden_prefix.len() as isize + 1;
-            let overlaps_with_prefix =
-                0 <= prefix_start && &s[prefix_start as usize..=marker_index] == forbidden_prefix;
+            // Avoid matching the "{{" at the end of "\{\{{" (where "{{" is the marker, and "\{\{{"
+            // is the forbidden prefix)
+            let overlaps_with_prefix = (forbidden_prefix.len() <= marker_index + 1) && {
+                let prefix_start = marker_index + 1 - forbidden_prefix.len();
+                &s[prefix_start..=marker_index] == forbidden_prefix
+            };
             if !overlaps_with_prefix {
                 return Some(marker_index);
             }
@@ -136,8 +137,6 @@ fn highlight_code<E>(
             // The next valid marker cannot include the first character of the current match
             search_start = marker_index + 1;
         }
-
-        None
     }
 
     // NOTE: This is not optimal, as it allocates one String for each `replace`
@@ -250,23 +249,23 @@ mod tests {
         ));
     }
 
+    fn run<'a>(cmd: &'a str, segment: &'a str) -> Vec<PageSnippet<String>> {
+        let mut yielded = Vec::new();
+        let mut process_snippet = |snip: PageSnippet<&str>| {
+            if !snip.is_empty() {
+                yielded.push(snip.map(str::to_string));
+            }
+            Ok::<(), ()>(())
+        };
+
+        highlight_code(cmd, segment.to_string(), &mut process_snippet)
+            .expect("highlight code segment failed");
+        yielded
+    }
+
     mod highlight_code_segment {
         use super::*;
         use PageSnippet::*;
-
-        fn run<'a>(cmd: &'a str, segment: &'a str) -> Vec<PageSnippet<String>> {
-            let mut yielded = Vec::new();
-            let mut process_snippet = |snip: PageSnippet<_>| {
-                if !snip.is_empty() {
-                    yielded.push(snip.map(str::to_string));
-                }
-                Ok::<(), ()>(())
-            };
-
-            highlight_code_segment(cmd, segment, &mut process_snippet)
-                .expect("highlight code segment failed");
-            yielded
-        }
 
         #[test]
         fn test_highlight_code_segment() {
@@ -335,20 +334,6 @@ mod tests {
     mod placeholders {
         use super::*;
         use PageSnippet::*;
-
-        fn run<'a>(cmd: &'a str, segment: &'a str) -> Vec<PageSnippet<String>> {
-            let mut yielded = Vec::new();
-            let mut process_snippet = |snip: PageSnippet<&str>| {
-                if !snip.is_empty() {
-                    yielded.push(snip.map(str::to_string));
-                }
-                Ok::<(), ()>(())
-            };
-
-            highlight_code(cmd, segment.to_string(), &mut process_snippet)
-                .expect("highlight code segment failed");
-            yielded
-        }
 
         #[test]
         fn variable_vs_escaped() {
