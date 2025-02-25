@@ -293,7 +293,7 @@ fn main() {
     let cache = Cache::new(
         &config.directories.cache_dir.path,
         enable_styles,
-        config.tls_backend,
+        config.updates.tls_backend,
     );
 
     // Clear cache, pass through

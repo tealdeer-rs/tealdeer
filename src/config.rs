@@ -202,15 +202,34 @@ impl Default for RawUpdatesConfig {
     }
 }
 
-impl From<RawUpdatesConfig> for UpdatesConfig {
-    fn from(raw_updates_config: RawUpdatesConfig) -> Self {
-        Self {
+impl TryFrom<RawUpdatesConfig> for UpdatesConfig {
+    type Error = anyhow::Error;
+
+    fn try_from(raw_updates_config: RawUpdatesConfig) -> Result<Self> {
+        let tls_backend = match raw_updates_config.tls_backend {
+            #[cfg(feature = "native-tls")]
+            RawTlsBackend::NativeTls => TlsBackend::NativeTls,
+            #[cfg(feature = "rustls-with-webpki-roots")]
+            RawTlsBackend::RustlsWithWebpkiRoots => TlsBackend::RustlsWithWebpkiRoots,
+            #[cfg(feature = "rustls-with-native-roots")]
+            RawTlsBackend::RustlsWithNativeRoots => TlsBackend::RustlsWithNativeRoots,
+            // when compiling without all TLS backend features, we want to handle config error.
+            #[allow(unreachable_patterns)]
+            _ => return Err(anyhow!(
+                "Unsupported TLS backend: {}. This tealdeer build has support for the following options: {}",
+                raw_updates_config.tls_backend,
+                SUPPORTED_TLS_BACKENDS.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", ")
+            ))
+        };
+
+        Ok(Self {
             auto_update: raw_updates_config.auto_update,
             auto_update_interval: Duration::from_secs(
                 raw_updates_config.auto_update_interval_hours * 3600,
             ),
             archive_source: raw_updates_config.archive_source,
-        }
+            tls_backend,
+        })
     }
 }
 
@@ -277,6 +296,7 @@ pub struct UpdatesConfig {
     pub auto_update: bool,
     pub auto_update_interval: Duration,
     pub archive_source: String,
+    pub tls_backend: TlsBackend,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -345,7 +365,6 @@ pub struct Config {
     pub style: StyleConfig,
     pub display: DisplayConfig,
     pub updates: UpdatesConfig,
-    pub tls_backend: TlsBackend,
     pub directories: DirectoriesConfig,
 }
 
@@ -357,23 +376,7 @@ impl Config {
     fn from_raw(raw_config: RawConfig, relative_path_root: &Path) -> Result<Self> {
         let style = raw_config.style.into();
         let display = raw_config.display.into();
-        // consumes early to prevent the move violation because `tls_backend` is not in `UpdatesConfig` but as a separate config
-        let tls_backend = match raw_config.updates.tls_backend {
-            #[cfg(feature = "native-tls")]
-            RawTlsBackend::NativeTls => TlsBackend::NativeTls,
-            #[cfg(feature = "rustls-with-webpki-roots")]
-            RawTlsBackend::RustlsWithWebpkiRoots => TlsBackend::RustlsWithWebpkiRoots,
-            #[cfg(feature = "rustls-with-native-roots")]
-            RawTlsBackend::RustlsWithNativeRoots => TlsBackend::RustlsWithNativeRoots,
-            // when compiling without all TLS backend features, we want to handle config error.
-            #[allow(unreachable_patterns)]
-            _ => return Err(anyhow!(
-                    "Unsupported TLS backend: {}. This tealdeer build has support for the following options: {}",
-                    raw_config.updates.tls_backend,
-                 SUPPORTED_TLS_BACKENDS.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", ")
-                ))
-        };
-        let updates = raw_config.updates.into();
+        let updates = raw_config.updates.try_into()?;
 
         // Determine directories config. For this, we need to take some
         // additional factory into account, like env variables, or the
@@ -434,7 +437,6 @@ impl Config {
             style,
             display,
             updates,
-            tls_backend,
             directories,
         })
     }
