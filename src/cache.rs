@@ -88,12 +88,53 @@ impl<'a> Cache<'a> {
             .context("Error comparing cache mtime with current time")
     }
 
+    pub fn find_page(&self, command: &str) -> Option<PageLookupResult> {
+        let page_filename = format!("{command}.md");
+        let patch_filename = format!("{command}.patch.md");
+        let custom_filename = format!("{command}.page.md");
+
+        if let Some(custom_pages_dir) = self.config.custom_pages_directory {
+            let custom_page = custom_pages_dir.join(custom_filename);
+            if custom_page.is_file() {
+                return Some(PageLookupResult::with_page(custom_page));
+            }
+        }
+
+        let patch_path = self
+            .config
+            .custom_pages_directory
+            .map(|dir| dir.join(&patch_filename))
+            .filter(|path| path.is_file());
+
+        let mut search_path = self.config.pages_directory.to_path_buf();
+        for &platform in self.config.platforms {
+            for language in self.config.languages {
+                search_path.push(language.directory_name());
+                search_path.push(platform.directory_name());
+                search_path.push(&page_filename);
+
+                if search_path.is_file() {
+                    return Some(
+                        PageLookupResult::with_page(search_path).with_optional_patch(patch_path),
+                    );
+                }
+
+                search_path.pop();
+                search_path.pop();
+                search_path.pop();
+            }
+        }
+
+        None
+    }
+
     pub fn list_pages(&self) -> impl IntoIterator<Item = String> {
         []
     }
 
-    pub fn find_page(&self, command: &str) -> Option<PageLookupResult> {
-        todo!()
+    pub fn check_for_old_custom_pages(&self) -> Result<bool> {
+        // TODO
+        Ok(false)
     }
 
     pub fn clear(self) -> Result<()> {
@@ -192,6 +233,37 @@ impl PageLookupResult {
         } else {
             Box::new(page_file) as Box<dyn Read>
         }))
+    }
+}
+
+trait DirectoryName {
+    type S;
+    fn directory_name(&self) -> Self::S;
+}
+
+impl DirectoryName for Language<'_> {
+    type S = String;
+
+    fn directory_name(&self) -> Self::S {
+        format!("pages.{}", self.0)
+    }
+}
+
+impl DirectoryName for PlatformType {
+    type S = &'static str;
+
+    fn directory_name(&self) -> Self::S {
+        match self {
+            PlatformType::Linux => "linux",
+            PlatformType::OsX => "osx",
+            PlatformType::SunOs => "sunos",
+            PlatformType::Windows => "windows",
+            PlatformType::Android => "android",
+            PlatformType::FreeBsd => "freebsd",
+            PlatformType::NetBsd => "netbsd",
+            PlatformType::OpenBsd => "openbsd",
+            PlatformType::Common => "common",
+        }
     }
 }
 

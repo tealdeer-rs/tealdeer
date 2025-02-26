@@ -338,7 +338,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         .map_or_else(get_languages_from_env, |lang| vec![Language(lang)]);
 
     let cache_config = CacheConfig {
-        pages_directory: config.directories.cache_dir.path(),
+        pages_directory: &config.directories.cache_dir.path().join(TLDR_PAGES_DIR),
         custom_pages_directory: config
             .directories
             .custom_pages_dir
@@ -347,6 +347,8 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         platforms: &platforms,
         languages: &languages,
     };
+
+    // TODO: check for TLDR_OLD_PAGES_DIR
 
     if args.clear_cache {
         if let Some(cache) = Cache::open(cache_config)? {
@@ -376,7 +378,24 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
 
     // Show command from cache
     if !command.is_empty() {
-        // Search for command in cache
+        // TODO: Remove this check 1 year after version 1.7.0 was released
+        if cache.check_for_old_custom_pages()? {
+            print_warning(
+                enable_styles,
+                &format!(
+                    "Custom pages using the old naming convention were found in {}.\n\
+                     Please rename them to follow the new convention:\n\
+                     - `<name>.page` → `<name>.page.md`\n\
+                     - `<name>.patch` → `<name>.patch.md`",
+                    cache
+                        .config()
+                        .custom_pages_directory
+                        .expect("Old custom pages can only exist in custom pages directory")
+                        .display(),
+                ),
+            );
+        }
+
         let Some(lookup_result) = cache.find_page(&command) else {
             if !args.quiet {
                 print_warning(
