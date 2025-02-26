@@ -32,6 +32,14 @@ pub(crate) struct Cli {
     #[arg(short = 'l', long = "list")]
     pub list: bool,
 
+    /// Edit custom page with `EDITOR`
+    #[arg(long, requires = "command")]
+    pub edit_page: bool,
+
+    /// Edit custom patch with `EDITOR`
+    #[arg(long, requires = "command", conflicts_with = "edit_page")]
+    pub edit_patch: bool,
+
     /// Render a specific markdown file
     #[arg(
         short = 'f',

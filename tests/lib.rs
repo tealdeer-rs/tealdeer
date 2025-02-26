@@ -1031,3 +1031,67 @@ fn test_raw_render_file() {
         .success()
         .stdout(diff(include_str!("cache/pages/common/inkscape-v1.md")));
 }
+
+fn touch_custom_page(testenv: &TestEnv) {
+    let args = vec!["--edit-page", "foo"];
+
+    testenv
+        .command()
+        .args(&args)
+        .env("EDITOR", "touch")
+        .assert()
+        .success();
+    assert!(testenv.custom_pages_dir.path().join("foo.page.md").exists());
+}
+
+fn touch_custom_patch(testenv: &TestEnv) {
+    let args = vec!["--edit-patch", "foo"];
+
+    testenv
+        .command()
+        .args(&args)
+        .env("EDITOR", "touch")
+        .assert()
+        .success();
+    assert!(testenv
+        .custom_pages_dir
+        .path()
+        .join("foo.patch.md")
+        .exists());
+}
+
+#[test]
+fn test_edit_page() {
+    let testenv = TestEnv::new().write_custom_pages_config();
+    touch_custom_page(&testenv);
+}
+
+#[test]
+fn test_edit_patch() {
+    let testenv = TestEnv::new().write_custom_pages_config();
+    touch_custom_patch(&testenv);
+}
+
+#[test]
+fn test_recreate_dir() {
+    let testenv = TestEnv::new().write_custom_pages_config();
+    touch_custom_patch(&testenv);
+    touch_custom_page(&testenv);
+}
+
+#[test]
+fn test_custom_pages_dir_is_not_dir() {
+    let testenv = TestEnv::new().write_custom_pages_config();
+    let _ = std::fs::remove_dir_all(testenv.custom_pages_dir.path());
+    let _ = File::create(testenv.custom_pages_dir.path()).unwrap();
+    assert!(testenv.custom_pages_dir.path().is_file());
+
+    let args = vec!["--edit-patch", "foo"];
+
+    testenv
+        .command()
+        .args(&args)
+        .env("EDITOR", "touch")
+        .assert()
+        .failure();
+}

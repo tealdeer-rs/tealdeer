@@ -27,10 +27,15 @@ compile_error!(
 
 use std::{
     env,
+    fs::create_dir_all,
     io::{self, IsTerminal},
+    path::Path,
     process,
+    process::Command,
 };
 
+use anyhow::anyhow;
+use anyhow::Context;
 use app_dirs::AppInfo;
 use clap::Parser;
 
@@ -235,6 +240,27 @@ fn get_languages_from_env() -> Vec<String> {
     )
 }
 
+fn spawn_editor(custom_pages_dir: &Path, file_name: &str) -> anyhow::Result<()> {
+    create_dir_all(custom_pages_dir).context("Failed to create custom pages directory")?;
+
+    let custom_page_path = custom_pages_dir.join(file_name);
+    let Some(custom_page_path) = custom_page_path.to_str() else {
+        return Err(anyhow!("`custom_page_path.to_str()` failed"));
+    };
+    let Ok(editor) = env::var("EDITOR") else {
+        return Err(anyhow!(
+            "To edit a custom page, please set the `EDITOR` environment variable."
+        ));
+    };
+    println!("Editing {custom_page_path:?}");
+
+    let status = Command::new(&editor).arg(custom_page_path).status()?;
+    if !status.success() {
+        return Err(anyhow!("{editor} exit with code {:?}", status.code()));
+    }
+    Ok(())
+}
+
 fn main() {
     // Initialize logger
     init_log();
@@ -265,6 +291,34 @@ fn main() {
             process::exit(1);
         }
     };
+
+    let custom_pages_dir = config
+        .directories
+        .custom_pages_dir
+        .as_ref()
+        .map(PathWithSource::path);
+
+    // Note: According to the TLDR client spec, page names must be transparently
+    // lowercased before lookup:
+    // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#page-names
+    let command = args.command.join("-").to_lowercase();
+
+    if args.edit_patch || args.edit_page {
+        let file_name = if args.edit_patch {
+            format!("{command}.patch.md")
+        } else {
+            format!("{command}.page.md")
+        };
+
+        custom_pages_dir
+            .context("To edit custom pages/patches, please specify a custom pages directory.")
+            .and_then(|custom_pages_dir| spawn_editor(custom_pages_dir, &file_name))
+            .unwrap_or_else(|err| {
+                print_error(enable_styles, &err);
+                process::exit(1);
+            });
+        return;
+    }
 
     // Show various paths
     if args.show_paths {
@@ -312,7 +366,7 @@ fn main() {
 
     // Check cache presence and freshness
     if !cache_updated
-        && (args.list || !args.command.is_empty())
+        && (args.list || !command.is_empty())
         && check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing
     {
         process::exit(1);
@@ -320,11 +374,6 @@ fn main() {
 
     // List cached commands and exit
     if args.list {
-        let custom_pages_dir = config
-            .directories
-            .custom_pages_dir
-            .as_ref()
-            .map(PathWithSource::path);
         println!(
             "{}",
             cache.list_pages(custom_pages_dir, &platforms).join("\n")
@@ -333,12 +382,7 @@ fn main() {
     }
 
     // Show command from cache
-    if !args.command.is_empty() {
-        // Note: According to the TLDR client spec, page names must be transparently
-        // lowercased before lookup:
-        // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#page-names
-        let command = args.command.join("-").to_lowercase();
-
+    if !command.is_empty() {
         // Collect languages
         let languages = args
             .language
