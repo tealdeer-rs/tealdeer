@@ -68,8 +68,39 @@ impl<'a> Cache<'a> {
         todo!()
     }
 
-    fn build_client(tls_backend: TlsBackend) -> Result<reqwest::Client> {
-        todo!()
+    fn build_client(tls_backend: TlsBackend) -> Result<reqwest::blocking::Client> {
+        let mut builder = Client::builder();
+        builder = match tls_backend {
+            #[cfg(feature = "native-tls")]
+            TlsBackend::NativeTls => builder
+                .use_native_tls()
+                .tls_built_in_root_certs(true)
+                .tls_built_in_webpki_certs(false)
+                .tls_built_in_native_certs(false),
+            #[cfg(feature = "rustls-with-webpki-roots")]
+            TlsBackend::RustlsWithWebpkiRoots => builder
+                .use_rustls_tls()
+                .tls_built_in_root_certs(false)
+                .tls_built_in_webpki_certs(true)
+                .tls_built_in_native_certs(false),
+            #[cfg(feature = "rustls-with-native-roots")]
+            TlsBackend::RustlsWithNativeRoots => builder
+                .use_rustls_tls()
+                .tls_built_in_root_certs(false)
+                .tls_built_in_webpki_certs(false)
+                .tls_built_in_native_certs(true),
+        };
+        if let Ok(ref host) = env::var("HTTP_PROXY") {
+            if let Ok(proxy) = Proxy::http(host) {
+                builder = builder.proxy(proxy);
+            }
+        }
+        if let Ok(ref host) = env::var("HTTPS_PROXY") {
+            if let Ok(proxy) = Proxy::https(host) {
+                builder = builder.proxy(proxy);
+            }
+        }
+        builder.build().context("Could not instantiate HTTP client")
     }
 
     pub fn config(&self) -> &CacheConfig<'a> {
