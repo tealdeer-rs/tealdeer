@@ -41,15 +41,51 @@ pub struct PageLookupResult {
 
 impl<'a> Cache<'a> {
     pub fn open(config: CacheConfig<'a>) -> Result<Option<Self>> {
-        todo!()
+        let (cache_dir_exists, cache_dir_is_dir) = config
+            .pages_directory
+            .metadata()
+            .map_or((false, false), |md| (true, md.is_dir()));
+        ensure!(
+            !cache_dir_exists || cache_dir_is_dir,
+            "{} exists, but is not a directory.",
+            config.pages_directory.display(),
+        );
+
+        Ok(cache_dir_is_dir.then_some(Cache { config }))
     }
 
     pub fn open_or_create(config: CacheConfig<'a>) -> Result<Self> {
-        todo!()
+        let (cache_dir_exists, cache_dir_is_dir) = config
+            .pages_directory
+            .metadata()
+            .map_or((false, false), |md| (true, md.is_dir()));
+        ensure!(
+            !cache_dir_exists || cache_dir_is_dir,
+            "{} exists, but is not a directory.",
+            config.pages_directory.display(),
+        );
+
+        if !cache_dir_is_dir {
+            fs::create_dir_all(&config.pages_directory).with_context(|| {
+                format!(
+                    "Cache directory `{}` cannot be created",
+                    config.pages_directory.display(),
+                )
+            })?;
+            eprintln!(
+                "Successfully created cache directory `{}`.",
+                config.pages_directory.display(),
+            );
+        }
+
+        Ok(Cache { config })
     }
 
     pub fn age(&self) -> Result<Duration> {
-        todo!()
+        let mtime = self.config.pages_directory.metadata()?.modified()?;
+        SystemTime::now()
+            .duration_since(mtime)
+            .context("Error comparing cache mtime with current time")
     }
 
     pub fn list_pages(&self) -> impl IntoIterator<Item = String> {
@@ -61,7 +97,12 @@ impl<'a> Cache<'a> {
     }
 
     pub fn clear(self) -> Result<()> {
-        todo!()
+        fs::remove_dir_all(self.config.pages_directory).with_context(|| {
+            format!(
+                "Could not remove pages directory at {}",
+                self.config.pages_directory.display(),
+            )
+        })
     }
 
     pub fn update(&mut self, archive_url: &str) -> Result<()> {
