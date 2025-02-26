@@ -123,15 +123,6 @@ impl PageLookupResult {
     }
 }
 
-pub enum CacheFreshness {
-    /// The cache is still fresh (less than `MAX_CACHE_AGE` old)
-    Fresh,
-    /// The cache is stale and should be updated
-    Stale(Duration),
-    /// The cache is missing
-    Missing,
-}
-
 /// Unit Tests for cache module
 #[cfg(test)]
 mod tests {

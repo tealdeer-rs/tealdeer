@@ -50,7 +50,7 @@ mod types;
 mod utils;
 
 use crate::{
-    cache::{Cache, CacheFreshness, PageLookupResult, TLDR_PAGES_DIR},
+    cache::{Cache, PageLookupResult, TLDR_PAGES_DIR},
     cli::Cli,
     config::{get_config_dir, get_config_path, make_default_config, Config, PathWithSource},
     extensions::Dedup,
@@ -86,39 +86,40 @@ enum CheckCacheResult {
 
 /// Check the cache for freshness. If it's stale or missing, show a warning.
 fn check_cache(cache: &Cache, args: &Cli, enable_styles: bool) -> CheckCacheResult {
-    todo!()
-    // match cache.freshness() {
-    //     CacheFreshness::Fresh => CheckCacheResult::CacheFound,
-    //     CacheFreshness::Stale(_) if args.quiet => CheckCacheResult::CacheFound,
-    //     CacheFreshness::Stale(age) => {
-    //         print_warning(
-    //             enable_styles,
-    //             &format!(
-    //                 "The cache hasn't been updated for {} days.\n\
-    //                  You should probably run `tldr --update` soon.",
-    //                 age.as_secs() / 24 / 3600
-    //             ),
-    //         );
-    //         CheckCacheResult::CacheFound
-    //     }
-    //     CacheFreshness::Missing => {
-    //         print_error(
-    //             enable_styles,
-    //             &anyhow::anyhow!(
-    //                 "Page cache not found. Please run `tldr --update` to download the cache."
-    //             ),
-    //         );
-    //         println!("\nNote: You can optionally enable automatic cache updates by adding the");
-    //         println!("following config to your config file:\n");
-    //         println!("  [updates]");
-    //         println!("  auto_update = true\n");
-    //         println!("The path to your config file can be looked up with `tldr --show-paths`.");
-    //         println!("To create an initial config file, use `tldr --seed-config`.\n");
-    //         println!("You can find more tips and tricks in our docs:\n");
-    //         println!("  https://tealdeer-rs.github.io/tealdeer/config_updates.html");
-    //         CheckCacheResult::CacheMissing
-    //     }
-    // }
+    match cache.age() {
+        Ok(age) => {
+            if age > config::MAX_CACHE_AGE && !args.quiet {
+                print_warning(
+                    enable_styles,
+                    &format!(
+                        "The cache hasn't been updated for {} days.\n\
+                     You should probably run `tldr --update` soon.",
+                        age.as_secs() / 24 / 3600
+                    ),
+                );
+            }
+
+            CheckCacheResult::CacheFound
+        }
+        Err(_) => {
+            print_error(
+                enable_styles,
+                &anyhow::anyhow!(
+                    "Page cache not found. Please run `tldr --update` to download the cache."
+                ),
+            );
+            println!("\nNote: You can optionally enable automatic cache updates by adding the");
+            println!("following config to your config file:\n");
+            println!("  [updates]");
+            println!("  auto_update = true\n");
+            println!("The path to your config file can be looked up with `tldr --show-paths`.");
+            println!("To create an initial config file, use `tldr --seed-config`.\n");
+            println!("You can find more tips and tricks in our docs:\n");
+            println!("  https://tealdeer-rs.github.io/tealdeer/config_updates.html");
+
+            CheckCacheResult::CacheMissing
+        }
+    }
 }
 
 /// Clear the cache
@@ -337,19 +338,24 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         .map_or_else(get_languages_from_env, |lang| vec![Language(lang)]);
 
     let cache_config = CacheConfig {
-        pages_directory: todo!(),
-        custom_pages_directory: todo!(),
+        pages_directory: config.directories.cache_dir.path(),
+        custom_pages_directory: config
+            .directories
+            .custom_pages_dir
+            .as_ref()
+            .map(PathWithSource::path),
         platforms: &platforms,
         languages: &languages,
     };
 
-    // Instantiate cache. This will not yet create the cache directory!
-    let cache: Cache = todo!();
-
-    // Clear cache, pass through
     if args.clear_cache {
-        clear_cache(cache, args.quiet)?;
+        if let Some(cache) = Cache::open(cache_config)? {
+            clear_cache(cache, args.quiet)?;
+        };
+        return Ok(ExitCode::SUCCESS);
     }
+
+    let mut cache = Cache::open_or_create(cache_config)?;
 
     if should_update_cache(&cache, &args, &config) {
         update_cache(&mut cache, &config.updates.archive_source, args.quiet)?;
@@ -360,7 +366,6 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         return Ok(ExitCode::FAILURE);
     };
 
-    // List cached commands and exit
     if args.list {
         for page in cache.list_pages() {
             println!("{}", page);
