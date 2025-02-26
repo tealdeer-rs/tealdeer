@@ -246,12 +246,7 @@ fn get_languages_from_env() -> Vec<String> {
 }
 
 fn spawn_editor(custom_pages_dir: &Path, file_name: &str) -> anyhow::Result<()> {
-    let res = create_dir_all(custom_pages_dir)
-        .context(format!("Fail to create dir {:?}", custom_pages_dir));
-    if !custom_pages_dir.is_dir() {
-        res?;
-        return Err(anyhow!("Fail to create dir {:?}", custom_pages_dir));
-    }
+    create_dir_all(custom_pages_dir).context("Failed to create custom pages directory")?;
 
     let custom_page_path = custom_pages_dir.join(file_name);
     let Some(custom_page_path) = custom_page_path.to_str() else {
