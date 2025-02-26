@@ -6,12 +6,11 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use log::debug;
 use ureq::tls::{RootCerts, TlsConfig, TlsProvider};
 use ureq::Agent;
-use walkdir::{DirEntry, WalkDir};
-use zip::ZipArchive;
+use zip::{read, ZipArchive};
 
 use crate::{config::TlsBackend, types::PlatformType, utils::print_warning};
 
@@ -21,27 +20,199 @@ static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Language<'a>(pub &'a str);
 
-impl Language<'_> {
-    fn directory_name(&self) -> String {
-        if *self == Language("en") {
-            String::from("pages")
-        } else {
-            format!("pages.{}", self.0)
-        }
-    }
+pub struct CacheConfig<'a> {
+    pub pages_directory: &'a Path,
+    pub custom_pages_directory: Option<&'a Path>,
+    pub platforms: &'a [PlatformType],
+    pub languages: &'a [Language<'a>],
 }
 
-#[derive(Debug)]
-pub struct Cache {
-    cache_dir: PathBuf,
-    enable_styles: bool,
-    tls_backend: TlsBackend,
+/// The directory backing this cache is checked to be populated at construction.
+pub struct Cache<'a> {
+    config: CacheConfig<'a>,
 }
 
 #[derive(Debug)]
 pub struct PageLookupResult {
     pub page_path: PathBuf,
     pub patch_path: Option<PathBuf>,
+}
+
+impl<'a> Cache<'a> {
+    pub fn open(config: CacheConfig<'a>) -> Result<Option<Self>> {
+        let (cache_dir_exists, cache_dir_is_dir) = config
+            .pages_directory
+            .metadata()
+            .map_or((false, false), |md| (true, md.is_dir()));
+        ensure!(
+            !cache_dir_exists || cache_dir_is_dir,
+            "{} exists, but is not a directory.",
+            config.pages_directory.display(),
+        );
+
+        Ok(cache_dir_is_dir.then_some(Cache { config }))
+    }
+
+    pub fn open_or_create(config: CacheConfig<'a>) -> Result<Self> {
+        let (cache_dir_exists, cache_dir_is_dir) = config
+            .pages_directory
+            .metadata()
+            .map_or((false, false), |md| (true, md.is_dir()));
+        ensure!(
+            !cache_dir_exists || cache_dir_is_dir,
+            "{} exists, but is not a directory.",
+            config.pages_directory.display(),
+        );
+
+        if !cache_dir_is_dir {
+            fs::create_dir_all(&config.pages_directory).with_context(|| {
+                format!(
+                    "Cache directory `{}` cannot be created",
+                    config.pages_directory.display(),
+                )
+            })?;
+            eprintln!(
+                "Successfully created cache directory `{}`.",
+                config.pages_directory.display(),
+            );
+        }
+
+        Ok(Cache { config })
+    }
+
+    pub fn age(&self) -> Result<Duration> {
+        let mtime = self.config.pages_directory.metadata()?.modified()?;
+        SystemTime::now()
+            .duration_since(mtime)
+            .context("Error comparing cache mtime with current time")
+    }
+
+    pub fn find_page(&self, command: &str) -> Option<PageLookupResult> {
+        let page_filename = format!("{command}.md");
+        let patch_filename = format!("{command}.patch.md");
+        let custom_filename = format!("{command}.page.md");
+
+        if let Some(custom_pages_dir) = self.config.custom_pages_directory {
+            let custom_page = custom_pages_dir.join(custom_filename);
+            if custom_page.is_file() {
+                return Some(PageLookupResult::with_page(custom_page));
+            }
+        }
+
+        let patch_path = self
+            .config
+            .custom_pages_directory
+            .map(|dir| dir.join(&patch_filename))
+            .filter(|path| path.is_file());
+
+        let mut search_path = self.config.pages_directory.to_path_buf();
+        for &platform in self.config.platforms {
+            for language in self.config.languages {
+                search_path.push(language.directory_name());
+                search_path.push(platform.directory_name());
+                search_path.push(&page_filename);
+
+                if search_path.is_file() {
+                    return Some(
+                        PageLookupResult::with_page(search_path).with_optional_patch(patch_path),
+                    );
+                }
+
+                search_path.pop();
+                search_path.pop();
+                search_path.pop();
+            }
+        }
+
+        None
+    }
+
+    pub fn list_pages(&self) -> Result<impl IntoIterator<Item = String>> {
+        let mut pages = Vec::new();
+
+        let mut append_all = |directory: &Path, suffix: &str| -> Result<()> {
+            let Ok(file_iter) = fs::read_dir(&directory) else {
+                return Ok(());
+            };
+
+            for entry in file_iter {
+                let entry = entry?;
+                if entry.file_type()?.is_file() {
+                    let mut page_path = entry
+                        .file_name()
+                        .into_string()
+                        .map_err(|_| anyhow!("Found invalid filename: {:?}", entry.path()))?;
+
+                    if page_path.ends_with(suffix) {
+                        page_path.truncate(page_path.len() - suffix.len());
+                        pages.push(page_path);
+                    } else {
+                        debug!(
+                            "Skipping page entry not ending in \".md\": {:?}",
+                            entry.path(),
+                        );
+                    }
+                }
+            }
+
+            Ok(())
+        };
+
+        let mut search_path = self.config.pages_directory.to_path_buf();
+        for language in self.config.languages {
+            search_path.push(language.directory_name());
+            for platform in self.config.platforms {
+                search_path.push(platform.directory_name());
+                append_all(&search_path, ".md")?;
+                search_path.pop();
+            }
+            search_path.pop();
+        }
+
+        if let Some(custom_pages_dir) = self.config.custom_pages_directory {
+            append_all(&custom_pages_dir, ".page.md")?;
+        }
+
+        pages.sort_unstable();
+        pages.dedup();
+        Ok(pages)
+    }
+
+    pub fn old_custom_pages_exist(&self) -> Result<bool> {
+        let Some(directory) = self.config.custom_pages_directory else {
+            return Ok(false);
+        };
+        let Ok(file_iter) = fs::read_dir(&directory) else {
+            return Ok(false);
+        };
+
+        for entry in file_iter {
+            if let Some(extension) = entry?.path().extension() {
+                if extension == "page" || extension == "patch" {
+                    return Ok(true);
+                }
+            }
+        }
+
+        Ok(false)
+    }
+
+    pub fn clear(self) -> Result<()> {
+        fs::remove_dir_all(self.config.pages_directory).with_context(|| {
+            format!(
+                "Could not remove pages directory at {}",
+                self.config.pages_directory.display(),
+            )
+        })
+    }
+
+    pub fn update(&mut self, archive_url: &str) -> Result<()> {
+        todo!()
+    }
+
+    pub fn config(&self) -> &CacheConfig<'a> {
+        &self.config
+    }
 }
 
 impl PageLookupResult {
@@ -90,120 +261,24 @@ impl PageLookupResult {
     }
 }
 
-pub enum CacheFreshness {
-    /// The cache is still fresh (less than `MAX_CACHE_AGE` old)
-    Fresh,
-    /// The cache is stale and should be updated
-    Stale(Duration),
-    /// The cache is missing
-    Missing,
+trait DirectoryName {
+    type S;
+    fn directory_name(&self) -> Self::S;
 }
 
-impl Cache {
-    pub fn new<P>(cache_dir: P, enable_styles: bool, tls_backend: TlsBackend) -> Self
-    where
-        P: Into<PathBuf>,
-    {
-        Self {
-            cache_dir: cache_dir.into(),
-            enable_styles,
-            tls_backend,
-        }
+impl DirectoryName for Language<'_> {
+    type S = String;
+
+    fn directory_name(&self) -> Self::S {
+        format!("pages.{}", self.0)
     }
+}
 
-    pub fn cache_dir(&self) -> &Path {
-        &self.cache_dir
-    }
+impl DirectoryName for PlatformType {
+    type S = &'static str;
 
-    /// Make sure that the cache directory exists and is a directory.
-    /// If necessary, create the directory.
-    fn ensure_cache_dir_exists(&self) -> Result<()> {
-        // Check whether `cache_dir` exists and is a directory
-        let (cache_dir_exists, cache_dir_is_dir) = self
-            .cache_dir
-            .metadata()
-            .map_or((false, false), |md| (true, md.is_dir()));
-        ensure!(
-            !cache_dir_exists || cache_dir_is_dir,
-            "Cache directory path `{}` is not a directory",
-            self.cache_dir.display(),
-        );
-
-        if !cache_dir_exists {
-            // If missing, try to create the complete directory path
-            fs::create_dir_all(&self.cache_dir).with_context(|| {
-                format!(
-                    "Cache directory path `{}` cannot be created",
-                    self.cache_dir.display(),
-                )
-            })?;
-            eprintln!(
-                "Successfully created cache directory path `{}`.",
-                self.cache_dir.display(),
-            );
-        }
-
-        Ok(())
-    }
-
-    fn pages_dir(&self) -> PathBuf {
-        self.cache_dir.join(TLDR_PAGES_DIR)
-    }
-
-    /// Update the pages cache from the specified URL.
-    pub fn update(&self, archive_source: &str) -> Result<()> {
-        self.ensure_cache_dir_exists()?;
-
-        let archive_url = format!("{archive_source}/tldr.zip");
-
-        let client = Self::build_client(self.tls_backend)?;
-        // First, download the compressed data
-        let bytes: Vec<u8> = Self::download(&client, &archive_url)?;
-
-        // Decompress the response body into an `Archive`
-        let mut archive = ZipArchive::new(Cursor::new(bytes))
-            .context("Could not decompress downloaded ZIP archive")?;
-
-        // Clear cache directory
-        // Note: This is not the best solution. Ideally we would download the
-        // archive to a temporary directory and then swap the two directories.
-        // But renaming a directory doesn't work across filesystems and Rust
-        // does not yet offer a recursive directory copying function. So for
-        // now, we'll use this approach.
-        self.clear()
-            .context("Could not clear the cache directory")?;
-
-        // Extract archive into pages dir
-        archive
-            .extract(self.pages_dir())
-            .context("Could not unpack compressed data")?;
-
-        Ok(())
-    }
-
-    /// Return the duration since the cache directory was last modified.
-    pub fn last_update(&self) -> Option<Duration> {
-        if let Ok(metadata) = fs::metadata(self.pages_dir()) {
-            if let Ok(mtime) = metadata.modified() {
-                let now = SystemTime::now();
-                return now.duration_since(mtime).ok();
-            }
-        }
-        None
-    }
-
-    /// Return the freshness of the cache (fresh, stale or missing).
-    pub fn freshness(&self) -> CacheFreshness {
-        match self.last_update() {
-            Some(ago) if ago > crate::config::MAX_CACHE_AGE => CacheFreshness::Stale(ago),
-            Some(_) => CacheFreshness::Fresh,
-            None => CacheFreshness::Missing,
-        }
-    }
-
-    /// Return the platform directory.
-    fn get_platform_dir(platform: PlatformType) -> &'static str {
-        match platform {
+    fn directory_name(&self) -> Self::S {
+        match self {
             PlatformType::Linux => "linux",
             PlatformType::OsX => "osx",
             PlatformType::SunOs => "sunos",
@@ -215,223 +290,9 @@ impl Cache {
             PlatformType::Common => "common",
         }
     }
-
-    /// Check for pages for a given platform in one of the given languages.
-    fn find_page_for_platform(
-        page_name: &str,
-        pages_dir: &Path,
-        platform: &str,
-        language_dirs: &[String],
-    ) -> Option<PathBuf> {
-        language_dirs
-            .iter()
-            .map(|lang_dir| pages_dir.join(lang_dir).join(platform).join(page_name))
-            .find(|path| path.exists() && path.is_file())
-    }
-
-    /// Look up custom patch (<name>.patch.md). If it exists, store it in a variable.
-    fn find_patch(patch_name: &str, custom_pages_dir: Option<&Path>) -> Option<PathBuf> {
-        custom_pages_dir
-            .map(|custom_dir| custom_dir.join(patch_name))
-            .filter(|path| path.exists() && path.is_file())
-    }
-
-    /// Search for a page and return the path to it.
-    pub fn find_page(
-        &self,
-        name: &str,
-        languages: &[Language<'_>],
-        custom_pages_dir: Option<&Path>,
-        platforms: &[PlatformType],
-    ) -> Option<PageLookupResult> {
-        let page_filename = format!("{name}.md");
-        let patch_filename = format!("{name}.patch.md");
-        let custom_filename = format!("{name}.page.md");
-
-        // Determine directory paths
-        let pages_dir = self.pages_dir();
-        let lang_dirs: Vec<String> = languages.iter().map(Language::directory_name).collect();
-
-        // Look up custom page (<name>.page.md). If it exists, return it directly
-        if let Some(config_dir) = custom_pages_dir {
-            // TODO: Remove this check 1 year after version 1.7.0 was released
-            self.check_for_old_custom_pages(config_dir);
-
-            let custom_page = config_dir.join(custom_filename);
-            if custom_page.exists() && custom_page.is_file() {
-                return Some(PageLookupResult::with_page(custom_page));
-            }
-        }
-
-        let patch_path = Self::find_patch(&patch_filename, custom_pages_dir);
-
-        // Try to find a platform specific path next, in the order supplied by the user, and append custom patch to it.
-        for &platform in platforms {
-            let platform_dir = Cache::get_platform_dir(platform);
-            if let Some(page) =
-                Self::find_page_for_platform(&page_filename, &pages_dir, platform_dir, &lang_dirs)
-            {
-                return Some(PageLookupResult::with_page(page).with_optional_patch(patch_path));
-            }
-        }
-
-        None
-    }
-
-    /// Return the available pages.
-    pub fn list_pages(
-        &self,
-        custom_pages_dir: Option<&Path>,
-        platforms: &[PlatformType],
-    ) -> Vec<String> {
-        // Determine platforms directory and platform
-        let platforms_dir = self.pages_dir().join("pages");
-        let platform_dirs: Vec<&'static str> = platforms
-            .iter()
-            .map(|&p| Self::get_platform_dir(p))
-            .collect();
-
-        // Closure that allows the WalkDir instance to traverse platform
-        // relevant page directories, but not others.
-        let should_walk = |entry: &DirEntry| -> bool {
-            let file_type = entry.file_type();
-            let Some(file_name) = entry.file_name().to_str() else {
-                return false;
-            };
-            if file_type.is_dir() {
-                return platform_dirs.contains(&file_name);
-            } else if file_type.is_file() {
-                return true;
-            }
-            false
-        };
-
-        let to_stem = |entry: DirEntry| -> Option<String> {
-            entry
-                .path()
-                .file_stem()
-                .and_then(OsStr::to_str)
-                .map(str::to_string)
-        };
-
-        let to_stem_custom = |entry: DirEntry| -> Option<String> {
-            entry
-                .path()
-                .file_name()
-                .and_then(OsStr::to_str)
-                .and_then(|s| s.strip_suffix(".page.md"))
-                .map(str::to_string)
-        };
-
-        // Recursively walk through platform specific directory
-        let mut pages = WalkDir::new(platforms_dir)
-            .min_depth(1) // Skip root directory
-            .into_iter()
-            .filter_entry(should_walk) // Filter out pages for other architectures
-            .filter_map(Result::ok) // Convert results to options, filter out errors
-            .filter_map(|e| {
-                let extension = e.path().extension().unwrap_or_default();
-                if e.file_type().is_file() && extension == "md" {
-                    to_stem(e)
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<String>>();
-
-        if let Some(custom_pages_dir) = custom_pages_dir {
-            let is_page = |entry: &DirEntry| -> bool {
-                entry.file_type().is_file()
-                    && entry
-                        .path()
-                        .file_name()
-                        .and_then(OsStr::to_str)
-                        .is_some_and(|file_name| file_name.ends_with(".page.md"))
-            };
-
-            let custom_pages = WalkDir::new(custom_pages_dir)
-                .min_depth(1)
-                .max_depth(1)
-                .into_iter()
-                .filter_entry(is_page)
-                .filter_map(Result::ok)
-                .filter_map(to_stem_custom);
-
-            pages.extend(custom_pages);
-        }
-
-        pages.sort();
-        pages.dedup();
-        pages
-    }
-
-    /// Delete the cache directory
-    ///
-    /// Returns true if the cache was deleted and false if the cache dir did
-    /// not exist.
-    pub fn clear(&self) -> Result<bool> {
-        if !self.cache_dir.exists() {
-            return Ok(false);
-        }
-        ensure!(
-            self.cache_dir.is_dir(),
-            "Cache path ({}) is not a directory.",
-            self.cache_dir.display(),
-        );
-
-        // Delete old tldr-pages cache location as well if present
-        // TODO: To be removed in the future
-        for pages_dir_name in [TLDR_PAGES_DIR, TLDR_OLD_PAGES_DIR] {
-            let pages_dir = self.cache_dir.join(pages_dir_name);
-
-            if pages_dir.exists() {
-                fs::remove_dir_all(&pages_dir).with_context(|| {
-                    format!(
-                        "Could not remove the cache directory at {}",
-                        pages_dir.display()
-                    )
-                })?;
-            }
-        }
-
-        Ok(true)
-    }
-
-    /// Check for old custom pages (without .md suffix) and print a warning.
-    fn check_for_old_custom_pages(&self, custom_pages_dir: &Path) {
-        let old_custom_pages_exist = WalkDir::new(custom_pages_dir)
-            .min_depth(1)
-            .max_depth(1)
-            .into_iter()
-            .filter_entry(|entry| entry.file_type().is_file())
-            .any(|entry| {
-                if let Ok(entry) = entry {
-                    let extension = entry.path().extension();
-                    if let Some(extension) = extension {
-                        extension == "page" || extension == "patch"
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                }
-            });
-        if old_custom_pages_exist {
-            print_warning(
-                self.enable_styles,
-                &format!(
-                    "Custom pages using the old naming convention were found in {}.\n\
-                     Please rename them to follow the new convention:\n\
-                     - `<name>.page` → `<name>.page.md`\n\
-                     - `<name>.patch` → `<name>.patch.md`",
-                    custom_pages_dir.display()
-                ),
-            );
-        }
-    }
 }
 
-impl Cache {
+impl Cache<'_> {
     fn build_client(tls_backend: TlsBackend) -> Result<Agent> {
         let tls_builder = match tls_backend {
             #[cfg(feature = "native-tls")]
