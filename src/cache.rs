@@ -13,7 +13,7 @@ use reqwest::{blocking::Client, Proxy};
 use walkdir::{DirEntry, WalkDir};
 use zip::ZipArchive;
 
-use crate::{types::PlatformType, utils::print_warning};
+use crate::{config::TlsBackend, types::PlatformType, utils::print_warning};
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
@@ -22,6 +22,7 @@ static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 pub struct Cache {
     cache_dir: PathBuf,
     enable_styles: bool,
+    tls_backend: TlsBackend,
 }
 
 #[derive(Debug)]
@@ -86,13 +87,14 @@ pub enum CacheFreshness {
 }
 
 impl Cache {
-    pub fn new<P>(cache_dir: P, enable_styles: bool) -> Self
+    pub fn new<P>(cache_dir: P, enable_styles: bool, tls_backend: TlsBackend) -> Self
     where
         P: Into<PathBuf>,
     {
         Self {
             cache_dir: cache_dir.into(),
             enable_styles,
+            tls_backend,
         }
     }
 
@@ -135,9 +137,28 @@ impl Cache {
         self.cache_dir.join(TLDR_PAGES_DIR)
     }
 
-    /// Download the archive from the specified URL.
-    fn download(archive_url: &str) -> Result<Vec<u8>> {
+    fn build_client(tls_backend: TlsBackend) -> Result<Client> {
         let mut builder = Client::builder();
+        builder = match tls_backend {
+            #[cfg(feature = "native-tls")]
+            TlsBackend::NativeTls => builder
+                .use_native_tls()
+                .tls_built_in_root_certs(true)
+                .tls_built_in_webpki_certs(false)
+                .tls_built_in_native_certs(false),
+            #[cfg(feature = "rustls-with-webpki-roots")]
+            TlsBackend::RustlsWithWebpkiRoots => builder
+                .use_rustls_tls()
+                .tls_built_in_root_certs(false)
+                .tls_built_in_webpki_certs(true)
+                .tls_built_in_native_certs(false),
+            #[cfg(feature = "rustls-with-native-roots")]
+            TlsBackend::RustlsWithNativeRoots => builder
+                .use_rustls_tls()
+                .tls_built_in_root_certs(false)
+                .tls_built_in_webpki_certs(false)
+                .tls_built_in_native_certs(true),
+        };
         if let Ok(ref host) = env::var("HTTP_PROXY") {
             if let Ok(proxy) = Proxy::http(host) {
                 builder = builder.proxy(proxy);
@@ -148,9 +169,11 @@ impl Cache {
                 builder = builder.proxy(proxy);
             }
         }
-        let client = builder
-            .build()
-            .context("Could not instantiate HTTP client")?;
+        builder.build().context("Could not instantiate HTTP client")
+    }
+
+    /// Download the archive from the specified URL.
+    fn download(client: &Client, archive_url: &str) -> Result<Vec<u8>> {
         let mut resp = client
             .get(archive_url)
             .send()?
@@ -163,11 +186,14 @@ impl Cache {
     }
 
     /// Update the pages cache from the specified URL.
-    pub fn update(&self, archive_url: &str) -> Result<()> {
+    pub fn update(&self, archive_source: &str) -> Result<()> {
         self.ensure_cache_dir_exists()?;
 
+        let archive_url = format!("{archive_source}/tldr.zip");
+
+        let client = Self::build_client(self.tls_backend)?;
         // First, download the compressed data
-        let bytes: Vec<u8> = Self::download(archive_url)?;
+        let bytes: Vec<u8> = Self::download(&client, &archive_url)?;
 
         // Decompress the response body into an `Archive`
         let mut archive = ZipArchive::new(Cursor::new(bytes))
@@ -221,6 +247,7 @@ impl Cache {
             PlatformType::FreeBsd => "freebsd",
             PlatformType::NetBsd => "netbsd",
             PlatformType::OpenBsd => "openbsd",
+            PlatformType::Common => "common",
         }
     }
 
@@ -292,9 +319,7 @@ impl Cache {
             }
         }
 
-        // Did not find platform specific results, fall back to "common"
-        Self::find_page_for_platform(&page_filename, &pages_dir, "common", &lang_dirs)
-            .map(|page| PageLookupResult::with_page(page).with_optional_patch(patch_path))
+        None
     }
 
     /// Return the available pages.
@@ -311,14 +336,14 @@ impl Cache {
             .collect();
 
         // Closure that allows the WalkDir instance to traverse platform
-        // specific and common page directories, but not others.
+        // relevant page directories, but not others.
         let should_walk = |entry: &DirEntry| -> bool {
             let file_type = entry.file_type();
             let Some(file_name) = entry.file_name().to_str() else {
                 return false;
             };
             if file_type.is_dir() {
-                return file_name == "common" || platform_dirs.contains(&file_name);
+                return platform_dirs.contains(&file_name);
             } else if file_type.is_file() {
                 return true;
             }
@@ -342,7 +367,7 @@ impl Cache {
                 .map(str::to_string)
         };
 
-        // Recursively walk through common and (if applicable) platform specific directory
+        // Recursively walk through platform specific directory
         let mut pages = WalkDir::new(platforms_dir)
             .min_depth(1) // Skip root directory
             .into_iter()
@@ -365,7 +390,7 @@ impl Cache {
                         .path()
                         .file_name()
                         .and_then(OsStr::to_str)
-                        .map_or(false, |file_name| file_name.ends_with(".page.md"))
+                        .is_some_and(|file_name| file_name.ends_with(".page.md"))
             };
 
             let custom_pages = WalkDir::new(custom_pages_dir)
@@ -503,5 +528,23 @@ mod tests {
         reader.read_to_end(&mut buf).unwrap();
 
         assert_eq!(&buf, b"Hello\n");
+    }
+
+    #[test]
+    #[cfg(feature = "native-tls")]
+    fn test_create_https_client_with_native_tls() {
+        Cache::build_client(TlsBackend::NativeTls).expect("fails to build a client.");
+    }
+
+    #[test]
+    #[cfg(feature = "rustls-with-webpki-roots")]
+    fn test_create_https_client_with_rustls() {
+        Cache::build_client(TlsBackend::RustlsWithWebpkiRoots).expect("fails to build a client.");
+    }
+
+    #[test]
+    #[cfg(feature = "rustls-with-native-roots")]
+    fn test_create_https_client_with_rustls_with_native_roots() {
+        Cache::build_client(TlsBackend::RustlsWithNativeRoots).expect("fails to build a client.");
     }
 }

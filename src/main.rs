@@ -16,27 +16,24 @@
 #![allow(clippy::struct_excessive_bools)]
 #![allow(clippy::too_many_lines)]
 
-#[cfg(any(
-    all(feature = "native-roots", feature = "webpki-roots"),
-    all(feature = "native-roots", feature = "native-tls"),
-    all(feature = "webpki-roots", feature = "native-tls"),
-    not(any(
-        feature = "native-roots",
-        feature = "webpki-roots",
-        feature = "native-tls"
-    )),
-))]
+#[cfg(not(any(
+    feature = "native-tls",
+    feature = "rustls-with-webpki-roots",
+    feature = "rustls-with-native-roots",
+)))]
 compile_error!(
-    "exactly one of the features \"native-roots\", \"webpki-roots\" or \"native-tls\" must be enabled"
+    "at least one of the features \"native-tls\", \"rustls-with-webpki-roots\" or \"rustls-with-native-roots\" must be enabled"
 );
 
 use std::{
     env,
+    fs::create_dir_all,
     io::{self, IsTerminal},
-    process::ExitCode,
+    path::Path,
+    process::{Command, ExitCode},
 };
 
-use anyhow::{Context as _, Result};
+use anyhow::{anyhow, Context, Result};
 use app_dirs::AppInfo;
 use clap::Parser;
 
@@ -65,7 +62,6 @@ const APP_INFO: AppInfo = AppInfo {
     name: NAME,
     author: NAME,
 };
-const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
 
 /// The cache should be updated if it was explicitly requested,
 /// or if an automatic update is due and allowed.
@@ -135,9 +131,9 @@ fn clear_cache(cache: &Cache, quietly: bool) -> Result<()> {
 }
 
 /// Update the cache
-fn update_cache(cache: &Cache, quietly: bool) -> Result<()> {
+fn update_cache(cache: &Cache, archive_source: &str, quietly: bool) -> Result<()> {
     cache
-        .update(ARCHIVE_URL)
+        .update(archive_source)
         .context("Could not update cache")?;
     if !quietly {
         eprintln!("Successfully updated cache.");
@@ -232,6 +228,27 @@ fn get_languages_from_env() -> Vec<String> {
     )
 }
 
+fn spawn_editor(custom_pages_dir: &Path, file_name: &str) -> Result<()> {
+    create_dir_all(custom_pages_dir).context("Failed to create custom pages directory")?;
+
+    let custom_page_path = custom_pages_dir.join(file_name);
+    let Some(custom_page_path) = custom_page_path.to_str() else {
+        return Err(anyhow!("`custom_page_path.to_str()` failed"));
+    };
+    let Ok(editor) = env::var("EDITOR") else {
+        return Err(anyhow!(
+            "To edit a custom page, please set the `EDITOR` environment variable."
+        ));
+    };
+    println!("Editing {custom_page_path:?}");
+
+    let status = Command::new(&editor).arg(custom_page_path).status()?;
+    if !status.success() {
+        return Err(anyhow!("{editor} exit with code {:?}", status.code()));
+    }
+    Ok(())
+}
+
 fn main() -> ExitCode {
     // Initialize logger
     init_log();
@@ -264,6 +281,31 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     // Look up config file, if none is found fall back to default config.
     let config = Config::load(enable_styles).context("Could not load config")?;
 
+    let custom_pages_dir = config
+        .directories
+        .custom_pages_dir
+        .as_ref()
+        .map(PathWithSource::path);
+
+    // Note: According to the TLDR client spec, page names must be transparently
+    // lowercased before lookup:
+    // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#page-names
+    let command = args.command.join("-").to_lowercase();
+
+    if args.edit_patch || args.edit_page {
+        let file_name = if args.edit_patch {
+            format!("{command}.patch.md")
+        } else {
+            format!("{command}.page.md")
+        };
+
+        custom_pages_dir
+            .context("To edit custom pages/patches, please specify a custom pages directory.")
+            .and_then(|custom_pages_dir| spawn_editor(custom_pages_dir, &file_name))?;
+
+        return Ok(ExitCode::SUCCESS);
+    }
+
     // Show various paths
     if args.show_paths {
         show_paths(&config);
@@ -275,11 +317,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         return Ok(ExitCode::SUCCESS);
     }
 
-    let fallback_platforms: &[PlatformType] = &[PlatformType::current()];
-    let platforms = args
-        .platforms
-        .as_ref()
-        .map_or(fallback_platforms, Vec::as_slice);
+    let platforms = compute_platforms(args.platforms.as_ref());
 
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
@@ -289,7 +327,11 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     }
 
     // Instantiate cache. This will not yet create the cache directory!
-    let cache = Cache::new(&config.directories.cache_dir.path, enable_styles);
+    let cache = Cache::new(
+        &config.directories.cache_dir.path,
+        enable_styles,
+        config.updates.tls_backend,
+    );
 
     // Clear cache, pass through
     if args.clear_cache {
@@ -297,7 +339,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     }
 
     if should_update_cache(&cache, &args, &config) {
-        update_cache(&cache, args.quiet)?;
+        update_cache(&cache, &config.updates.archive_source, args.quiet)?;
     } else if (args.list || !args.command.is_empty())
         && check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing
     {
@@ -307,26 +349,16 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
 
     // List cached commands and exit
     if args.list {
-        let custom_pages_dir = config
-            .directories
-            .custom_pages_dir
-            .as_ref()
-            .map(PathWithSource::path);
         println!(
             "{}",
-            cache.list_pages(custom_pages_dir, platforms).join("\n")
+            cache.list_pages(custom_pages_dir, &platforms).join("\n")
         );
 
         return Ok(ExitCode::SUCCESS);
     }
 
     // Show command from cache
-    if !args.command.is_empty() {
-        // Note: According to the TLDR client spec, page names must be transparently
-        // lowercased before lookup:
-        // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#page-names
-        let command = args.command.join("-").to_lowercase();
-
+    if !command.is_empty() {
         // Collect languages
         let languages = args
             .language
@@ -341,7 +373,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
                 .custom_pages_dir
                 .as_ref()
                 .map(PathWithSource::path),
-            platforms,
+            &platforms,
         ) else {
             if !args.quiet {
                 print_warning(
@@ -362,6 +394,20 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     }
 
     Ok(ExitCode::SUCCESS)
+}
+
+/// Returns the passed or default platform types and appends `PlatformType::Common` as fallback.
+fn compute_platforms(platforms: Option<&Vec<PlatformType>>) -> Vec<PlatformType> {
+    match platforms {
+        Some(p) => {
+            let mut result = p.clone();
+            if !result.contains(&PlatformType::Common) {
+                result.push(PlatformType::Common);
+            }
+            result
+        }
+        None => vec![PlatformType::current(), PlatformType::Common],
+    }
 }
 
 #[cfg(test)]
