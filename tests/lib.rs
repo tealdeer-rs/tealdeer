@@ -78,7 +78,7 @@ impl TestEnv {
             .cache_dir
             .path()
             .join(TLDR_PAGES_DIR)
-            .join("pages")
+            .join("pages.en")
             .join(os);
         create_dir_all(&dir).unwrap();
 
@@ -518,7 +518,7 @@ fn test_os_specific_page() {
 fn test_markdown_rendering() {
     let testenv = TestEnv::new().install_default_cache();
 
-    let expected = include_str!("cache/pages/common/which.md");
+    let expected = include_str!("cache/pages.en/common/which.md");
     testenv
         .command()
         .args(["--raw", "which"])
@@ -902,7 +902,7 @@ fn test_custom_page_overwrites() {
     // Add .page.md file to custom_pages_dir
     testenv.add_page_entry(
         "inkscape-v2",
-        include_str!("cache/pages/common/inkscape-v2.md"),
+        include_str!("cache/pages.en/common/inkscape-v2.md"),
     );
 
     // Load expected output
@@ -945,7 +945,7 @@ fn test_custom_patch_does_not_append_to_custom() {
     // In addition to the page in the cache, add the same page as a custom page.
     testenv.add_page_entry(
         "inkscape-v2",
-        include_str!("cache/pages/common/inkscape-v2.md"),
+        include_str!("cache/pages.en/common/inkscape-v2.md"),
     );
 
     // Load expected output
@@ -1009,7 +1009,7 @@ fn test_raw_render_file() {
         .cache_dir
         .path()
         .join(TLDR_PAGES_DIR)
-        .join("pages/common/inkscape-v1.md");
+        .join("pages.en/common/inkscape-v1.md");
     let mut args = vec!["--color", "never", "-f", &path.to_str().unwrap()];
 
     // Default render
@@ -1029,7 +1029,7 @@ fn test_raw_render_file() {
         .args(&args)
         .assert()
         .success()
-        .stdout(diff(include_str!("cache/pages/common/inkscape-v1.md")));
+        .stdout(diff(include_str!("cache/pages.en/common/inkscape-v1.md")));
 }
 
 fn touch_custom_page(testenv: &TestEnv) {
