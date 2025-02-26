@@ -31,10 +31,12 @@ use std::{
     io::{self, IsTerminal},
     path::Path,
     process::{Command, ExitCode},
+    sync::LazyLock,
 };
 
 use anyhow::{anyhow, Context, Result};
 use app_dirs::AppInfo;
+use cache::{CacheConfig, Language};
 use clap::Parser;
 
 mod cache;
@@ -191,12 +193,15 @@ fn init_log() {
 #[cfg(not(feature = "logging"))]
 fn init_log() {}
 
-fn get_languages(env_lang: Option<&str>, env_language: Option<&str>) -> Vec<String> {
+fn get_languages<'a>(
+    env_lang: Option<&'a str>,
+    env_language: Option<&'a str>,
+) -> Vec<Language<'a>> {
     // Language list according to
     // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#language
 
     if env_lang.is_none() {
-        return vec!["en".to_string()];
+        return vec![Language("en")];
     }
     let env_lang = env_lang.unwrap();
 
@@ -217,13 +222,15 @@ fn get_languages(env_lang: Option<&str>, env_language: Option<&str>) -> Vec<Stri
 
     lang_list.push("en");
     lang_list.clear_duplicates();
-    lang_list.into_iter().map(str::to_string).collect()
+    lang_list.into_iter().map(Language).collect()
 }
 
-fn get_languages_from_env() -> Vec<String> {
+fn get_languages_from_env<'a>() -> Vec<Language<'a>> {
+    static LANG: LazyLock<Option<String>> = LazyLock::new(|| std::env::var("LANG").ok());
+    static LANGUAGE: LazyLock<Option<String>> = LazyLock::new(|| std::env::var("LANGUAGE").ok());
     get_languages(
-        std::env::var("LANG").ok().as_deref(),
-        std::env::var("LANGUAGE").ok().as_deref(),
+        LANG.as_ref().map(String::as_str),
+        LANGUAGE.as_ref().map(String::as_str),
     )
 }
 
@@ -326,7 +333,15 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     let platforms = compute_platforms(args.platforms.as_ref());
     let languages = args
         .language
-        .map_or_else(get_languages_from_env, |lang| vec![lang]);
+        .as_deref()
+        .map_or_else(get_languages_from_env, |lang| vec![Language(lang)]);
+
+    let cache_config = CacheConfig {
+        pages_directory: todo!(),
+        custom_pages_directory: todo!(),
+        platforms: &platforms,
+        languages: &languages,
+    };
 
     // Instantiate cache. This will not yet create the cache directory!
     let cache: Cache = todo!();
@@ -395,49 +410,67 @@ fn compute_platforms(platforms: Option<&Vec<PlatformType>>) -> Vec<PlatformType>
 
 #[cfg(test)]
 mod test {
-    use crate::get_languages;
 
     mod language {
-        use super::*;
+        use crate::{cache::Language, get_languages};
 
         #[test]
         fn missing_lang_env() {
             let lang_list = get_languages(None, Some("de:fr"));
-            assert_eq!(lang_list, ["en"]);
+            assert_eq!(lang_list, [Language("en")]);
             let lang_list = get_languages(None, None);
-            assert_eq!(lang_list, ["en"]);
+            assert_eq!(lang_list, [Language("en")]);
         }
 
         #[test]
         fn missing_language_env() {
             let lang_list = get_languages(Some("de"), None);
-            assert_eq!(lang_list, ["de", "en"]);
+            assert_eq!(lang_list, [Language("de"), Language("en")]);
         }
 
         #[test]
         fn preference_order() {
             let lang_list = get_languages(Some("de"), Some("fr:cn"));
-            assert_eq!(lang_list, ["fr", "cn", "de", "en"]);
+            assert_eq!(
+                lang_list,
+                [
+                    Language("fr"),
+                    Language("cn"),
+                    Language("de"),
+                    Language("en"),
+                ]
+            );
         }
 
         #[test]
         fn country_code_expansion() {
             let lang_list = get_languages(Some("pt_BR"), None);
-            assert_eq!(lang_list, ["pt_BR", "pt", "en"]);
+            assert_eq!(
+                lang_list,
+                [Language("pt_BR"), Language("pt"), Language("en")]
+            );
         }
 
         #[test]
         fn ignore_posix_and_c() {
             let lang_list = get_languages(Some("POSIX"), None);
-            assert_eq!(lang_list, ["en"]);
+            assert_eq!(lang_list, [Language("en")]);
             let lang_list = get_languages(Some("C"), None);
-            assert_eq!(lang_list, ["en"]);
+            assert_eq!(lang_list, [Language("en")]);
         }
 
         #[test]
         fn no_duplicates() {
             let lang_list = get_languages(Some("de"), Some("fr:de:cn:de"));
-            assert_eq!(lang_list, ["fr", "de", "cn", "en"]);
+            assert_eq!(
+                lang_list,
+                [
+                    Language("fr"),
+                    Language("de"),
+                    Language("cn"),
+                    Language("en"),
+                ]
+            );
         }
     }
 }
