@@ -9,7 +9,8 @@ use std::{
 
 use anyhow::{ensure, Context, Result};
 use log::debug;
-use reqwest::{blocking::Client, Proxy};
+use ureq::tls::{RootCerts, TlsConfig, TlsProvider};
+use ureq::{Agent, Proxy};
 use walkdir::{DirEntry, WalkDir};
 use zip::ZipArchive;
 
@@ -17,6 +18,10 @@ use crate::{config::TlsBackend, types::PlatformType, utils::print_warning};
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
+
+/// tealdeer user agent when fetching TLDR pages.
+const USER_AGENT: &str = concat!("teardeer/", env!("CARGO_PKG_VERSION"));
+const GLOBAL_DOWNLOAD_TIMEOUT_SECONDS: u64 = 3 * 60;
 
 #[derive(Debug)]
 pub struct Cache {
@@ -135,54 +140,6 @@ impl Cache {
 
     fn pages_dir(&self) -> PathBuf {
         self.cache_dir.join(TLDR_PAGES_DIR)
-    }
-
-    fn build_client(tls_backend: TlsBackend) -> Result<Client> {
-        let mut builder = Client::builder();
-        builder = match tls_backend {
-            #[cfg(feature = "native-tls")]
-            TlsBackend::NativeTls => builder
-                .use_native_tls()
-                .tls_built_in_root_certs(true)
-                .tls_built_in_webpki_certs(false)
-                .tls_built_in_native_certs(false),
-            #[cfg(feature = "rustls-with-webpki-roots")]
-            TlsBackend::RustlsWithWebpkiRoots => builder
-                .use_rustls_tls()
-                .tls_built_in_root_certs(false)
-                .tls_built_in_webpki_certs(true)
-                .tls_built_in_native_certs(false),
-            #[cfg(feature = "rustls-with-native-roots")]
-            TlsBackend::RustlsWithNativeRoots => builder
-                .use_rustls_tls()
-                .tls_built_in_root_certs(false)
-                .tls_built_in_webpki_certs(false)
-                .tls_built_in_native_certs(true),
-        };
-        if let Ok(ref host) = env::var("HTTP_PROXY") {
-            if let Ok(proxy) = Proxy::http(host) {
-                builder = builder.proxy(proxy);
-            }
-        }
-        if let Ok(ref host) = env::var("HTTPS_PROXY") {
-            if let Ok(proxy) = Proxy::https(host) {
-                builder = builder.proxy(proxy);
-            }
-        }
-        builder.build().context("Could not instantiate HTTP client")
-    }
-
-    /// Download the archive from the specified URL.
-    fn download(client: &Client, archive_url: &str) -> Result<Vec<u8>> {
-        let mut resp = client
-            .get(archive_url)
-            .send()?
-            .error_for_status()
-            .with_context(|| format!("Could not download tldr pages from {archive_url}"))?;
-        let mut buf: Vec<u8> = vec![];
-        let bytes_downloaded = resp.copy_to(&mut buf)?;
-        debug!("{} bytes downloaded", bytes_downloaded);
-        Ok(buf)
     }
 
     /// Update the pages cache from the specified URL.
@@ -472,6 +429,60 @@ impl Cache {
                 ),
             );
         }
+    }
+}
+
+fn build_proxy() -> Result<Option<Proxy>> {
+    if let Ok(ref host) = env::var("HTTP_PROXY") {
+        return Ok(Some(Proxy::new(host)?));
+    }
+    if let Ok(ref host) = env::var("HTTPS_PROXY") {
+        return Ok(Some(Proxy::new(host)?));
+    }
+
+    Ok(None)
+}
+
+impl Cache {
+    fn build_client(tls_backend: TlsBackend) -> Result<Agent> {
+        let proxy = build_proxy()?;
+        let mut tls_builder = TlsConfig::builder();
+        tls_builder = match tls_backend {
+            #[cfg(feature = "native-tls")]
+            TlsBackend::NativeTls => tls_builder
+                .provider(TlsProvider::NativeTls)
+                .root_certs(RootCerts::PlatformVerifier),
+            #[cfg(feature = "rustls-with-webpki-roots")]
+            TlsBackend::RustlsWithWebpkiRoots => tls_builder
+                .provider(TlsProvider::Rustls)
+                .root_certs(RootCerts::WebPki),
+            #[cfg(feature = "rustls-with-native-roots")]
+            TlsBackend::RustlsWithNativeRoots => tls_builder
+                .provider(TlsProvider::Rustls)
+                .root_certs(RootCerts::PlatformVerifier),
+        };
+        let config = Agent::config_builder()
+            .user_agent(USER_AGENT)
+            .timeout_global(Some(Duration::from_secs(GLOBAL_DOWNLOAD_TIMEOUT_SECONDS)))
+            .proxy(proxy)
+            .tls_config(tls_builder.build())
+            .build();
+
+        Ok(config.into())
+    }
+
+    /// Download the archive from the specified URL.
+    fn download(client: &Agent, archive_url: &str) -> Result<Vec<u8>> {
+        let mut response = client
+            .get(archive_url)
+            .call()
+            .with_context(|| format!("Could not download tldr pages from {archive_url}"))?;
+        let buf = response
+            .body_mut()
+            .with_config() // to use unlimited (default) output buffer
+            .read_to_vec()?;
+        debug!("{} bytes downloaded", buf.len());
+        Ok(buf)
     }
 }
 
