@@ -16,26 +16,24 @@
 #![allow(clippy::struct_excessive_bools)]
 #![allow(clippy::too_many_lines)]
 
-#[cfg(any(
-    all(feature = "native-roots", feature = "webpki-roots"),
-    all(feature = "native-roots", feature = "native-tls"),
-    all(feature = "webpki-roots", feature = "native-tls"),
-    not(any(
-        feature = "native-roots",
-        feature = "webpki-roots",
-        feature = "native-tls"
-    )),
-))]
+#[cfg(not(any(
+    feature = "native-tls",
+    feature = "rustls-with-webpki-roots",
+    feature = "rustls-with-native-roots",
+)))]
 compile_error!(
-    "exactly one of the features \"native-roots\", \"webpki-roots\" or \"native-tls\" must be enabled"
+    "at least one of the features \"native-tls\", \"rustls-with-webpki-roots\" or \"rustls-with-native-roots\" must be enabled"
 );
 
 use std::{
     env,
+    fs::create_dir_all,
     io::{self, IsTerminal},
-    process,
+    path::Path,
+    process::{Command, ExitCode},
 };
 
+use anyhow::{anyhow, Context, Result};
 use app_dirs::AppInfo;
 use clap::Parser;
 
@@ -119,11 +117,8 @@ fn check_cache(cache: &Cache, args: &Cli, enable_styles: bool) -> CheckCacheResu
 }
 
 /// Clear the cache
-fn clear_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
-    let cache_dir_found = cache.clear().unwrap_or_else(|e| {
-        print_error(enable_styles, &e.context("Could not clear cache"));
-        process::exit(1);
-    });
+fn clear_cache(cache: &Cache, quietly: bool) -> Result<()> {
+    let cache_dir_found = cache.clear().context("Could not clear cache")?;
     if !quietly {
         let cache_dir = cache.cache_dir().display();
         if cache_dir_found {
@@ -132,17 +127,18 @@ fn clear_cache(cache: &Cache, quietly: bool, enable_styles: bool) {
             eprintln!("Cache directory not found at `{cache_dir}`, nothing to do.");
         }
     }
+    Ok(())
 }
 
 /// Update the cache
-fn update_cache(cache: &Cache, archive_source: &str, quietly: bool, enable_styles: bool) {
-    cache.update(archive_source).unwrap_or_else(|e| {
-        print_error(enable_styles, &e.context("Could not update cache"));
-        process::exit(1);
-    });
+fn update_cache(cache: &Cache, archive_source: &str, quietly: bool) -> Result<()> {
+    cache
+        .update(archive_source)
+        .context("Could not update cache")?;
     if !quietly {
         eprintln!("Successfully updated cache.");
     }
+    Ok(())
 }
 
 /// Show file paths
@@ -179,21 +175,13 @@ fn show_paths(config: &Config) {
     println!("Custom pages dir: {custom_pages_dir}");
 }
 
-/// Create seed config file and exit
-fn create_config_and_exit(enable_styles: bool) {
-    match make_default_config() {
-        Ok(config_file_path) => {
-            eprintln!(
-                "Successfully created seed config file here: {}",
-                config_file_path.to_str().unwrap()
-            );
-            process::exit(0);
-        }
-        Err(e) => {
-            print_error(enable_styles, &e.context("Could not create seed config"));
-            process::exit(1);
-        }
-    }
+fn create_config() -> Result<()> {
+    let config_file_path = make_default_config().context("Could not create seed config")?;
+    eprintln!(
+        "Successfully created seed config file here: {}",
+        config_file_path.to_str().unwrap()
+    );
+    Ok(())
 }
 
 #[cfg(feature = "logging")]
@@ -240,7 +228,28 @@ fn get_languages_from_env() -> Vec<String> {
     )
 }
 
-fn main() {
+fn spawn_editor(custom_pages_dir: &Path, file_name: &str) -> Result<()> {
+    create_dir_all(custom_pages_dir).context("Failed to create custom pages directory")?;
+
+    let custom_page_path = custom_pages_dir.join(file_name);
+    let Some(custom_page_path) = custom_page_path.to_str() else {
+        return Err(anyhow!("`custom_page_path.to_str()` failed"));
+    };
+    let Ok(editor) = env::var("EDITOR") else {
+        return Err(anyhow!(
+            "To edit a custom page, please set the `EDITOR` environment variable."
+        ));
+    };
+    println!("Editing {custom_page_path:?}");
+
+    let status = Command::new(&editor).arg(custom_page_path).status()?;
+    if !status.success() {
+        return Err(anyhow!("{editor} exit with code {:?}", status.code()));
+    }
+    Ok(())
+}
+
+fn main() -> ExitCode {
     // Initialize logger
     init_log();
 
@@ -262,14 +271,40 @@ fn main() {
         ColorOptions::Never => false,
     };
 
+    try_main(args, enable_styles).unwrap_or_else(|error| {
+        print_error(enable_styles, &error);
+        ExitCode::FAILURE
+    })
+}
+
+fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     // Look up config file, if none is found fall back to default config.
-    let config = match Config::load(enable_styles) {
-        Ok(config) => config,
-        Err(e) => {
-            print_error(enable_styles, &e.context("Could not load config"));
-            process::exit(1);
-        }
-    };
+    let config = Config::load(enable_styles).context("Could not load config")?;
+
+    let custom_pages_dir = config
+        .directories
+        .custom_pages_dir
+        .as_ref()
+        .map(PathWithSource::path);
+
+    // Note: According to the TLDR client spec, page names must be transparently
+    // lowercased before lookup:
+    // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#page-names
+    let command = args.command.join("-").to_lowercase();
+
+    if args.edit_patch || args.edit_page {
+        let file_name = if args.edit_patch {
+            format!("{command}.patch.md")
+        } else {
+            format!("{command}.page.md")
+        };
+
+        custom_pages_dir
+            .context("To edit custom pages/patches, please specify a custom pages directory.")
+            .and_then(|custom_pages_dir| spawn_editor(custom_pages_dir, &file_name))?;
+
+        return Ok(ExitCode::SUCCESS);
+    }
 
     // Show various paths
     if args.show_paths {
@@ -278,7 +313,8 @@ fn main() {
 
     // Create a basic config and exit
     if args.seed_config {
-        create_config_and_exit(enable_styles);
+        create_config()?;
+        return Ok(ExitCode::SUCCESS);
     }
 
     let platforms = compute_platforms(args.platforms.as_ref());
@@ -286,67 +322,50 @@ fn main() {
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
         let path = PageLookupResult::with_page(file);
-        if let Err(ref e) = print_page(&path, args.raw, enable_styles, args.pager, &config) {
-            print_error(enable_styles, e);
-            process::exit(1);
-        } else {
-            process::exit(0);
-        };
+        print_page(&path, args.raw, enable_styles, args.pager, &config)?;
+        return Ok(ExitCode::SUCCESS);
     }
 
     // Instantiate cache. This will not yet create the cache directory!
-    let cache = Cache::new(&config.directories.cache_dir.path, enable_styles);
+    let cache = Cache::new(
+        &config.directories.cache_dir.path,
+        enable_styles,
+        config.updates.tls_backend,
+    );
 
     // Clear cache, pass through
     if args.clear_cache {
-        clear_cache(&cache, args.quiet, enable_styles);
+        clear_cache(&cache, args.quiet)?;
     }
 
-    // Cache update, pass through
-    let cache_updated = if should_update_cache(&cache, &args, &config) {
-        let archive_source = config.updates.archive_source.as_str();
-        update_cache(&cache, archive_source, args.quiet, enable_styles);
-        true
-    } else {
-        false
-    };
-
-    // Check cache presence and freshness
-    if !cache_updated
-        && (args.list || !args.command.is_empty())
+    if should_update_cache(&cache, &args, &config) {
+        update_cache(&cache, &config.updates.archive_source, args.quiet)?;
+    } else if (args.list || !args.command.is_empty())
         && check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing
     {
-        process::exit(1);
-    }
+        // Cache is needed, but missing
+        return Ok(ExitCode::FAILURE);
+    };
 
     // List cached commands and exit
     if args.list {
-        let custom_pages_dir = config
-            .directories
-            .custom_pages_dir
-            .as_ref()
-            .map(PathWithSource::path);
         println!(
             "{}",
             cache.list_pages(custom_pages_dir, &platforms).join("\n")
         );
-        process::exit(0);
+
+        return Ok(ExitCode::SUCCESS);
     }
 
     // Show command from cache
-    if !args.command.is_empty() {
-        // Note: According to the TLDR client spec, page names must be transparently
-        // lowercased before lookup:
-        // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#page-names
-        let command = args.command.join("-").to_lowercase();
-
+    if !command.is_empty() {
         // Collect languages
         let languages = args
             .language
             .map_or_else(get_languages_from_env, |lang| vec![lang]);
 
         // Search for command in cache
-        if let Some(lookup_result) = cache.find_page(
+        let Some(lookup_result) = cache.find_page(
             &command,
             &languages,
             config
@@ -355,15 +374,7 @@ fn main() {
                 .as_ref()
                 .map(PathWithSource::path),
             &platforms,
-        ) {
-            if let Err(ref e) =
-                print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)
-            {
-                print_error(enable_styles, e);
-                process::exit(1);
-            }
-            process::exit(0);
-        } else {
+        ) else {
             if !args.quiet {
                 print_warning(
                     enable_styles,
@@ -375,9 +386,14 @@ fn main() {
                     ),
                 );
             }
-            process::exit(1);
-        }
+
+            return Ok(ExitCode::FAILURE);
+        };
+
+        print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)?;
     }
+
+    Ok(ExitCode::SUCCESS)
 }
 
 /// Returns the passed or default platform types and appends `PlatformType::Common` as fallback.

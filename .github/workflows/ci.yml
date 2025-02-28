@@ -22,8 +22,11 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
       - name: Build with default features
         run: cargo build
-      - name: Build with logging and webpki roots
-        run: cargo build --features logging,webpki-roots --no-default-features
+      - name: Build with logging and Rustls with webpki roots
+        run: cargo build --features logging,rustls-with-webpki-roots --no-default-features
+      - name: Build with native TLS backend
+        # expects runners have the proper Native SSL library
+        run: cargo build --features native-tls --no-default-features
       - name: Run tests
         run: cargo test -- --test-threads 1
 
