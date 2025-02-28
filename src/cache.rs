@@ -11,7 +11,7 @@ use anyhow::{anyhow, ensure, Context, Result};
 use log::debug;
 use reqwest::{blocking::Client, Proxy};
 use walkdir::{DirEntry, WalkDir};
-use zip::ZipArchive;
+use zip::{read, ZipArchive};
 
 use crate::{config::TlsBackend, types::PlatformType, utils::print_warning};
 
@@ -179,8 +179,22 @@ impl<'a> Cache<'a> {
         Ok(pages)
     }
 
-    pub fn check_for_old_custom_pages(&self) -> Result<bool> {
-        // TODO
+    pub fn old_custom_pages_exist(&self) -> Result<bool> {
+        let Some(directory) = self.config.custom_pages_directory else {
+            return Ok(false);
+        };
+        let Ok(file_iter) = fs::read_dir(&directory) else {
+            return Ok(false);
+        };
+
+        for entry in file_iter {
+            if let Some(extension) = entry?.path().extension() {
+                if extension == "page" || extension == "patch" {
+                    return Ok(true);
+                }
+            }
+        }
+
         Ok(false)
     }
 
