@@ -1045,7 +1045,7 @@ fn touch_custom_page(testenv: &TestEnv) {
         .env("EDITOR", "touch")
         .assert()
         .success();
-    assert!(testenv.custom_pages_dir.path().join("foo.page.md").exists());
+    assert!(testenv.custom_pages_dir().join("foo.page.md").exists());
 }
 
 fn touch_custom_patch(testenv: &TestEnv) {
@@ -1058,8 +1058,7 @@ fn touch_custom_patch(testenv: &TestEnv) {
         .assert()
         .success();
     assert!(testenv
-        .custom_pages_dir
-        .path()
+        .custom_pages_dir()
         .join("foo.patch.md")
         .exists());
 }
@@ -1086,9 +1085,9 @@ fn test_recreate_dir() {
 #[test]
 fn test_custom_pages_dir_is_not_dir() {
     let testenv = TestEnv::new().write_custom_pages_config();
-    let _ = std::fs::remove_dir_all(testenv.custom_pages_dir.path());
-    let _ = File::create(testenv.custom_pages_dir.path()).unwrap();
-    assert!(testenv.custom_pages_dir.path().is_file());
+    let _ = std::fs::remove_dir_all(testenv.custom_pages_dir());
+    let _ = File::create(testenv.custom_pages_dir()).unwrap();
+    assert!(testenv.custom_pages_dir().is_file());
 
     let args = vec!["--edit-patch", "foo"];
 
