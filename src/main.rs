@@ -369,7 +369,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     };
 
     if args.list {
-        for page in cache.list_pages() {
+        for page in cache.list_pages()? {
             println!("{}", page);
         }
 

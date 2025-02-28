@@ -7,7 +7,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use log::debug;
 use reqwest::{blocking::Client, Proxy};
 use walkdir::{DirEntry, WalkDir};
@@ -128,8 +128,55 @@ impl<'a> Cache<'a> {
         None
     }
 
-    pub fn list_pages(&self) -> impl IntoIterator<Item = String> {
-        []
+    pub fn list_pages(&self) -> Result<impl IntoIterator<Item = String>> {
+        let mut pages = Vec::new();
+
+        let mut append_all = |directory: &Path, suffix: &str| -> Result<()> {
+            let Ok(file_iter) = fs::read_dir(&directory) else {
+                return Ok(());
+            };
+
+            for entry in file_iter {
+                let entry = entry?;
+                if entry.file_type()?.is_file() {
+                    let mut page_path = entry
+                        .file_name()
+                        .into_string()
+                        .map_err(|_| anyhow!("Found invalid filename: {:?}", entry.path()))?;
+
+                    if page_path.ends_with(suffix) {
+                        page_path.truncate(page_path.len() - suffix.len());
+                        pages.push(page_path);
+                    } else {
+                        debug!(
+                            "Skipping page entry not ending in \".md\": {:?}",
+                            entry.path(),
+                        );
+                    }
+                }
+            }
+
+            Ok(())
+        };
+
+        let mut search_path = self.config.pages_directory.to_path_buf();
+        for language in self.config.languages {
+            search_path.push(language.directory_name());
+            for platform in self.config.platforms {
+                search_path.push(platform.directory_name());
+                append_all(&search_path, ".md")?;
+                search_path.pop();
+            }
+            search_path.pop();
+        }
+
+        if let Some(custom_pages_dir) = self.config.custom_pages_directory {
+            append_all(&custom_pages_dir, ".page.md")?;
+        }
+
+        pages.sort_unstable();
+        pages.dedup();
+        Ok(pages)
     }
 
     pub fn check_for_old_custom_pages(&self) -> Result<bool> {
