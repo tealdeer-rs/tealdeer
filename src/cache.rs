@@ -10,7 +10,6 @@ use std::{
 use anyhow::{anyhow, ensure, Context, Result};
 use log::debug;
 use reqwest::{blocking::Client, Proxy};
-use walkdir::{DirEntry, WalkDir};
 use zip::{read, ZipArchive};
 
 use crate::{config::TlsBackend, types::PlatformType, utils::print_warning};

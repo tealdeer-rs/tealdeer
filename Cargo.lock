@@ -1593,7 +1593,6 @@ dependencies = [
  "serde_derive",
  "tempfile",
  "toml",
- "walkdir",
  "yansi",
  "zip",
 ]
