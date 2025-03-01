@@ -47,17 +47,7 @@ filetime = "0.2.10"
 default = ["native-tls", "rustls-with-webpki-roots", "rustls-with-native-roots"]
 logging = ["env_logger"]
 
-# ureq (the HTTP client library) can handle TLS connections in four
-# different modes:
-#
-# - Rustls with:
-#   - native roots
-#   - WebPKI roots
-# - Native TLS (by `native_tls` crate) with:
-#   - native roots
-#   - WebPKI roots (not implemented in tealdeer)
-#
-# At least one of variants must be selected.
+# At least one of variants for `ureq` HTTP client must be selected.
 native-tls = ["ureq/native-tls", "ureq/platform-verifier"]
 rustls-with-webpki-roots = ["ureq/rustls"] # ureq uses WebPKI roots by default
 rustls-with-native-roots = ["ureq/rustls", "ureq/platform-verifier"]
