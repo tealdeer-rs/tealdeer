@@ -26,9 +26,9 @@ struct TestEnv {
 impl TestEnv {
     fn new() -> Self {
         let test_dir: TempDir = TempfileBuilder::new()
-                .prefix(".tldr.test")
-                .tempdir()
-                .unwrap();
+            .prefix(".tldr.test")
+            .tempdir()
+            .unwrap();
 
         let this = TestEnv {
             _test_dir: test_dir,
@@ -82,11 +82,7 @@ impl TestEnv {
 
     /// Add entry for that environment to an OS-specific subfolder.
     fn add_os_entry(&self, os: &str, name: &str, contents: &str) {
-        let dir = self
-            .cache_dir()
-            .join(TLDR_PAGES_DIR)
-            .join("pages")
-            .join(os);
+        let dir = self.cache_dir().join(TLDR_PAGES_DIR).join("pages").join(os);
         create_dir_all(&dir).unwrap();
 
         fs::write(dir.join(format!("{name}.md")), contents.as_bytes()).unwrap();
@@ -133,10 +129,7 @@ impl TestEnv {
         }
         let run = build.run().expect("Failed to build tealdeer for testing");
         let mut cmd = run.command();
-        cmd.env(
-            "TEALDEER_CONFIG_DIR",
-            self.config_dir().to_str().unwrap(),
-        );
+        cmd.env("TEALDEER_CONFIG_DIR", self.config_dir().to_str().unwrap());
         cmd
     }
 
@@ -473,11 +466,7 @@ fn test_show_paths() {
         )))
         .stdout(contains(format!(
             "Config path:      {}",
-            testenv
-                .config_dir()
-                .join("config.toml")
-                .to_str()
-                .unwrap(),
+            testenv.config_dir().join("config.toml").to_str().unwrap(),
         )))
         .stdout(contains(format!(
             "Cache dir:        {}",
@@ -485,11 +474,7 @@ fn test_show_paths() {
         )))
         .stdout(contains(format!(
             "Pages dir:        {}",
-            testenv
-                .cache_dir()
-                .join(TLDR_PAGES_DIR)
-                .to_str()
-                .unwrap(),
+            testenv.cache_dir().join(TLDR_PAGES_DIR).to_str().unwrap(),
         )));
 
     let testenv = testenv.write_custom_pages_config();
@@ -1057,10 +1042,7 @@ fn touch_custom_patch(testenv: &TestEnv) {
         .env("EDITOR", "touch")
         .assert()
         .success();
-    assert!(testenv
-        .custom_pages_dir()
-        .join("foo.patch.md")
-        .exists());
+    assert!(testenv.custom_pages_dir().join("foo.patch.md").exists());
 }
 
 #[test]
