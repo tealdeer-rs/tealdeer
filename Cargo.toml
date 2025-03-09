@@ -25,9 +25,9 @@ app_dirs = { version = "2", package = "app_dirs2" }
 clap = { version = "4", features = ["std", "derive", "help", "usage", "cargo", "error-context", "color", "wrap_help"], default-features = false }
 env_logger = { version = "0.11", optional = true }
 log = "0.4"
-reqwest = { version = "0.12.9", features = ["blocking"], default-features = false }
 serde = "1.0.21"
 serde_derive = "1.0.21"
+ureq = { version = "3.0.8", default-features = false, features = ["gzip"] }
 toml = "0.8.19"
 walkdir = "2.0.1"
 yansi = "1"
@@ -47,20 +47,10 @@ filetime = "0.2.10"
 default = ["native-tls", "rustls-with-webpki-roots", "rustls-with-native-roots"]
 logging = ["env_logger"]
 
-# Reqwest (the HTTP client library) can handle TLS connections in four
-# different modes:
-#
-# - Rustls with:
-#   - native roots
-#   - WebPK roots
-# - Native TLS (SChannel on Windows, Secure Transport on macOS and OpenSSL otherwise) with:
-#   - native roots
-#   - WebPK roots (not implemented in tealdeer)
-#
-# At least one of variants must be selected. By default, uses native TLS and native roots.
-native-tls = ["reqwest/rustls-tls-native-roots-no-provider", "reqwest/rustls-tls-webpki-roots-no-provider", "reqwest/native-tls"]
-rustls-with-webpki-roots = ["reqwest/rustls-tls-native-roots-no-provider", "reqwest/rustls-tls-webpki-roots"]
-rustls-with-native-roots = ["reqwest/rustls-tls-webpki-roots-no-provider", "reqwest/rustls-tls-native-roots"]
+# At least one of variants for `ureq` HTTP client must be selected.
+native-tls = ["ureq/native-tls", "ureq/platform-verifier"]
+rustls-with-webpki-roots = ["ureq/rustls"] # ureq uses WebPKI roots by default
+rustls-with-native-roots = ["ureq/rustls", "ureq/platform-verifier"]
 
 ignore-online-tests = []
 

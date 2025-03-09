@@ -1,5 +1,4 @@
 use std::{
-    env,
     ffi::OsStr,
     fs::{self, File},
     io::{BufReader, Cursor, Read},
@@ -9,7 +8,8 @@ use std::{
 
 use anyhow::{ensure, Context, Result};
 use log::debug;
-use reqwest::{blocking::Client, Proxy};
+use ureq::tls::{RootCerts, TlsConfig, TlsProvider};
+use ureq::Agent;
 use walkdir::{DirEntry, WalkDir};
 use zip::ZipArchive;
 
@@ -135,54 +135,6 @@ impl Cache {
 
     fn pages_dir(&self) -> PathBuf {
         self.cache_dir.join(TLDR_PAGES_DIR)
-    }
-
-    fn build_client(tls_backend: TlsBackend) -> Result<Client> {
-        let mut builder = Client::builder();
-        builder = match tls_backend {
-            #[cfg(feature = "native-tls")]
-            TlsBackend::NativeTls => builder
-                .use_native_tls()
-                .tls_built_in_root_certs(true)
-                .tls_built_in_webpki_certs(false)
-                .tls_built_in_native_certs(false),
-            #[cfg(feature = "rustls-with-webpki-roots")]
-            TlsBackend::RustlsWithWebpkiRoots => builder
-                .use_rustls_tls()
-                .tls_built_in_root_certs(false)
-                .tls_built_in_webpki_certs(true)
-                .tls_built_in_native_certs(false),
-            #[cfg(feature = "rustls-with-native-roots")]
-            TlsBackend::RustlsWithNativeRoots => builder
-                .use_rustls_tls()
-                .tls_built_in_root_certs(false)
-                .tls_built_in_webpki_certs(false)
-                .tls_built_in_native_certs(true),
-        };
-        if let Ok(ref host) = env::var("HTTP_PROXY") {
-            if let Ok(proxy) = Proxy::http(host) {
-                builder = builder.proxy(proxy);
-            }
-        }
-        if let Ok(ref host) = env::var("HTTPS_PROXY") {
-            if let Ok(proxy) = Proxy::https(host) {
-                builder = builder.proxy(proxy);
-            }
-        }
-        builder.build().context("Could not instantiate HTTP client")
-    }
-
-    /// Download the archive from the specified URL.
-    fn download(client: &Client, archive_url: &str) -> Result<Vec<u8>> {
-        let mut resp = client
-            .get(archive_url)
-            .send()?
-            .error_for_status()
-            .with_context(|| format!("Could not download tldr pages from {archive_url}"))?;
-        let mut buf: Vec<u8> = vec![];
-        let bytes_downloaded = resp.copy_to(&mut buf)?;
-        debug!("{} bytes downloaded", bytes_downloaded);
-        Ok(buf)
     }
 
     /// Update the pages cache from the specified URL.
@@ -472,6 +424,42 @@ impl Cache {
                 ),
             );
         }
+    }
+}
+
+impl Cache {
+    fn build_client(tls_backend: TlsBackend) -> Result<Agent> {
+        let tls_builder = match tls_backend {
+            #[cfg(feature = "native-tls")]
+            TlsBackend::NativeTls => TlsConfig::builder()
+                .provider(TlsProvider::NativeTls)
+                .root_certs(RootCerts::PlatformVerifier),
+            #[cfg(feature = "rustls-with-webpki-roots")]
+            TlsBackend::RustlsWithWebpkiRoots => TlsConfig::builder()
+                .provider(TlsProvider::Rustls)
+                .root_certs(RootCerts::WebPki),
+            #[cfg(feature = "rustls-with-native-roots")]
+            TlsBackend::RustlsWithNativeRoots => TlsConfig::builder()
+                .provider(TlsProvider::Rustls)
+                .root_certs(RootCerts::PlatformVerifier),
+        };
+        let config = Agent::config_builder()
+            .tls_config(tls_builder.build())
+            .build();
+
+        Ok(config.into())
+    }
+
+    /// Download the archive from the specified URL.
+    fn download(client: &Agent, archive_url: &str) -> Result<Vec<u8>> {
+        let response = client
+            .get(archive_url)
+            .call()
+            .with_context(|| format!("Could not download tldr pages from {archive_url}"))?;
+        let mut buf: Vec<u8> = Vec::new();
+        response.into_body().into_reader().read_to_end(&mut buf)?;
+        debug!("{} bytes downloaded", buf.len());
+        Ok(buf)
     }
 }
 
