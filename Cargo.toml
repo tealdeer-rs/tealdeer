@@ -10,7 +10,7 @@ name = "tealdeer"
 readme = "README.md"
 repository = "https://github.com/tealdeer-rs/tealdeer/"
 documentation = "https://tealdeer-rs.github.io/tealdeer/"
-version = "1.7.1"
+version = "1.7.2"
 include = ["/src/**/*", "/tests/**/*", "/Cargo.toml", "/README.md", "/LICENSE-*", "/screenshot.png", "completion/*"]
 rust-version = "1.75"
 edition = "2021"
@@ -31,7 +31,7 @@ ureq = { version = "3.0.8", default-features = false, features = ["gzip"] }
 toml = "0.8.19"
 walkdir = "2.0.1"
 yansi = "1"
-zip = { version = "2.1.6", default-features = false, features = ["deflate"] }
+zip = { version = "2.3.0", default-features = false, features = ["deflate"] }
 
 [target.'cfg(not(windows))'.dependencies]
 pager = "0.16"
