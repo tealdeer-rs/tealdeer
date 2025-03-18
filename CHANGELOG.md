@@ -13,6 +13,21 @@ Possible log types:
 - `[docs]` for documentation changes.
 - `[chore]` for maintenance work.
 
+### [v1.7.2][v1.7.2] (2025-03-18)
+
+This patch release updates the `zip` dependency to mitigate a potential security
+vulnerability. A successful attack against tealdeer users would require
+manipulation of the tldr pages archive downloaded during an update. As the
+archive is downloaded from a trusted source (the tldr-pages organization), it
+seems very unlikely that running a version of tealdeer prior to 1.7.2 poses a
+security risk. Nevertheless, it cannot hurt to rule out any chance of an attack
+by updating tealdeer to version 1.7.2.
+
+For more details, please see https://github.com/advisories/GHSA-94vh-gphv-8pm8.
+
+- [security] Require `zip >= 2.3.0`
+- [chore] Run CI on backport branches and on dispatch
+
 ### [v1.7.1][v1.7.1] (2024-11-14)
 
 This patch release updates the `yansi` dependency to version 1, so that the
@@ -457,6 +472,7 @@ Thanks!
 [v1.6.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.6.0...v1.6.1
 [v1.7.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.6.1...v1.7.0
 [v1.7.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.7.0...v1.7.1
+[v1.7.2]: https://github.com/tealdeer-rs/tealdeer/compare/v1.7.1...v1.7.2
 
 [i34]: https://github.com/tealdeer-rs/tealdeer/issues/34
 [i43]: https://github.com/tealdeer-rs/tealdeer/issues/43
