@@ -3,9 +3,11 @@ on:
   push:
     branches:
       - main
+      - "v*.x"
   pull_request:
   schedule:
     - cron: '30 3 * * 2'
+  workflow_dispatch:
 
 jobs:
   test:
