@@ -74,6 +74,10 @@ pub(crate) struct Cli {
     #[arg(short = 'c', long = "clear-cache")]
     pub clear_cache: bool,
 
+    /// Use the specified file as config instead of the default
+    #[arg(long = "config")]
+    pub config: Option<PathBuf>,
+
     /// Use a pager to page output
     #[arg(long = "pager", requires = "command_or_file")]
     pub pager: bool,

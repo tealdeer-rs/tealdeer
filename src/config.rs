@@ -441,11 +441,22 @@ impl Config {
         })
     }
 
-    pub fn load(enable_styles: bool) -> Result<Self> {
+    /// Load and read the config file into a [Config] and return it.
+    ///
+    /// path: The path to the config file could be specified with the path variable.
+    /// if not specified, the default config file will be determined and used.
+    ///
+    /// enable_styles: Whether to use colors, etc.
+    pub fn load(path: Option<PathBuf>, enable_styles: bool) -> Result<Self> {
         debug!("Loading config");
 
+        let path_specified = path.is_some();
         // Determine path
-        let (config_file_path, _) = get_config_path().context("Could not determine config path")?;
+        let (config_file_path, _) = if path_specified {
+            (path.unwrap(), PathSource::ConfigFile)
+        } else {
+            get_config_path().context("Could not determine config path")?
+        };
 
         // Load raw config
         let raw_config: RawConfig = if config_file_path.exists() && config_file_path.is_file() {
@@ -460,6 +471,13 @@ impl Config {
                 format!("Failed to parse TOML config file at {config_file_path:?}")
             })?
         } else {
+            if path_specified {
+                // Let the user know that their given path couldn't be used.
+                bail!(format!(
+                    "Failed to open config file path at {:?}",
+                    config_file_path
+                ));
+            }
             RawConfig::new()
         };
 

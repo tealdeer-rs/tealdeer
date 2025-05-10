@@ -279,7 +279,8 @@ fn main() -> ExitCode {
 
 fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     // Look up config file, if none is found fall back to default config.
-    let config = Config::load(enable_styles).context("Could not load config")?;
+    let config =
+        Config::load(args.config.clone(), enable_styles).context("Could not load config")?;
 
     let custom_pages_dir = config
         .directories
