@@ -142,7 +142,7 @@ fn update_cache(cache: &Cache, archive_source: &str, quietly: bool) -> Result<()
 }
 
 /// Show file paths
-fn show_paths(config: &Config) {
+fn show_paths(custom_config_path: Option<&Path>, config: &Config) {
     let config_dir = get_config_dir().map_or_else(
         |e| format!("[Error: {e}]"),
         |(mut path, source)| {
@@ -153,7 +153,7 @@ fn show_paths(config: &Config) {
             }
         },
     );
-    let config_path = get_config_path().map_or_else(
+    let config_path = get_config_path(custom_config_path).map_or_else(
         |e| format!("[Error: {e}]"),
         |(path, _)| path.display().to_string(),
     );
@@ -280,7 +280,7 @@ fn main() -> ExitCode {
 fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     // Look up config file, if none is found fall back to default config.
     let config =
-        Config::load(args.config.clone(), enable_styles).context("Could not load config")?;
+        Config::load(args.config.as_deref(), enable_styles).context("Could not load config")?;
 
     let custom_pages_dir = config
         .directories
@@ -309,7 +309,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
 
     // Show various paths
     if args.show_paths {
-        show_paths(&config);
+        show_paths(args.config.as_deref(), &config);
     }
 
     // Create a basic config and exit

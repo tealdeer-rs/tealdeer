@@ -205,6 +205,8 @@ pub enum PathSource {
     EnvVar,
     /// Config file
     ConfigFile,
+    /// CLI argument override
+    Override,
 }
 
 impl fmt::Display for PathSource {
@@ -216,6 +218,7 @@ impl fmt::Display for PathSource {
                 Self::OsConvention => "OS convention",
                 Self::EnvVar => "env variable",
                 Self::ConfigFile => "config file",
+                Self::Override => "override by flag",
             }
         )
     }
