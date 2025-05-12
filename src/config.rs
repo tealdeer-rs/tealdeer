@@ -554,22 +554,29 @@ pub fn get_default_config_path() -> Result<PathWithSource> {
 }
 
 /// Create default config file.
-pub fn make_default_config() -> Result<PathBuf> {
-    let (config_dir, _) = get_config_dir()?;
-
-    // Ensure that config directory exists
-    if config_dir.exists() {
-        ensure!(
-            config_dir.is_dir(),
-            "Config directory could not be created: {} already exists but is not a directory",
-            config_dir.to_string_lossy(),
-        );
+/// path: Can be specified to create the config in that path instead of
+/// the default path.
+pub fn make_default_config(path: Option<&Path>) -> Result<PathBuf> {
+    let config_file_path = if let Some(p) = path {
+        p.into()
     } else {
-        fs::create_dir_all(&config_dir).context("Could not create config directory")?;
-    }
+        let (config_dir, _) = get_config_dir()?;
+
+        // Ensure that config directory exists
+        if config_dir.exists() {
+            ensure!(
+                config_dir.is_dir(),
+                "Config directory could not be created: {} already exists but is not a directory",
+                config_dir.to_string_lossy(),
+            );
+        } else {
+            fs::create_dir_all(&config_dir).context("Could not create config directory")?;
+        }
+
+        config_dir.join(CONFIG_FILE_NAME)
+    };
 
     // Ensure that a config file doesn't get overwritten
-    let config_file_path = config_dir.join(CONFIG_FILE_NAME);
     ensure!(
         !config_file_path.is_file(),
         "A configuration file already exists at {}, no action was taken.",

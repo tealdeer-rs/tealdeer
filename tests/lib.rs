@@ -501,6 +501,20 @@ fn test_setup_seed_config() {
         .stderr(contains("Successfully created seed config file here"));
 
     assert!(testenv.config_dir().join("config.toml").is_file());
+
+    let custom_config_path = testenv.config_dir().join("config_custom.toml");
+    testenv
+        .command()
+        .args([
+            "--seed-config",
+            "--config-path",
+            custom_config_path.to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .stderr(contains("Successfully created seed config file here"));
+
+    assert!(custom_config_path.is_file());
 }
 
 #[test]

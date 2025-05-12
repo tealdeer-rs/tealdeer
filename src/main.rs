@@ -173,8 +173,8 @@ fn show_paths(config: &Config) {
     println!("Custom pages dir: {custom_pages_dir}");
 }
 
-fn create_config() -> Result<()> {
-    let config_file_path = make_default_config().context("Could not create seed config")?;
+fn create_config(path: Option<&Path>) -> Result<()> {
+    let config_file_path = make_default_config(path).context("Could not create seed config")?;
     eprintln!(
         "Successfully created seed config file here: {}",
         config_file_path.to_str().unwrap()
@@ -278,12 +278,12 @@ fn main() -> ExitCode {
 fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     // Look up config file, if none is found fall back to default config.
     debug!("Loading config");
-    let config = match args.config_path {
-        Some(ref path) => {
-            Config::load(path, enable_styles).context("Could not load config from given path")?
-        }
-        None => Config::load_default_path(enable_styles)
-            .context("Could not load config from default path")?,
+    let config = if args.config_path.is_some() && !args.seed_config {
+        Config::load(args.config_path.as_deref().unwrap(), enable_styles)
+            .context("Could not load config from given path")?
+    } else {
+        Config::load_default_path(enable_styles)
+            .context("Could not load config from default path")?
     };
 
     let custom_pages_dir = config
@@ -318,7 +318,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
 
     // Create a basic config and exit
     if args.seed_config {
-        create_config()?;
+        create_config(args.config_path.as_deref())?;
         return Ok(ExitCode::SUCCESS);
     }
 
