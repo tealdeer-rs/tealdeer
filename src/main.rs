@@ -36,6 +36,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use app_dirs::AppInfo;
 use clap::Parser;
+use log::debug;
 
 mod cache;
 mod cli;
@@ -50,7 +51,7 @@ mod utils;
 use crate::{
     cache::{Cache, CacheFreshness, PageLookupResult, TLDR_PAGES_DIR},
     cli::Cli,
-    config::{get_config_dir, get_config_path, make_default_config, Config, PathWithSource},
+    config::{get_config_dir, make_default_config, Config, PathWithSource},
     extensions::Dedup,
     output::print_page,
     types::{ColorOptions, PlatformType},
@@ -142,7 +143,7 @@ fn update_cache(cache: &Cache, archive_source: &str, quietly: bool) -> Result<()
 }
 
 /// Show file paths
-fn show_paths(custom_config_path: Option<&Path>, config: &Config) {
+fn show_paths(config: &Config) {
     let config_dir = get_config_dir().map_or_else(
         |e| format!("[Error: {e}]"),
         |(mut path, source)| {
@@ -153,10 +154,7 @@ fn show_paths(custom_config_path: Option<&Path>, config: &Config) {
             }
         },
     );
-    let config_path = get_config_path(custom_config_path).map_or_else(
-        |e| format!("[Error: {e}]"),
-        |(path, _)| path.display().to_string(),
-    );
+    let config_path = config.config_file_path.to_string();
     let cache_dir = config.directories.cache_dir.to_string();
     let pages_dir = {
         let mut path = config.directories.cache_dir.path.clone();
@@ -279,8 +277,14 @@ fn main() -> ExitCode {
 
 fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     // Look up config file, if none is found fall back to default config.
-    let config =
-        Config::load(args.config.as_deref(), enable_styles).context("Could not load config")?;
+    debug!("Loading config");
+    let config = match args.config_path {
+        Some(ref path) => {
+            Config::load(path, enable_styles).context("Could not load config from given path")?
+        }
+        None => Config::load_default_path(enable_styles)
+            .context("Could not load config from default path")?,
+    };
 
     let custom_pages_dir = config
         .directories
@@ -309,7 +313,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
 
     // Show various paths
     if args.show_paths {
-        show_paths(args.config.as_deref(), &config);
+        show_paths(&config);
     }
 
     // Create a basic config and exit

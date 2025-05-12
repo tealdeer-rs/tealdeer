@@ -70,6 +70,24 @@ impl TestEnv {
             .expect("Failed to append to config file.");
     }
 
+    fn create_secondary_config(self) -> Self {
+        self.append_to_secondary_config(format!(
+            "directories.cache_dir = '{}'\n",
+            self.cache_dir().to_str().unwrap(),
+        ));
+        self
+    }
+
+    fn append_to_secondary_config(&self, content: impl AsRef<str>) {
+        File::options()
+            .create(true)
+            .append(true)
+            .open(self.config_dir().join("config-secondary.toml"))
+            .expect("Failed to open config file")
+            .write_all(content.as_ref().as_bytes())
+            .expect("Failed to append to config file.");
+    }
+
     fn remove_initial_config(self) -> Self {
         let _ = fs::remove_file(self.config_dir().join("config.toml"));
         self
@@ -181,6 +199,41 @@ fn copy_recursively(source: &Path, destination: &Path) -> io::Result<()> {
 #[should_panic]
 fn test_cannot_build_without_tls_feature() {
     let _ = TestEnv::new().no_default_features().command();
+}
+
+#[test]
+fn test_load_the_correct_config() {
+    let testenv = TestEnv::new()
+        .install_default_cache()
+        .create_secondary_config();
+    testenv.append_to_secondary_config(include_str!("style-config.toml"));
+
+    let expected_default = include_str!("rendered/inkscape-default.expected");
+    let expected_with_config = include_str!("rendered/inkscape-with-config.expected");
+
+    testenv
+        .command()
+        .args(["--color", "always", "inkscape-v2"])
+        .assert()
+        .success()
+        .stdout(diff(expected_default));
+
+    testenv
+        .command()
+        .args([
+            "--color",
+            "always",
+            "--config-path",
+            testenv
+                .config_dir()
+                .join("config-secondary.toml")
+                .to_str()
+                .unwrap(),
+            "inkscape-v2",
+        ])
+        .assert()
+        .success()
+        .stdout(diff(expected_with_config));
 }
 
 #[test]

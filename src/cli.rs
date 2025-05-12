@@ -75,8 +75,8 @@ pub(crate) struct Cli {
     pub clear_cache: bool,
 
     /// Override config file location
-    #[arg(long = "config", value_name = "FILE")]
-    pub config: Option<PathBuf>,
+    #[arg(long = "config-path", value_name = "FILE")]
+    pub config_path: Option<PathBuf>,
 
     /// Use a pager to page output
     #[arg(long = "pager", requires = "command_or_file")]
