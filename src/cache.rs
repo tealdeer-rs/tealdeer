@@ -174,8 +174,8 @@ impl Cache {
             if let Ok(mtime) = metadata.modified() {
                 let now = SystemTime::now();
                 return now.duration_since(mtime).ok();
-            };
-        };
+            }
+        }
         None
     }
 

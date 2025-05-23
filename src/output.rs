@@ -71,7 +71,7 @@ pub fn print_page(
             !config.display.compact,
         )
         .context("Could not write to stdout")?;
-    };
+    }
 
     // We're done outputting data, flush stdout now!
     handle.flush().context("Could not flush stdout")?;

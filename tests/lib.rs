@@ -237,6 +237,21 @@ fn test_load_the_correct_config() {
 }
 
 #[test]
+fn test_fail_on_custom_config_path_is_directory() {
+    let testenv = TestEnv::new();
+    testenv
+        .command()
+        .args([
+            "--config-path",
+            testenv.config_dir().to_str().unwrap(),
+            "sl",
+        ])
+        .assert()
+        .failure()
+        .stderr(contains("The given path doesn't point to a file"));
+}
+
+#[test]
 fn test_missing_cache() {
     TestEnv::new()
         .command()

@@ -1,6 +1,6 @@
 use std::{
     env, fmt, fs,
-    io::{Read, Write},
+    io::Write,
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -254,21 +254,22 @@ impl RawConfig {
         Self::default()
     }
 
-    fn from_config_path(config_file_path: &Path) -> Result<Option<RawConfig>> {
-        if config_file_path.exists() && config_file_path.is_file() {
-            let mut config_file = fs::File::open(&config_file_path).with_context(|| {
-                format!("Failed to open config file path at {:?}", &config_file_path)
+    fn load(config_file_path: &Path) -> Result<RawConfig> {
+        if config_file_path.is_file() {
+            let contents = fs::read_to_string(config_file_path).with_context(|| {
+                format!(
+                    "Failed to read from config file at {}",
+                    config_file_path.display()
+                )
             })?;
-            let mut contents = String::new();
-            config_file.read_to_string(&mut contents).with_context(|| {
-                format!("Failed to read from config file at {:?}", &config_file_path)
-            })?;
-            return Ok(Some(toml::from_str(&contents).with_context(|| {
-                format!("Failed to parse TOML config file at {config_file_path:?}")
-            })?));
-        } else {
-            Ok(None)
+            return toml::from_str(&contents).with_context(|| {
+                format!(
+                    "Failed to parse TOML config file at {}",
+                    config_file_path.display()
+                )
+            });
         }
+        bail!("The given path doesn't point to a file")
     }
 }
 
@@ -292,7 +293,7 @@ impl Default for RawConfig {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq)]
 pub struct StyleConfig {
     pub description: Style,
     pub command_name: Style,
@@ -382,7 +383,7 @@ pub struct Config {
     pub display: DisplayConfig,
     pub updates: UpdatesConfig,
     pub directories: DirectoriesConfig,
-    pub config_file_path: PathWithSource,
+    pub file_path: PathWithSource,
 }
 
 impl Config {
@@ -394,8 +395,10 @@ impl Config {
         let style = raw_config.style.into();
         let display = raw_config.display.into();
         let updates = raw_config.updates.try_into()?;
-        // Safe to unwrap, it's a file path, so it should have a directory component
-        let relative_path_root = config_file_path.path().parent().unwrap();
+        let relative_path_root = config_file_path
+            .path()
+            .parent()
+            .context("Failed to get config directory")?;
 
         // Determine directories config. For this, we need to take some
         // additional factory into account, like env variables, or the
@@ -457,40 +460,20 @@ impl Config {
             display,
             updates,
             directories,
-            config_file_path,
+            file_path: config_file_path,
         })
-    }
-
-    fn process_config_styles(mut self, enable_styles: bool) -> Config {
-        // Potentially override styles
-        if !enable_styles {
-            self.style = StyleConfig {
-                command_name: Style::default(),
-                description: Style::default(),
-                example_text: Style::default(),
-                example_code: Style::default(),
-                example_variable: Style::default(),
-            };
-        }
-
-        self
     }
 
     /// Load and read the config file from the given path into
     /// a [Config] and return it.
     ///
     /// path: The path to the config file.
-    /// enable_styles: Whether to use colors, etc.
-    pub fn load(path: &Path, enable_styles: bool) -> Result<Self> {
+    pub fn load(path: &Path) -> Result<Self> {
         // Load raw config, return with error if it fails.
-        let raw_config = RawConfig::from_config_path(path)?;
-        if raw_config.is_none() {
-            bail!("Given path doesn't exist or doesn't point to a file");
-        }
+        let raw_config = RawConfig::load(path)?;
 
-        // Convert to config, resolve relative paths from the config file dir
         let config = Self::from_raw(
-            raw_config.unwrap(),
+            raw_config,
             PathWithSource {
                 path: path.into(),
                 source: PathSource::Cli,
@@ -498,25 +481,26 @@ impl Config {
         )
         .context("Could not process raw config")?;
 
-        Ok(config.process_config_styles(enable_styles))
+        Ok(config)
     }
 
     /// Load and read the config file from the default path into
     /// a [Config] and return it.
-    ///
-    /// enable_styles: Whether to use colors, etc.
-    pub fn load_default_path(enable_styles: bool) -> Result<Self> {
+    pub fn load_default_path() -> Result<Self> {
         // Determine path
         let config_file_path =
             get_default_config_path().context("Could not determine config path")?;
 
         // Load raw config if possible, or load default
-        let raw_config = RawConfig::from_config_path(config_file_path.path())?.unwrap_or_default();
-        // Convert to config, resolve relative paths from the config file dir
+        let raw_config = if config_file_path.path().is_file() {
+            RawConfig::load(config_file_path.path())?
+        } else {
+            RawConfig::default()
+        };
         let config =
             Self::from_raw(raw_config, config_file_path).context("Could not process raw config")?;
 
-        Ok(config.process_config_styles(enable_styles))
+        Ok(config)
     }
 }
 
@@ -532,7 +516,7 @@ pub fn get_config_dir() -> Result<(PathBuf, PathSource)> {
     // $TEALDEER_CONFIG_DIR env variable.
     if let Ok(value) = env::var("TEALDEER_CONFIG_DIR") {
         return Ok((PathBuf::from(value), PathSource::EnvVar));
-    };
+    }
 
     // Otherwise, fall back to the user config directory.
     let dirs = get_app_root(AppDataType::UserConfig, &crate::APP_INFO)

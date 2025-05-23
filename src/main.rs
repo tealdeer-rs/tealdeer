@@ -36,6 +36,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use app_dirs::AppInfo;
 use clap::Parser;
+use config::StyleConfig;
 use log::debug;
 
 mod cache;
@@ -154,7 +155,7 @@ fn show_paths(config: &Config) {
             }
         },
     );
-    let config_path = config.config_file_path.to_string();
+    let config_path = config.file_path.to_string();
     let cache_dir = config.directories.cache_dir.to_string();
     let pages_dir = {
         let mut path = config.directories.cache_dir.path.clone();
@@ -278,13 +279,17 @@ fn main() -> ExitCode {
 fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     // Look up config file, if none is found fall back to default config.
     debug!("Loading config");
-    let config = if args.config_path.is_some() && !args.seed_config {
-        Config::load(args.config_path.as_deref().unwrap(), enable_styles)
-            .context("Could not load config from given path")?
-    } else {
-        Config::load_default_path(enable_styles)
-            .context("Could not load config from default path")?
+    let mut config = match &args.config_path {
+        Some(path) if !args.seed_config => {
+            Config::load(path).context("Could not load config from given path")?
+        }
+        _ => Config::load_default_path().context("Could not load config from default path")?,
     };
+
+    // Override styles if needed
+    if !enable_styles {
+        config.style = StyleConfig::default();
+    }
 
     let custom_pages_dir = config
         .directories
@@ -350,7 +355,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     {
         // Cache is needed, but missing
         return Ok(ExitCode::FAILURE);
-    };
+    }
 
     // List cached commands and exit
     if args.list {
