@@ -248,7 +248,7 @@ fn test_fail_on_custom_config_path_is_directory() {
         ])
         .assert()
         .failure()
-        .stderr(contains("The given path doesn't point to a file"));
+        .stderr(contains("Is a directory"));
 }
 
 #[test]
@@ -506,8 +506,9 @@ fn test_setup_seed_config() {
         .failure()
         .stderr(contains("A configuration file already exists"));
 
-    let testenv = testenv.remove_initial_config();
+    assert!(testenv.config_dir().join("config.toml").is_file());
 
+    let testenv = testenv.remove_initial_config();
     testenv
         .command()
         .args(["--seed-config"])
@@ -517,6 +518,19 @@ fn test_setup_seed_config() {
 
     assert!(testenv.config_dir().join("config.toml").is_file());
 
+    // Create parent directories as needed for the default config path.
+    fs::remove_dir_all(testenv.config_dir()).unwrap();
+    testenv
+        .command()
+        .args(["--seed-config"])
+        .assert()
+        .success()
+        .stderr(contains("Successfully created seed config file here"));
+
+    assert!(testenv.config_dir().join("config.toml").is_file());
+
+    // Write the default config to --config-path if specified by the user
+    // at the same time.
     let custom_config_path = testenv.config_dir().join("config_custom.toml");
     testenv
         .command()
@@ -530,6 +544,21 @@ fn test_setup_seed_config() {
         .stderr(contains("Successfully created seed config file here"));
 
     assert!(custom_config_path.is_file());
+
+    // DON'T create parent directories for a custom config path.
+    fs::remove_dir_all(testenv.config_dir()).unwrap();
+    testenv
+        .command()
+        .args([
+            "--seed-config",
+            "--config-path",
+            custom_config_path.to_str().unwrap(),
+        ])
+        .assert()
+        .failure()
+        .stderr(contains("Could not create config file"));
+
+    assert!(!custom_config_path.is_file());
 }
 
 #[test]

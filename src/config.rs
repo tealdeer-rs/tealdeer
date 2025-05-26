@@ -1,6 +1,7 @@
 use std::{
-    env, fmt, fs,
-    io::Write,
+    env, fmt,
+    fs::{self, File},
+    io::{ErrorKind, Read, Write},
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -254,22 +255,12 @@ impl RawConfig {
         Self::default()
     }
 
-    fn load(config_file_path: &Path) -> Result<RawConfig> {
-        if config_file_path.is_file() {
-            let contents = fs::read_to_string(config_file_path).with_context(|| {
-                format!(
-                    "Failed to read from config file at {}",
-                    config_file_path.display()
-                )
-            })?;
-            return toml::from_str(&contents).with_context(|| {
-                format!(
-                    "Failed to parse TOML config file at {}",
-                    config_file_path.display()
-                )
-            });
-        }
-        bail!("The given path doesn't point to a file")
+    fn load(mut config: impl Read) -> Result<RawConfig> {
+        let mut content = String::new();
+        config
+            .read_to_string(&mut content)
+            .context("Failed to read from config file")?;
+        toml::from_str(&content).context("Failed to parse TOML config file")
     }
 }
 
@@ -469,8 +460,7 @@ impl Config {
     ///
     /// path: The path to the config file.
     pub fn load(path: &Path) -> Result<Self> {
-        // Load raw config, return with error if it fails.
-        let raw_config = RawConfig::load(path)?;
+        let raw_config = RawConfig::load(File::open(path)?)?;
 
         let config = Self::from_raw(
             raw_config,
@@ -491,11 +481,18 @@ impl Config {
         let config_file_path =
             get_default_config_path().context("Could not determine config path")?;
 
-        // Load raw config if possible, or load default
-        let raw_config = if config_file_path.path().is_file() {
-            RawConfig::load(config_file_path.path())?
-        } else {
-            RawConfig::default()
+        let raw_config = match File::open(config_file_path.path()) {
+            Ok(file) => RawConfig::load(file)?,
+            Err(e) => {
+                if e.kind().eq(&ErrorKind::NotFound) {
+                    RawConfig::default()
+                } else {
+                    bail!(
+                        "Failed to open config file at {}",
+                        config_file_path.path().display()
+                    );
+                }
+            }
         };
         let config =
             Self::from_raw(raw_config, config_file_path).context("Could not process raw config")?;
@@ -573,7 +570,7 @@ pub fn make_default_config(path: Option<&Path>) -> Result<PathBuf> {
 
     // Write default config
     let mut config_file =
-        fs::File::create(&config_file_path).context("Could not create config file")?;
+        File::create(&config_file_path).context("Could not create config file")?;
     let _wc = config_file
         .write(serialized_config.as_bytes())
         .context("Could not write to config file")?;
