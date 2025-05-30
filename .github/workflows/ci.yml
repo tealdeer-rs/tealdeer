@@ -16,19 +16,33 @@ jobs:
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
         toolchain: [stable, 1.75.0]
+        include:
+          - platform: windows-latest
+            exe_suffix: .exe
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
+      - run: mkdir artifacts
       - name: Build with default features
-        run: cargo build
+        run: |
+          cargo build
+          cp target/debug/tldr${{ matrix.exe_suffix}} artifacts/tldr-default${{ matrix.exe_suffix}}
       - name: Build with logging and Rustls with webpki roots
-        run: cargo build --features logging,rustls-with-webpki-roots --no-default-features
+        run: |
+          cargo build --features logging,rustls-with-webpki-roots --no-default-features
+          cp target/debug/tldr${{ matrix.exe_suffix}} artifacts/tldr-logging-rustls-webpki${{ matrix.exe_suffix}}
       - name: Build with native TLS backend
-        # expects runners have the proper Native SSL library
-        run: cargo build --features native-tls --no-default-features
+        run: |
+          # expects runners have the proper Native SSL library
+          cargo build --features native-tls --no-default-features
+          cp target/debug/tldr${{ matrix.exe_suffix}} artifacts/tldr-native-tls${{ matrix.exe_suffix}}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tldr-debug-build-${{ matrix.platform }}-rust-${{ matrix.toolchain }}
+          path: artifacts/
       - name: Run tests
         run: cargo test -- --test-threads 1
 
