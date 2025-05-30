@@ -483,15 +483,12 @@ impl Config {
 
         let raw_config = match File::open(config_file_path.path()) {
             Ok(file) => RawConfig::load(file)?,
+            Err(e) if e.kind() == ErrorKind::NotFound => RawConfig::default(),
             Err(e) => {
-                if e.kind().eq(&ErrorKind::NotFound) {
-                    RawConfig::default()
-                } else {
-                    bail!(
-                        "Failed to open config file at {}",
-                        config_file_path.path().display()
-                    );
-                }
+                return Err(e).context(format!(
+                    "Failed to open config file at {}",
+                    config_file_path.path().display()
+                ));
             }
         };
         let config =
