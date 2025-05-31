@@ -70,6 +70,24 @@ impl TestEnv {
             .expect("Failed to append to config file.");
     }
 
+    fn create_secondary_config(self) -> Self {
+        self.append_to_secondary_config(format!(
+            "directories.cache_dir = '{}'\n",
+            self.cache_dir().to_str().unwrap(),
+        ));
+        self
+    }
+
+    fn append_to_secondary_config(&self, content: impl AsRef<str>) {
+        File::options()
+            .create(true)
+            .append(true)
+            .open(self.config_dir().join("config-secondary.toml"))
+            .expect("Failed to open config file")
+            .write_all(content.as_ref().as_bytes())
+            .expect("Failed to append to config file.");
+    }
+
     fn remove_initial_config(self) -> Self {
         let _ = fs::remove_file(self.config_dir().join("config.toml"));
         self
@@ -181,6 +199,61 @@ fn copy_recursively(source: &Path, destination: &Path) -> io::Result<()> {
 #[should_panic]
 fn test_cannot_build_without_tls_feature() {
     let _ = TestEnv::new().no_default_features().command();
+}
+
+#[test]
+fn test_load_the_correct_config() {
+    let testenv = TestEnv::new()
+        .install_default_cache()
+        .create_secondary_config();
+    testenv.append_to_secondary_config(include_str!("style-config.toml"));
+
+    let expected_default = include_str!("rendered/inkscape-default.expected");
+    let expected_with_config = include_str!("rendered/inkscape-with-config.expected");
+
+    testenv
+        .command()
+        .args(["--color", "always", "inkscape-v2"])
+        .assert()
+        .success()
+        .stdout(diff(expected_default));
+
+    testenv
+        .command()
+        .args([
+            "--color",
+            "always",
+            "--config-path",
+            testenv
+                .config_dir()
+                .join("config-secondary.toml")
+                .to_str()
+                .unwrap(),
+            "inkscape-v2",
+        ])
+        .assert()
+        .success()
+        .stdout(diff(expected_with_config));
+}
+
+#[test]
+fn test_fail_on_custom_config_path_is_directory() {
+    let testenv = TestEnv::new();
+    let error = if cfg!(windows) {
+        "Access is denied"
+    } else {
+        "Is a directory"
+    };
+    testenv
+        .command()
+        .args([
+            "--config-path",
+            testenv.config_dir().to_str().unwrap(),
+            "sl",
+        ])
+        .assert()
+        .failure()
+        .stderr(contains(error));
 }
 
 #[test]
@@ -438,8 +511,9 @@ fn test_setup_seed_config() {
         .failure()
         .stderr(contains("A configuration file already exists"));
 
-    let testenv = testenv.remove_initial_config();
+    assert!(testenv.config_dir().join("config.toml").is_file());
 
+    let testenv = testenv.remove_initial_config();
     testenv
         .command()
         .args(["--seed-config"])
@@ -448,6 +522,48 @@ fn test_setup_seed_config() {
         .stderr(contains("Successfully created seed config file here"));
 
     assert!(testenv.config_dir().join("config.toml").is_file());
+
+    // Create parent directories as needed for the default config path.
+    fs::remove_dir_all(testenv.config_dir()).unwrap();
+    testenv
+        .command()
+        .args(["--seed-config"])
+        .assert()
+        .success()
+        .stderr(contains("Successfully created seed config file here"));
+
+    assert!(testenv.config_dir().join("config.toml").is_file());
+
+    // Write the default config to --config-path if specified by the user
+    // at the same time.
+    let custom_config_path = testenv.config_dir().join("config_custom.toml");
+    testenv
+        .command()
+        .args([
+            "--seed-config",
+            "--config-path",
+            custom_config_path.to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .stderr(contains("Successfully created seed config file here"));
+
+    assert!(custom_config_path.is_file());
+
+    // DON'T create parent directories for a custom config path.
+    fs::remove_dir_all(testenv.config_dir()).unwrap();
+    testenv
+        .command()
+        .args([
+            "--seed-config",
+            "--config-path",
+            custom_config_path.to_str().unwrap(),
+        ])
+        .assert()
+        .failure()
+        .stderr(contains("Could not create config file"));
+
+    assert!(!custom_config_path.is_file());
 }
 
 #[test]

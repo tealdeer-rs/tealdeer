@@ -36,6 +36,8 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use app_dirs::AppInfo;
 use clap::Parser;
+use config::StyleConfig;
+use log::debug;
 
 mod cache;
 mod cli;
@@ -50,7 +52,7 @@ mod utils;
 use crate::{
     cache::{Cache, CacheFreshness, PageLookupResult, TLDR_PAGES_DIR},
     cli::Cli,
-    config::{get_config_dir, get_config_path, make_default_config, Config, PathWithSource},
+    config::{get_config_dir, make_default_config, Config, PathWithSource},
     extensions::Dedup,
     output::print_page,
     types::{ColorOptions, PlatformType},
@@ -153,10 +155,7 @@ fn show_paths(config: &Config) {
             }
         },
     );
-    let config_path = get_config_path().map_or_else(
-        |e| format!("[Error: {e}]"),
-        |(path, _)| path.display().to_string(),
-    );
+    let config_path = config.file_path.to_string();
     let cache_dir = config.directories.cache_dir.to_string();
     let pages_dir = {
         let mut path = config.directories.cache_dir.path.clone();
@@ -175,8 +174,8 @@ fn show_paths(config: &Config) {
     println!("Custom pages dir: {custom_pages_dir}");
 }
 
-fn create_config() -> Result<()> {
-    let config_file_path = make_default_config().context("Could not create seed config")?;
+fn create_config(path: Option<&Path>) -> Result<()> {
+    let config_file_path = make_default_config(path).context("Could not create seed config")?;
     eprintln!(
         "Successfully created seed config file here: {}",
         config_file_path.to_str().unwrap()
@@ -279,7 +278,18 @@ fn main() -> ExitCode {
 
 fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     // Look up config file, if none is found fall back to default config.
-    let config = Config::load(enable_styles).context("Could not load config")?;
+    debug!("Loading config");
+    let mut config = match &args.config_path {
+        Some(path) if !args.seed_config => {
+            Config::load(path).context("Could not load config from given path")?
+        }
+        _ => Config::load_default_path().context("Could not load config from default path")?,
+    };
+
+    // Override styles if needed
+    if !enable_styles {
+        config.style = StyleConfig::default();
+    }
 
     let custom_pages_dir = config
         .directories
@@ -313,7 +323,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
 
     // Create a basic config and exit
     if args.seed_config {
-        create_config()?;
+        create_config(args.config_path.as_deref())?;
         return Ok(ExitCode::SUCCESS);
     }
 
@@ -345,7 +355,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     {
         // Cache is needed, but missing
         return Ok(ExitCode::FAILURE);
-    };
+    }
 
     // List cached commands and exit
     if args.list {

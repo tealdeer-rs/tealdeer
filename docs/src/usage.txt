@@ -18,6 +18,7 @@ Options:
   -u, --update               Update the local cache
       --no-auto-update       If auto update is configured, disable it for this run
   -c, --clear-cache          Clear the local cache
+      --config-path <FILE>   Override config file location
       --pager                Use a pager to page output
   -r, --raw                  Display the raw markdown instead of rendering it
   -q, --quiet                Suppress informational messages
