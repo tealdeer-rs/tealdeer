@@ -239,6 +239,11 @@ fn test_load_the_correct_config() {
 #[test]
 fn test_fail_on_custom_config_path_is_directory() {
     let testenv = TestEnv::new();
+    let error = if cfg!(windows) {
+        "Access is denied"
+    } else {
+        "Is a directory"
+    };
     testenv
         .command()
         .args([
@@ -248,7 +253,7 @@ fn test_fail_on_custom_config_path_is_directory() {
         ])
         .assert()
         .failure()
-        .stderr(contains("Is a directory"));
+        .stderr(contains(error));
 }
 
 #[test]
