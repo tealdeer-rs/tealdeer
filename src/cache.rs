@@ -1,16 +1,18 @@
 use std::{
-    ffi::OsStr,
     fs::{self, File},
     io::{BufReader, Cursor, Read},
     path::{Path, PathBuf},
     time::{Duration, SystemTime},
 };
 
-use anyhow::{anyhow, ensure, Context, Result};
+use anyhow::{anyhow, bail, ensure, Context, Result};
 use log::debug;
-use ureq::tls::{RootCerts, TlsConfig, TlsProvider};
-use ureq::Agent;
-use zip::{read, ZipArchive};
+use ureq::{
+    http::StatusCode,
+    tls::{RootCerts, TlsConfig, TlsProvider},
+    Agent,
+};
+use zip::ZipArchive;
 
 use crate::{config::TlsBackend, types::PlatformType, utils::print_warning};
 
@@ -206,8 +208,46 @@ impl<'a> Cache<'a> {
         })
     }
 
-    pub fn update(&mut self, archive_url: &str) -> Result<()> {
-        todo!()
+    pub fn update(&mut self, archive_url: &str, tls_backend: TlsBackend) -> Result<()> {
+        let client = Self::build_client(tls_backend)?;
+
+        // Download everything before deleting anything
+        let archives = self
+            .config
+            .languages
+            .iter()
+            .map(|lang| {
+                Ok((
+                    lang,
+                    Self::download(
+                        &client,
+                        &format!("{archive_url}/tldr-{}.zip", lang.directory_name()),
+                    )?
+                    .map(|bytes| ZipArchive::new(Cursor::new(bytes)))
+                    .transpose()?,
+                ))
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        // Clear cache directory
+        // Note: This is not the best solution. Ideally we would download the
+        // archive to a temporary directory and then swap the two directories.
+        // But renaming a directory doesn't work across filesystems and Rust
+        // does not yet offer a recursive directory copying function. So for
+        // now, we'll use this approach.
+        fs::remove_dir_all(self.config.pages_directory)?;
+        fs::create_dir(self.config.pages_directory)?;
+
+        for (lang, archive) in archives {
+            if let Some(mut archive) = archive {
+                debug!("Extracting archive for {lang:?}");
+                archive.extract(self.config.pages_directory.join(lang.directory_name()))?;
+            } else {
+                debug!("No archive found for {lang:?}");
+            }
+        }
+
+        Ok(())
     }
 
     pub fn config(&self) -> &CacheConfig<'a> {
@@ -309,6 +349,7 @@ impl Cache<'_> {
                 .root_certs(RootCerts::PlatformVerifier),
         };
         let config = Agent::config_builder()
+            .http_status_as_error(false) // because we want to handle them
             .tls_config(tls_builder.build())
             .build();
 
@@ -316,15 +357,24 @@ impl Cache<'_> {
     }
 
     /// Download the archive from the specified URL.
-    fn download(client: &Agent, archive_url: &str) -> Result<Vec<u8>> {
-        let response = client
-            .get(archive_url)
-            .call()
-            .with_context(|| format!("Could not download tldr pages from {archive_url}"))?;
-        let mut buf: Vec<u8> = Vec::new();
-        response.into_body().into_reader().read_to_end(&mut buf)?;
-        debug!("{} bytes downloaded", buf.len());
-        Ok(buf)
+    fn download(client: &Agent, archive_url: &str) -> Result<Option<Vec<u8>>> {
+        debug!("Downloading archive from {archive_url}");
+        let response = client.get(archive_url).call();
+        match response {
+            Ok(response) if response.status().is_success() => {
+                let mut buf: Vec<u8> = Vec::new();
+                response.into_body().into_reader().read_to_end(&mut buf)?;
+                debug!("{} bytes downloaded", buf.len());
+                Ok(Some(buf))
+            }
+            Ok(response) if response.status() == StatusCode::NOT_FOUND => Ok(None),
+            _ => {
+                bail!(
+                    "Could not download tldr pages from {archive_url}: {:?}",
+                    response,
+                )
+            }
+        }
     }
 }
 

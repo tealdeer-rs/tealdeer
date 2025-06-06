@@ -38,7 +38,7 @@ use anyhow::{anyhow, Context, Result};
 use app_dirs::AppInfo;
 use cache::{CacheConfig, Language};
 use clap::Parser;
-use config::StyleConfig;
+use config::{StyleConfig, TlsBackend};
 use log::debug;
 
 mod cache;
@@ -135,9 +135,14 @@ fn clear_cache(cache: Cache, quietly: bool) -> Result<()> {
 }
 
 /// Update the cache
-fn update_cache(cache: &mut Cache, archive_source: &str, quietly: bool) -> Result<()> {
+fn update_cache(
+    cache: &mut Cache,
+    archive_source: &str,
+    tls_backend: TlsBackend,
+    quietly: bool,
+) -> Result<()> {
     cache
-        .update(archive_source)
+        .update(archive_source, tls_backend)
         .context("Could not update cache")?;
     if !quietly {
         eprintln!("Successfully updated cache.");
@@ -369,7 +374,12 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     let mut cache = Cache::open_or_create(cache_config)?;
 
     if should_update_cache(&cache, &args, &config) {
-        update_cache(&mut cache, &config.updates.archive_source, args.quiet)?;
+        update_cache(
+            &mut cache,
+            &config.updates.archive_source,
+            config.updates.tls_backend,
+            args.quiet,
+        )?;
     } else if (args.list || !args.command.is_empty())
         && check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing
     {
