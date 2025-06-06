@@ -18,6 +18,19 @@ use crate::{config::TlsBackend, types::PlatformType, utils::print_warning};
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct Language<'a>(pub &'a str);
+
+impl Language<'_> {
+    fn directory_name(&self) -> String {
+        if *self == Language("en") {
+            String::from("pages")
+        } else {
+            format!("pages.{}", self.0)
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Cache {
     cache_dir: PathBuf,
@@ -227,7 +240,7 @@ impl Cache {
     pub fn find_page(
         &self,
         name: &str,
-        languages: &[String],
+        languages: &[Language<'_>],
         custom_pages_dir: Option<&Path>,
         platforms: &[PlatformType],
     ) -> Option<PageLookupResult> {
@@ -237,16 +250,7 @@ impl Cache {
 
         // Determine directory paths
         let pages_dir = self.pages_dir();
-        let lang_dirs: Vec<String> = languages
-            .iter()
-            .map(|lang| {
-                if lang == "en" {
-                    String::from("pages")
-                } else {
-                    format!("pages.{lang}")
-                }
-            })
-            .collect();
+        let lang_dirs: Vec<String> = languages.iter().map(Language::directory_name).collect();
 
         // Look up custom page (<name>.page.md). If it exists, return it directly
         if let Some(config_dir) = custom_pages_dir {

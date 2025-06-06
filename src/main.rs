@@ -31,10 +31,12 @@ use std::{
     io::{self, IsTerminal},
     path::Path,
     process::{Command, ExitCode},
+    sync::LazyLock,
 };
 
 use anyhow::{anyhow, Context, Result};
 use app_dirs::AppInfo;
+use cache::Language;
 use clap::Parser;
 use config::StyleConfig;
 use log::debug;
@@ -191,14 +193,16 @@ fn init_log() {
 #[cfg(not(feature = "logging"))]
 fn init_log() {}
 
-fn get_languages(env_lang: Option<&str>, env_language: Option<&str>) -> Vec<String> {
+fn get_languages<'a>(
+    env_lang: Option<&'a str>,
+    env_language: Option<&'a str>,
+) -> Vec<Language<'a>> {
     // Language list according to
     // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#language
 
-    if env_lang.is_none() {
-        return vec!["en".to_string()];
-    }
-    let env_lang = env_lang.unwrap();
+    let Some(env_lang) = env_lang else {
+        return vec![Language("en")];
+    };
 
     // Create an iterator that contains $LANGUAGE (':' separated list) followed by $LANG (single language)
     let locales = env_language.unwrap_or("").split(':').chain([env_lang]);
@@ -207,23 +211,25 @@ fn get_languages(env_lang: Option<&str>, env_language: Option<&str>) -> Vec<Stri
     for locale in locales {
         // Language plus country code (e.g. `en_US`)
         if locale.len() >= 5 && locale.chars().nth(2) == Some('_') {
-            lang_list.push(&locale[..5]);
+            lang_list.push(Language(&locale[..5]));
         }
         // Language code only (e.g. `en`)
         if locale.len() >= 2 && locale != "POSIX" {
-            lang_list.push(&locale[..2]);
+            lang_list.push(Language(&locale[..2]));
         }
     }
 
-    lang_list.push("en");
+    lang_list.push(Language("en"));
     lang_list.clear_duplicates();
-    lang_list.into_iter().map(str::to_string).collect()
+    lang_list
 }
 
-fn get_languages_from_env() -> Vec<String> {
+fn get_languages_from_env<'a>() -> Vec<Language<'a>> {
+    static LANG: LazyLock<Option<String>> = LazyLock::new(|| std::env::var("LANG").ok());
+    static LANGUAGE: LazyLock<Option<String>> = LazyLock::new(|| std::env::var("LANGUAGE").ok());
     get_languages(
-        std::env::var("LANG").ok().as_deref(),
-        std::env::var("LANGUAGE").ok().as_deref(),
+        LANG.as_ref().map(String::as_str),
+        LANGUAGE.as_ref().map(String::as_str),
     )
 }
 
@@ -372,7 +378,8 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         // Collect languages
         let languages = args
             .language
-            .map_or_else(get_languages_from_env, |lang| vec![lang]);
+            .as_deref()
+            .map_or_else(get_languages_from_env, |lang| vec![Language(lang)]);
 
         // Search for command in cache
         let Some(lookup_result) = cache.find_page(
@@ -422,7 +429,7 @@ fn compute_platforms(platforms: Option<&Vec<PlatformType>>) -> Vec<PlatformType>
 
 #[cfg(test)]
 mod test {
-    use crate::get_languages;
+    use super::*;
 
     mod language {
         use super::*;
@@ -430,41 +437,60 @@ mod test {
         #[test]
         fn missing_lang_env() {
             let lang_list = get_languages(None, Some("de:fr"));
-            assert_eq!(lang_list, ["en"]);
+            assert_eq!(lang_list, [Language("en")]);
             let lang_list = get_languages(None, None);
-            assert_eq!(lang_list, ["en"]);
+            assert_eq!(lang_list, [Language("en")]);
         }
 
         #[test]
         fn missing_language_env() {
             let lang_list = get_languages(Some("de"), None);
-            assert_eq!(lang_list, ["de", "en"]);
+            assert_eq!(lang_list, [Language("de"), Language("en")]);
         }
 
         #[test]
         fn preference_order() {
             let lang_list = get_languages(Some("de"), Some("fr:cn"));
-            assert_eq!(lang_list, ["fr", "cn", "de", "en"]);
+            assert_eq!(
+                lang_list,
+                [
+                    Language("fr"),
+                    Language("cn"),
+                    Language("de"),
+                    Language("en")
+                ]
+            );
         }
 
         #[test]
         fn country_code_expansion() {
             let lang_list = get_languages(Some("pt_BR"), None);
-            assert_eq!(lang_list, ["pt_BR", "pt", "en"]);
+            assert_eq!(
+                lang_list,
+                [Language("pt_BR"), Language("pt"), Language("en")]
+            );
         }
 
         #[test]
         fn ignore_posix_and_c() {
             let lang_list = get_languages(Some("POSIX"), None);
-            assert_eq!(lang_list, ["en"]);
+            assert_eq!(lang_list, [Language("en")]);
             let lang_list = get_languages(Some("C"), None);
-            assert_eq!(lang_list, ["en"]);
+            assert_eq!(lang_list, [Language("en")]);
         }
 
         #[test]
         fn no_duplicates() {
             let lang_list = get_languages(Some("de"), Some("fr:de:cn:de"));
-            assert_eq!(lang_list, ["fr", "de", "cn", "en"]);
+            assert_eq!(
+                lang_list,
+                [
+                    Language("fr"),
+                    Language("de"),
+                    Language("cn"),
+                    Language("en")
+                ]
+            );
         }
     }
 }
