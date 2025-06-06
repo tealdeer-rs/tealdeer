@@ -18,6 +18,9 @@ use crate::{config::TlsBackend, types::PlatformType, utils::print_warning};
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct Language<'a>(pub &'a str);
+
 #[derive(Debug)]
 pub struct Cache {
     cache_dir: PathBuf,
@@ -227,7 +230,7 @@ impl Cache {
     pub fn find_page(
         &self,
         name: &str,
-        languages: &[String],
+        languages: &[Language<'_>],
         custom_pages_dir: Option<&Path>,
         platforms: &[PlatformType],
     ) -> Option<PageLookupResult> {
@@ -240,10 +243,10 @@ impl Cache {
         let lang_dirs: Vec<String> = languages
             .iter()
             .map(|lang| {
-                if lang == "en" {
+                if *lang == Language("en") {
                     String::from("pages")
                 } else {
-                    format!("pages.{lang}")
+                    format!("pages.{}", lang.0)
                 }
             })
             .collect();
