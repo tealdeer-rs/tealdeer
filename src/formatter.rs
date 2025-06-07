@@ -2,20 +2,54 @@
 
 use log::debug;
 
-use crate::{extensions::FindFrom, types::LineType};
+use crate::{
+    extensions::{FindFrom, ReplaceInplace},
+    types::LineType,
+};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Eq)]
 /// Represents a snippet from a page of a specific highlighting class.
-pub enum PageSnippet<'a> {
-    CommandName(&'a str),
-    Variable(&'a str),
-    NormalCode(&'a str),
-    Description(&'a str),
-    Text(&'a str),
+pub enum PageSnippet<T> {
+    CommandName(T),
+    Variable(T),
+    NormalCode(T),
+    Description(T),
+    Text(T),
     Linebreak,
 }
 
-impl PageSnippet<'_> {
+#[cfg_attr(not(test), allow(dead_code))]
+impl<T> PageSnippet<T> {
+    pub fn map<F, U>(self, f: F) -> PageSnippet<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        match self {
+            PageSnippet::CommandName(s) => PageSnippet::CommandName(f(s)),
+            PageSnippet::Variable(s) => PageSnippet::Variable(f(s)),
+            PageSnippet::NormalCode(s) => PageSnippet::NormalCode(f(s)),
+            PageSnippet::Description(s) => PageSnippet::Description(f(s)),
+            PageSnippet::Text(s) => PageSnippet::Text(f(s)),
+            PageSnippet::Linebreak => PageSnippet::Linebreak,
+        }
+    }
+}
+
+impl<T: PartialEq<U>, U> PartialEq<PageSnippet<U>> for PageSnippet<T> {
+    fn eq(&self, other: &PageSnippet<U>) -> bool {
+        match (self, other) {
+            (PageSnippet::CommandName(s), PageSnippet::CommandName(t))
+            | (PageSnippet::Variable(s), PageSnippet::Variable(t))
+            | (PageSnippet::NormalCode(s), PageSnippet::NormalCode(t))
+            | (PageSnippet::Description(s), PageSnippet::Description(t))
+            | (PageSnippet::Text(s), PageSnippet::Text(t)) => s == t,
+            (PageSnippet::Linebreak, PageSnippet::Linebreak) => true,
+            _ => false,
+        }
+    }
+}
+
+impl PageSnippet<&str> {
     pub fn is_empty(&self) -> bool {
         use PageSnippet::*;
 
@@ -34,7 +68,7 @@ pub fn highlight_lines<L, F, E>(
 ) -> Result<(), E>
 where
     L: Iterator<Item = LineType>,
-    F: for<'snip> FnMut(PageSnippet<'snip>) -> Result<(), E>,
+    F: for<'snip> FnMut(PageSnippet<&'snip str>) -> Result<(), E>,
 {
     let mut command = String::new();
     for line in lines {
@@ -54,9 +88,9 @@ where
             }
             LineType::Description(text) => process_snippet(PageSnippet::Description(&text))?,
             LineType::ExampleText(text) => process_snippet(PageSnippet::Text(&text))?,
-            LineType::ExampleCode(text) => {
+            LineType::ExampleCode(mut text) => {
                 process_snippet(PageSnippet::NormalCode("      "))?;
-                highlight_code(&command, &text, process_snippet)?;
+                highlight_code(&command, &mut text, process_snippet)?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
 
@@ -68,18 +102,71 @@ where
 }
 
 /// Highlight code examples including user variables in {{ curly braces }}.
-fn highlight_code<'a, E>(
-    command: &'a str,
-    text: &'a str,
-    process_snippet: &mut impl FnMut(PageSnippet<'a>) -> Result<(), E>,
+fn highlight_code<E>(
+    command: &str,
+    mut text: &mut str,
+    process_snippet: &mut impl FnMut(PageSnippet<&str>) -> Result<(), E>,
 ) -> Result<(), E> {
-    let variable_splits = text
-        .split("}}")
-        .map(|s| s.split_once("{{").unwrap_or((s, "")));
-    for (code_segment, variable) in variable_splits {
-        highlight_code_segment(command, code_segment, process_snippet)?;
-        process_snippet(PageSnippet::Variable(variable))?;
+    fn find_marker(s: &str, marker: &str, forbidden_prefix: &str) -> Option<usize> {
+        assert_eq!(
+            marker.as_bytes()[0],
+            forbidden_prefix.as_bytes()[forbidden_prefix.len() - 1]
+        );
+
+        let mut search_start = 0;
+        loop {
+            let marker_index = s.find_from(marker, search_start)?;
+
+            // Avoid matching the "{{" at the end of "\{\{{" (where "{{" is the marker, and "\{\{{"
+            // is the forbidden prefix)
+            let overlaps_with_prefix = (forbidden_prefix.len() <= marker_index + 1) && {
+                let prefix_start = marker_index + 1 - forbidden_prefix.len();
+                &s[prefix_start..=marker_index] == forbidden_prefix
+            };
+            if !overlaps_with_prefix {
+                return Some(marker_index);
+            }
+
+            // The next valid marker cannot include the first character of the current match
+            search_start = marker_index + 1;
+        }
     }
+
+    fn replace_escaped(s: &mut str) -> &str {
+        s.replace_inplace(r"\{\{", "{{")
+            .replace_inplace(r"\}\}", "}}")
+    }
+
+    while !text.is_empty() {
+        let Some(placeholder_start) = find_marker(&text, "{{", r"\{\{") else {
+            return highlight_code_segment(command, replace_escaped(text), process_snippet);
+        };
+        let Some(mut placeholder_len) = find_marker(&text[placeholder_start..], "}}", r"\}\}")
+        else {
+            return highlight_code_segment(command, replace_escaped(text), process_snippet);
+        };
+        placeholder_len += 2;
+
+        // Greedily extend matched range
+        while text.as_bytes().get(placeholder_start + placeholder_len) == Some(&b'}') {
+            placeholder_len += 1;
+        }
+
+        let (segment, placeholder_and_rest) = text.split_at_mut(placeholder_start);
+        let (placeholder, rest) = placeholder_and_rest.split_at_mut(placeholder_len);
+        let placeholder_without_markers = &mut placeholder[2..placeholder_len - 2];
+
+        if !segment.is_empty() {
+            highlight_code_segment(command, replace_escaped(segment), process_snippet)?;
+        }
+
+        process_snippet(PageSnippet::Variable(replace_escaped(
+            placeholder_without_markers,
+        )))?;
+
+        text = rest;
+    }
+
     Ok(())
 }
 
@@ -89,7 +176,7 @@ fn highlight_code<'a, E>(
 fn highlight_code_segment<'a, E>(
     command_name: &'a str,
     mut segment: &'a str,
-    process_snippet: &mut impl FnMut(PageSnippet<'a>) -> Result<(), E>,
+    process_snippet: &mut impl FnMut(PageSnippet<&'a str>) -> Result<(), E>,
 ) -> Result<(), E> {
     if !command_name.is_empty() {
         let mut search_start = 0;
@@ -132,7 +219,6 @@ fn is_freestanding_substring(surrounding: &str, substring: (usize, usize)) -> bo
 #[cfg(test)]
 mod tests {
     use super::*;
-    use PageSnippet::*;
 
     #[test]
     fn test_is_freestanding_substring() {
@@ -159,80 +245,156 @@ mod tests {
         ));
     }
 
-    fn run<'a>(cmd: &'a str, segment: &'a str) -> Vec<PageSnippet<'a>> {
+    fn run<'a>(cmd: &'a str, segment: &'a str) -> Vec<PageSnippet<String>> {
         let mut yielded = Vec::new();
-        let mut process_snippet = |snip: PageSnippet<'a>| {
+        let mut process_snippet = |snip: PageSnippet<&str>| {
             if !snip.is_empty() {
-                yielded.push(snip);
+                yielded.push(snip.map(str::to_string));
             }
             Ok::<(), ()>(())
         };
 
-        highlight_code_segment(cmd, segment, &mut process_snippet)
+        highlight_code(cmd, &mut segment.to_string(), &mut process_snippet)
             .expect("highlight code segment failed");
         yielded
     }
 
-    #[test]
-    fn test_highlight_code_segment() {
-        assert!(run("make", "").is_empty());
-        assert_eq!(
-            &run("make", "make all CC=clang -q"),
-            &[CommandName("make"), NormalCode(" all CC=clang -q")]
-        );
-        assert_eq!(
-            &run("make", "  make money --always-make"),
-            &[
-                NormalCode("  "),
-                CommandName("make"),
-                NormalCode(" money --always-make")
-            ]
-        );
-        assert_eq!(
-            &run("git commit", "git commit -m 'git commit'"),
-            &[CommandName("git commit"), NormalCode(" -m 'git commit'"),]
-        );
+    mod highlight_code_segment {
+        use super::*;
+        use PageSnippet::*;
+
+        #[test]
+        fn test_highlight_code_segment() {
+            assert!(run("make", "").is_empty());
+            assert_eq!(
+                &run("make", "make all CC=clang -q"),
+                &[CommandName("make"), NormalCode(" all CC=clang -q")]
+            );
+            assert_eq!(
+                &run("make", "  make money --always-make"),
+                &[
+                    NormalCode("  "),
+                    CommandName("make"),
+                    NormalCode(" money --always-make")
+                ]
+            );
+            assert_eq!(
+                &run("git commit", "git commit -m 'git commit'"),
+                &[CommandName("git commit"), NormalCode(" -m 'git commit'"),]
+            );
+        }
+
+        #[test]
+        fn test_i18n() {
+            assert_eq!(
+                &run("mäke", "mäke höhlenrätselbücher"),
+                &[CommandName("mäke"), NormalCode(" höhlenrätselbücher")]
+            );
+            assert_eq!(
+                &run(
+                    "Müll",
+                    "1000 Gründe warum Müll heute größer ist als Müll früher, ärgerlich"
+                ),
+                &[
+                    NormalCode("1000 Gründe warum "),
+                    CommandName("Müll"),
+                    NormalCode(" heute größer ist als "),
+                    CommandName("Müll"),
+                    NormalCode(" früher, ärgerlich")
+                ]
+            );
+            assert_eq!(
+                &run(
+                    "übergang",
+                    "die Zustandsübergangsfunktion übergang Änderungen",
+                ),
+                &[
+                    NormalCode("die Zustandsübergangsfunktion "),
+                    CommandName("übergang"),
+                    NormalCode(" Änderungen")
+                ],
+            );
+        }
+
+        #[test]
+        fn test_empty_command() {
+            let segment = "some code";
+            let snippets = [NormalCode(segment)];
+
+            assert_eq!(run("", segment), snippets);
+            assert_eq!(run(" ", segment), snippets);
+            assert_eq!(run("  \t ", segment), snippets);
+        }
     }
 
-    #[test]
-    fn test_i18n() {
-        assert_eq!(
-            &run("mäke", "mäke höhlenrätselbücher"),
-            &[CommandName("mäke"), NormalCode(" höhlenrätselbücher")]
-        );
-        assert_eq!(
-            &run(
-                "Müll",
-                "1000 Gründe warum Müll heute größer ist als Müll früher, ärgerlich"
-            ),
-            &[
-                NormalCode("1000 Gründe warum "),
-                CommandName("Müll"),
-                NormalCode(" heute größer ist als "),
-                CommandName("Müll"),
-                NormalCode(" früher, ärgerlich")
-            ]
-        );
-        assert_eq!(
-            &run(
-                "übergang",
-                "die Zustandsübergangsfunktion übergang Änderungen",
-            ),
-            &[
-                NormalCode("die Zustandsübergangsfunktion "),
-                CommandName("übergang"),
-                NormalCode(" Änderungen")
-            ],
-        );
-    }
+    mod placeholders {
+        use super::*;
+        use PageSnippet::*;
 
-    #[test]
-    fn test_empty_command() {
-        let segment = "some code";
-        let snippets = [NormalCode(segment)];
+        #[test]
+        fn variable_vs_escaped() {
+            assert_eq!(
+                run("ping", "ping {{example.com}}"),
+                [
+                    CommandName("ping"),
+                    NormalCode(" "),
+                    Variable("example.com"),
+                ],
+            );
+            assert_eq!(
+                run(
+                    "docker inspect",
+                    r"docker inspect --format '\{\{range.NetworkSettings.Networks\}\}\{\{.IPAddress\}\}\{\{end\}\}' {{container}}"
+                ),
+                [
+                    CommandName("docker inspect"),
+                    NormalCode(
+                        " --format '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "
+                    ),
+                    Variable("container"),
+                ],
+            );
+            assert_eq!(
+                run("mount", r"mount \\{{computer_name}}\{{share_name}} Z:"),
+                [
+                    CommandName("mount"),
+                    NormalCode(r" \\"),
+                    Variable("computer_name"),
+                    NormalCode(r"\"),
+                    Variable("share_name"),
+                    NormalCode(" Z:"),
+                ],
+            );
 
-        assert_eq!(run("", segment), snippets);
-        assert_eq!(run(" ", segment), snippets);
-        assert_eq!(run("  \t ", segment), snippets);
+            assert_eq!(run("", r"\{"), [NormalCode(r"\{")]);
+            assert_eq!(run("", r"\{{a"), [NormalCode(r"\{{a")]);
+            assert_eq!(run("", r"\{{a}}"), [NormalCode(r"\"), Variable("a")]);
+
+            // Placeholder has begin marker, but no end marker
+            assert_eq!(run("", r"{{\}\}}"), [NormalCode("{{}}}")]);
+        }
+
+        #[test]
+        fn outer_precedence() {
+            assert_eq!(
+                run("git stash", "git stash show --patch {{stash@{0}}}"),
+                [
+                    CommandName("git stash"),
+                    NormalCode(" show --patch "),
+                    Variable("stash@{0}"),
+                ],
+            );
+
+            // The following is not listed in the specification, but this is the highlighting I would expect.
+            assert_eq!(
+                run("rg", "rg {{}}}"),
+                [CommandName("rg"), NormalCode(" "), Variable("}")]
+            );
+
+            // And these are just to document the current behavior
+            assert_eq!(run("", "{{{}}}"), [Variable("{}")]);
+            assert_eq!(run("", "{{{{}}}"), [Variable("{{}")]);
+            assert_eq!(run("", "{{{}}}}"), [Variable("{}}")]);
+        }
     }
 }
