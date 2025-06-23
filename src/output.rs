@@ -31,7 +31,7 @@ fn configure_pager(enable_styles: bool) {
 /// Print page by path
 pub fn print_page(
     lookup_result: &PageLookupResult,
-    enable_markdown: bool,
+    disable_markdown: bool,
     enable_styles: bool,
     use_pager: bool,
     config: &Config,
@@ -48,7 +48,7 @@ pub fn print_page(
     let stdout = io::stdout();
     let mut handle = stdout.lock();
 
-    if enable_markdown {
+    if disable_markdown {
         // Print the raw markdown of the file.
         for line in reader.lines() {
             let line = line.context("Error while reading from a page")?;
