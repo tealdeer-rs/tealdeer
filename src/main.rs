@@ -36,7 +36,7 @@ use std::{
 
 use anyhow::{anyhow, Context, Result};
 use app_dirs::AppInfo;
-use cache::{CacheConfig, Language};
+use cache::{CacheConfig, Language, TLDR_OLD_PAGES_DIR};
 use clap::Parser;
 use config::{StyleConfig, TlsBackend};
 use log::debug;
@@ -305,7 +305,15 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         languages: &languages,
     };
 
-    // TODO: check for TLDR_OLD_PAGES_DIR
+    // TODO: remove in tealdeer 1.9
+    let old_config = CacheConfig {
+        pages_directory: &config.directories.cache_dir.path().join(TLDR_OLD_PAGES_DIR),
+        ..cache_config
+    };
+    if let Ok(Some(old_cache)) = Cache::open(old_config) {
+        old_cache.clear()?;
+        eprintln!("Cleared pages from old cache location.");
+    };
 
     if args.clear_cache {
         if let Some(cache) = Cache::open(cache_config)? {

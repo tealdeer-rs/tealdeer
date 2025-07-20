@@ -17,7 +17,7 @@ use zip::ZipArchive;
 use crate::{config::TlsBackend, types::PlatformType, utils::print_warning};
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
-static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
+pub static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Language<'a>(pub &'a str);

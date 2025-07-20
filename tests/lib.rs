@@ -16,6 +16,7 @@ use predicates::{
 use tempfile::{Builder as TempfileBuilder, TempDir};
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
+pub static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 
 struct TestEnv {
     _test_dir: TempDir,
@@ -374,6 +375,28 @@ fn test_clear_only_pages_directory() {
 
     assert!(testenv.cache_dir().is_dir());
     assert!(!testenv.cache_dir().join(TLDR_PAGES_DIR).exists());
+}
+
+#[test]
+fn test_always_delete_old_pages_directory() {
+    let testenv = TestEnv::new().install_default_cache();
+    fs::rename(
+        testenv.cache_dir().join(TLDR_PAGES_DIR),
+        testenv.cache_dir().join(TLDR_OLD_PAGES_DIR),
+    )
+    .unwrap();
+
+    testenv
+        .command()
+        .arg("--list")
+        .assert()
+        .failure()
+        .stderr(contains("Cleared pages from old cache location."))
+        .stderr(contains("Page cache not found."));
+
+    assert!(testenv.cache_dir().is_dir());
+    assert!(!testenv.cache_dir().join(TLDR_PAGES_DIR).exists());
+    assert!(!testenv.cache_dir().join(TLDR_OLD_PAGES_DIR).exists());
 }
 
 #[test]
