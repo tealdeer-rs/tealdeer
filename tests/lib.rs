@@ -433,8 +433,8 @@ fn test_create_cache_directory_path() {
         .assert()
         .success()
         .stderr(contains(format!(
-            "Successfully created cache directory path `{}`.",
-            internal_cache_dir.to_str().unwrap()
+            "Successfully created cache directory `{}`.",
+            internal_cache_dir.join(TLDR_PAGES_DIR).to_str().unwrap()
         )))
         .stderr(contains("Successfully updated cache."));
 
@@ -444,15 +444,9 @@ fn test_create_cache_directory_path() {
 #[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_cache_location_not_a_directory() {
-    let testenv = TestEnv::new().remove_initial_config();
+    let testenv = TestEnv::new();
     let cache_dir = &testenv.cache_dir();
-    let internal_file = cache_dir.join("internal");
-    File::create(&internal_file).unwrap();
-
-    testenv.append_to_config(format!(
-        "directories.cache_dir = '{}'\n",
-        internal_file.to_str().unwrap()
-    ));
+    File::create(cache_dir.join(TLDR_PAGES_DIR)).unwrap();
 
     testenv
         .command()
@@ -460,8 +454,8 @@ fn test_cache_location_not_a_directory() {
         .assert()
         .failure()
         .stderr(contains(format!(
-            "Cache directory path `{}` is not a directory",
-            internal_file.display(),
+            "Cache directory `{}` exists, but is not a directory.",
+            cache_dir.join(TLDR_PAGES_DIR).display(),
         )));
 }
 

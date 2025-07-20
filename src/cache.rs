@@ -22,6 +22,7 @@ static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Language<'a>(pub &'a str);
 
+#[derive(Clone)]
 pub struct CacheConfig<'a> {
     pub pages_directory: &'a Path,
     pub custom_pages_directory: Option<&'a Path>,
@@ -48,38 +49,30 @@ impl<'a> Cache<'a> {
             .map_or((false, false), |md| (true, md.is_dir()));
         ensure!(
             !cache_dir_exists || cache_dir_is_dir,
-            "{} exists, but is not a directory.",
+            "Cache directory `{}` exists, but is not a directory.",
             config.pages_directory.display(),
         );
 
         Ok(cache_dir_is_dir.then_some(Cache { config }))
     }
 
-    pub fn open_or_create(config: CacheConfig<'a>) -> Result<Self> {
-        let (cache_dir_exists, cache_dir_is_dir) = config
-            .pages_directory
-            .metadata()
-            .map_or((false, false), |md| (true, md.is_dir()));
-        ensure!(
-            !cache_dir_exists || cache_dir_is_dir,
-            "{} exists, but is not a directory.",
+    pub fn open_or_create(config: CacheConfig<'a>) -> Result<(Self, bool)> {
+        if let Some(cache) = Self::open(config.clone())? {
+            return Ok((cache, false));
+        }
+
+        fs::create_dir_all(&config.pages_directory).with_context(|| {
+            format!(
+                "Cache directory `{}` cannot be created",
+                config.pages_directory.display(),
+            )
+        })?;
+        eprintln!(
+            "Successfully created cache directory `{}`.",
             config.pages_directory.display(),
         );
 
-        if !cache_dir_is_dir {
-            fs::create_dir_all(&config.pages_directory).with_context(|| {
-                format!(
-                    "Cache directory `{}` cannot be created",
-                    config.pages_directory.display(),
-                )
-            })?;
-            eprintln!(
-                "Successfully created cache directory `{}`.",
-                config.pages_directory.display(),
-            );
-        }
-
-        Ok(Cache { config })
+        Ok((Cache { config }, true))
     }
 
     pub fn age(&self) -> Result<Duration> {
