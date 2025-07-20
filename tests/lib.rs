@@ -360,6 +360,23 @@ fn test_quiet_cache() {
 }
 
 #[test]
+fn test_clear_only_pages_directory() {
+    let testenv = TestEnv::new().install_default_cache();
+    testenv
+        .command()
+        .args(["--clear-cache"])
+        .assert()
+        .success()
+        .stderr(contains(format!(
+            "Successfully cleared cache at `{}`.",
+            testenv.cache_dir().join(TLDR_PAGES_DIR).to_str().unwrap(),
+        )));
+
+    assert!(testenv.cache_dir().is_dir());
+    assert!(!testenv.cache_dir().join(TLDR_PAGES_DIR).exists());
+}
+
+#[test]
 fn test_warn_invalid_tls_backend() {
     let testenv = TestEnv::new()
         .no_default_features()
