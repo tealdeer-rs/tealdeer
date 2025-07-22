@@ -294,23 +294,14 @@ impl PageLookupResult {
     }
 }
 
-trait DirectoryName {
-    type S;
-    fn directory_name(&self) -> Self::S;
-}
-
-impl DirectoryName for Language<'_> {
-    type S = String;
-
-    fn directory_name(&self) -> Self::S {
+impl Language<'_> {
+    fn directory_name(&self) -> String {
         format!("pages.{}", self.0)
     }
 }
 
-impl DirectoryName for PlatformType {
-    type S = &'static str;
-
-    fn directory_name(&self) -> Self::S {
+impl PlatformType {
+    fn directory_name(self) -> &'static str {
         match self {
             PlatformType::Linux => "linux",
             PlatformType::OsX => "osx",
