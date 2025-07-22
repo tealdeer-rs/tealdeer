@@ -313,12 +313,12 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     if let Ok(Some(old_cache)) = Cache::open(old_config) {
         old_cache.clear()?;
         eprintln!("Cleared pages from old cache location.");
-    };
+    }
 
     if args.clear_cache {
         if let Some(cache) = Cache::open(cache_config)? {
             clear_cache(cache, args.quiet)?;
-        };
+        }
         return Ok(ExitCode::SUCCESS);
     }
 
