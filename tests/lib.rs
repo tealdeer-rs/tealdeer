@@ -37,9 +37,9 @@ impl TestEnv {
             features: vec![],
         };
 
-        create_dir_all(&this.cache_dir()).unwrap();
-        create_dir_all(&this.config_dir()).unwrap();
-        create_dir_all(&this.custom_pages_dir()).unwrap();
+        create_dir_all(this.cache_dir()).unwrap();
+        create_dir_all(this.config_dir()).unwrap();
+        create_dir_all(this.custom_pages_dir()).unwrap();
 
         this.append_to_config(format!(
             "directories.cache_dir = '{}'\n",

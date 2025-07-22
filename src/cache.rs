@@ -14,7 +14,7 @@ use ureq::{
 };
 use zip::ZipArchive;
 
-use crate::{config::TlsBackend, types::PlatformType, utils::print_warning};
+use crate::{config::TlsBackend, types::PlatformType};
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 pub static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
@@ -61,7 +61,7 @@ impl<'a> Cache<'a> {
             return Ok((cache, false));
         }
 
-        fs::create_dir_all(&config.pages_directory).with_context(|| {
+        fs::create_dir_all(config.pages_directory).with_context(|| {
             format!(
                 "Cache directory `{}` cannot be created",
                 config.pages_directory.display(),
@@ -126,7 +126,7 @@ impl<'a> Cache<'a> {
         let mut pages = Vec::new();
 
         let mut append_all = |directory: &Path, suffix: &str| -> Result<()> {
-            let Ok(file_iter) = fs::read_dir(&directory) else {
+            let Ok(file_iter) = fs::read_dir(directory) else {
                 return Ok(());
             };
 
@@ -165,7 +165,7 @@ impl<'a> Cache<'a> {
         }
 
         if let Some(custom_pages_dir) = self.config.custom_pages_directory {
-            append_all(&custom_pages_dir, ".page.md")?;
+            append_all(custom_pages_dir, ".page.md")?;
         }
 
         pages.sort_unstable();
@@ -177,7 +177,7 @@ impl<'a> Cache<'a> {
         let Some(directory) = self.config.custom_pages_directory else {
             return Ok(false);
         };
-        let Ok(file_iter) = fs::read_dir(&directory) else {
+        let Ok(file_iter) = fs::read_dir(directory) else {
             return Ok(false);
         };
 
