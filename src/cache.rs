@@ -202,7 +202,7 @@ impl<'a> Cache<'a> {
     }
 
     pub fn update(&mut self, archive_url: &str, tls_backend: TlsBackend) -> Result<()> {
-        let client = Self::build_client(tls_backend)?;
+        let client = Self::build_client(tls_backend);
 
         // Download everything before deleting anything
         let archives = self
@@ -326,7 +326,7 @@ impl DirectoryName for PlatformType {
 }
 
 impl Cache<'_> {
-    fn build_client(tls_backend: TlsBackend) -> Result<Agent> {
+    fn build_client(tls_backend: TlsBackend) -> Agent {
         let tls_builder = match tls_backend {
             #[cfg(feature = "native-tls")]
             TlsBackend::NativeTls => TlsConfig::builder()
@@ -346,7 +346,7 @@ impl Cache<'_> {
             .tls_config(tls_builder.build())
             .build();
 
-        Ok(config.into())
+        config.into()
     }
 
     /// Download the archive from the specified URL.
@@ -424,23 +424,5 @@ mod tests {
         reader.read_to_end(&mut buf).unwrap();
 
         assert_eq!(&buf, b"Hello\n");
-    }
-
-    #[test]
-    #[cfg(feature = "native-tls")]
-    fn test_create_https_client_with_native_tls() {
-        Cache::build_client(TlsBackend::NativeTls).expect("fails to build a client.");
-    }
-
-    #[test]
-    #[cfg(feature = "rustls-with-webpki-roots")]
-    fn test_create_https_client_with_rustls() {
-        Cache::build_client(TlsBackend::RustlsWithWebpkiRoots).expect("fails to build a client.");
-    }
-
-    #[test]
-    #[cfg(feature = "rustls-with-native-roots")]
-    fn test_create_https_client_with_rustls_with_native_roots() {
-        Cache::build_client(TlsBackend::RustlsWithNativeRoots).expect("fails to build a client.");
     }
 }
