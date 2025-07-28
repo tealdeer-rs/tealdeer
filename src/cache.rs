@@ -109,9 +109,9 @@ impl<'a> Cache<'a> {
             .map(|dir| dir.join(&patch_filename))
             .filter(|path| path.is_file());
 
-        let mut search_path = self.config.pages_directory.to_path_buf();
         for &platform in self.config.platforms {
             for language in self.config.languages {
+                let mut search_path = self.config.pages_directory.to_path_buf();
                 search_path.push(language.directory_name());
                 search_path.push(platform.directory_name());
                 search_path.push(&page_filename);
@@ -121,10 +121,6 @@ impl<'a> Cache<'a> {
                         PageLookupResult::with_page(search_path).with_optional_patch(patch_path),
                     );
                 }
-
-                search_path.pop();
-                search_path.pop();
-                search_path.pop();
             }
         }
 
