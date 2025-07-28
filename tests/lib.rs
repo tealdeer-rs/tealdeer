@@ -481,7 +481,6 @@ fn test_create_cache_directory_path() {
     assert!(internal_cache_dir.is_dir());
 }
 
-#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_cache_location_not_a_directory() {
     let testenv = TestEnv::new();
@@ -490,7 +489,7 @@ fn test_cache_location_not_a_directory() {
 
     testenv
         .command()
-        .arg("--update")
+        .arg("--list")
         .assert()
         .failure()
         .stderr(contains(format!(
