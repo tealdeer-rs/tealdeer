@@ -42,6 +42,8 @@ pub struct PageLookupResult {
 }
 
 impl<'a> Cache<'a> {
+    /// Try opening a cache at the location given by `config.pages_directory`. If no directory
+    /// exists at this location, `Ok(None)` is returned.
     pub fn open(config: CacheConfig<'a>) -> Result<Option<Self>> {
         match config.pages_directory.metadata() {
             Ok(md) => {
@@ -60,6 +62,9 @@ impl<'a> Cache<'a> {
         }
     }
 
+    /// Open an existing cache at `config.pages_directory` or create one if no cache resides at
+    /// this location. In case of success, the return value is a tuple with the `Cache` and a
+    /// boolean indicating whether the cache was newly created.
     pub fn open_or_create(config: CacheConfig<'a>) -> Result<(Self, bool)> {
         if let Some(cache) = Self::open(config.clone())? {
             return Ok((cache, false));
