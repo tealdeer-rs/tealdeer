@@ -1,6 +1,6 @@
 use std::{
     fs::{self, File},
-    io::{BufReader, Cursor, Read},
+    io::{BufReader, Cursor, ErrorKind, Read},
     path::{Path, PathBuf},
     time::{Duration, SystemTime},
 };
@@ -43,17 +43,21 @@ pub struct PageLookupResult {
 
 impl<'a> Cache<'a> {
     pub fn open(config: CacheConfig<'a>) -> Result<Option<Self>> {
-        let (cache_dir_exists, cache_dir_is_dir) = config
-            .pages_directory
-            .metadata()
-            .map_or((false, false), |md| (true, md.is_dir()));
-        ensure!(
-            !cache_dir_exists || cache_dir_is_dir,
-            "Cache directory `{}` exists, but is not a directory.",
-            config.pages_directory.display(),
-        );
-
-        Ok(cache_dir_is_dir.then_some(Cache { config }))
+        match config.pages_directory.metadata() {
+            Ok(md) => {
+                ensure!(
+                    md.is_dir(),
+                    "Cache directory `{}` exists, but is not a directory.",
+                    config.pages_directory.display(),
+                );
+                Ok(Some(Cache { config }))
+            }
+            Err(err) if err.kind() == ErrorKind::NotFound => Ok(None),
+            Err(err) => Err(anyhow!(err).context(format!(
+                "Error getting metdata of cache directory {}",
+                config.pages_directory.display()
+            ))),
+        }
     }
 
     pub fn open_or_create(config: CacheConfig<'a>) -> Result<(Self, bool)> {

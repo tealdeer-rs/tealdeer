@@ -498,6 +498,34 @@ fn test_cache_location_not_a_directory() {
         )));
 }
 
+#[cfg(unix)]
+#[test]
+fn test_cache_location_permission_denied() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let testenv = TestEnv::new().install_default_cache();
+
+    testenv
+        .command()
+        .arg("--list")
+        .assert()
+        .success()
+        .stderr(contains("Permission denied").not());
+
+    // Make cache directory unreadable
+    let cache_dir = testenv.cache_dir();
+    let mut permissions = cache_dir.metadata().unwrap().permissions();
+    permissions.set_mode(0);
+    fs::set_permissions(cache_dir, permissions).unwrap();
+
+    testenv
+        .command()
+        .arg("--list")
+        .assert()
+        .failure()
+        .stderr(contains("Permission denied"));
+}
+
 #[test]
 fn test_cache_location_source() {
     let testenv = TestEnv::new().remove_initial_config();
