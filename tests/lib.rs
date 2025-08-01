@@ -16,6 +16,7 @@ use predicates::{
 use tempfile::{Builder as TempfileBuilder, TempDir};
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
+pub static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 
 struct TestEnv {
     _test_dir: TempDir,
@@ -36,9 +37,9 @@ impl TestEnv {
             features: vec![],
         };
 
-        create_dir_all(&this.cache_dir()).unwrap();
-        create_dir_all(&this.config_dir()).unwrap();
-        create_dir_all(&this.custom_pages_dir()).unwrap();
+        create_dir_all(this.cache_dir()).unwrap();
+        create_dir_all(this.config_dir()).unwrap();
+        create_dir_all(this.custom_pages_dir()).unwrap();
 
         this.append_to_config(format!(
             "directories.cache_dir = '{}'\n",
@@ -100,7 +101,11 @@ impl TestEnv {
 
     /// Add entry for that environment to an OS-specific subfolder.
     fn add_os_entry(&self, os: &str, name: &str, contents: &str) {
-        let dir = self.cache_dir().join(TLDR_PAGES_DIR).join("pages").join(os);
+        let dir = self
+            .cache_dir()
+            .join(TLDR_PAGES_DIR)
+            .join("pages.en")
+            .join(os);
         create_dir_all(&dir).unwrap();
 
         fs::write(dir.join(format!("{name}.md")), contents.as_bytes()).unwrap();
@@ -356,6 +361,45 @@ fn test_quiet_cache() {
 }
 
 #[test]
+fn test_clear_only_pages_directory() {
+    let testenv = TestEnv::new().install_default_cache();
+    testenv
+        .command()
+        .args(["--clear-cache"])
+        .assert()
+        .success()
+        .stderr(contains(format!(
+            "Successfully cleared cache at `{}`.",
+            testenv.cache_dir().join(TLDR_PAGES_DIR).to_str().unwrap(),
+        )));
+
+    assert!(testenv.cache_dir().is_dir());
+    assert!(!testenv.cache_dir().join(TLDR_PAGES_DIR).exists());
+}
+
+#[test]
+fn test_always_delete_old_pages_directory() {
+    let testenv = TestEnv::new().install_default_cache();
+    fs::rename(
+        testenv.cache_dir().join(TLDR_PAGES_DIR),
+        testenv.cache_dir().join(TLDR_OLD_PAGES_DIR),
+    )
+    .unwrap();
+
+    testenv
+        .command()
+        .arg("--list")
+        .assert()
+        .failure()
+        .stderr(contains("Cleared pages from old cache location."))
+        .stderr(contains("Page cache not found."));
+
+    assert!(testenv.cache_dir().is_dir());
+    assert!(!testenv.cache_dir().join(TLDR_PAGES_DIR).exists());
+    assert!(!testenv.cache_dir().join(TLDR_OLD_PAGES_DIR).exists());
+}
+
+#[test]
 fn test_warn_invalid_tls_backend() {
     let testenv = TestEnv::new()
         .no_default_features()
@@ -429,36 +473,57 @@ fn test_create_cache_directory_path() {
         .assert()
         .success()
         .stderr(contains(format!(
-            "Successfully created cache directory path `{}`.",
-            internal_cache_dir.to_str().unwrap()
+            "Successfully created cache directory `{}`.",
+            internal_cache_dir.join(TLDR_PAGES_DIR).to_str().unwrap()
         )))
         .stderr(contains("Successfully updated cache."));
 
     assert!(internal_cache_dir.is_dir());
 }
 
-#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_cache_location_not_a_directory() {
-    let testenv = TestEnv::new().remove_initial_config();
+    let testenv = TestEnv::new();
     let cache_dir = &testenv.cache_dir();
-    let internal_file = cache_dir.join("internal");
-    File::create(&internal_file).unwrap();
-
-    testenv.append_to_config(format!(
-        "directories.cache_dir = '{}'\n",
-        internal_file.to_str().unwrap()
-    ));
+    File::create(cache_dir.join(TLDR_PAGES_DIR)).unwrap();
 
     testenv
         .command()
-        .arg("--update")
+        .arg("--list")
         .assert()
         .failure()
         .stderr(contains(format!(
-            "Cache directory path `{}` is not a directory",
-            internal_file.display(),
+            "Cache directory `{}` exists, but is not a directory.",
+            cache_dir.join(TLDR_PAGES_DIR).display(),
         )));
+}
+
+#[cfg(unix)]
+#[test]
+fn test_cache_location_permission_denied() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let testenv = TestEnv::new().install_default_cache();
+
+    testenv
+        .command()
+        .arg("--list")
+        .assert()
+        .success()
+        .stderr(contains("Permission denied").not());
+
+    // Make cache directory unreadable
+    let cache_dir = testenv.cache_dir();
+    let mut permissions = cache_dir.metadata().unwrap().permissions();
+    permissions.set_mode(0);
+    fs::set_permissions(cache_dir, permissions).unwrap();
+
+    testenv
+        .command()
+        .arg("--list")
+        .assert()
+        .failure()
+        .stderr(contains("Permission denied"));
 }
 
 #[test]
@@ -624,7 +689,7 @@ fn test_os_specific_page() {
 fn test_markdown_rendering() {
     let testenv = TestEnv::new().install_default_cache();
 
-    let expected = include_str!("cache/pages/common/which.md");
+    let expected = include_str!("cache/pages.en/common/which.md");
     testenv
         .command()
         .args(["--raw", "which"])
@@ -1008,7 +1073,7 @@ fn test_custom_page_overwrites() {
     // Add .page.md file to custom_pages_dir
     testenv.add_page_entry(
         "inkscape-v2",
-        include_str!("cache/pages/common/inkscape-v2.md"),
+        include_str!("cache/pages.en/common/inkscape-v2.md"),
     );
 
     // Load expected output
@@ -1051,7 +1116,7 @@ fn test_custom_patch_does_not_append_to_custom() {
     // In addition to the page in the cache, add the same page as a custom page.
     testenv.add_page_entry(
         "inkscape-v2",
-        include_str!("cache/pages/common/inkscape-v2.md"),
+        include_str!("cache/pages.en/common/inkscape-v2.md"),
     );
 
     // Load expected output
@@ -1114,7 +1179,7 @@ fn test_raw_render_file() {
     let path = testenv
         .cache_dir()
         .join(TLDR_PAGES_DIR)
-        .join("pages/common/inkscape-v1.md");
+        .join("pages.en/common/inkscape-v1.md");
     let mut args = vec!["--color", "never", "-f", &path.to_str().unwrap()];
 
     // Default render
@@ -1134,7 +1199,7 @@ fn test_raw_render_file() {
         .args(&args)
         .assert()
         .success()
-        .stdout(diff(include_str!("cache/pages/common/inkscape-v1.md")));
+        .stdout(diff(include_str!("cache/pages.en/common/inkscape-v1.md")));
 }
 
 fn touch_custom_page(testenv: &TestEnv) {

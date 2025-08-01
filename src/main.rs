@@ -36,9 +36,9 @@ use std::{
 
 use anyhow::{anyhow, Context, Result};
 use app_dirs::AppInfo;
-use cache::Language;
+use cache::{CacheConfig, Language, TLDR_OLD_PAGES_DIR};
 use clap::Parser;
-use config::StyleConfig;
+use config::{StyleConfig, TlsBackend};
 use log::debug;
 
 mod cache;
@@ -52,7 +52,7 @@ mod types;
 mod utils;
 
 use crate::{
-    cache::{Cache, CacheFreshness, PageLookupResult, TLDR_PAGES_DIR},
+    cache::{Cache, PageLookupResult, TLDR_PAGES_DIR},
     cli::Cli,
     config::{get_config_dir, make_default_config, Config, PathWithSource},
     extensions::Dedup,
@@ -67,77 +67,25 @@ const APP_INFO: AppInfo = AppInfo {
     author: NAME,
 };
 
-/// The cache should be updated if it was explicitly requested,
-/// or if an automatic update is due and allowed.
-fn should_update_cache(cache: &Cache, args: &Cli, config: &Config) -> bool {
-    args.update
-        || (!args.no_auto_update
-            && config.updates.auto_update
-            && cache
-                .last_update()
-                .map_or(true, |ago| ago >= config.updates.auto_update_interval))
-}
-
-#[derive(PartialEq)]
-enum CheckCacheResult {
-    CacheFound,
-    CacheMissing,
-}
-
-/// Check the cache for freshness. If it's stale or missing, show a warning.
-fn check_cache(cache: &Cache, args: &Cli, enable_styles: bool) -> CheckCacheResult {
-    match cache.freshness() {
-        CacheFreshness::Fresh => CheckCacheResult::CacheFound,
-        CacheFreshness::Stale(_) if args.quiet => CheckCacheResult::CacheFound,
-        CacheFreshness::Stale(age) => {
-            print_warning(
-                enable_styles,
-                &format!(
-                    "The cache hasn't been updated for {} days.\n\
-                     You should probably run `tldr --update` soon.",
-                    age.as_secs() / 24 / 3600
-                ),
-            );
-            CheckCacheResult::CacheFound
-        }
-        CacheFreshness::Missing => {
-            print_error(
-                enable_styles,
-                &anyhow::anyhow!(
-                    "Page cache not found. Please run `tldr --update` to download the cache."
-                ),
-            );
-            println!("\nNote: You can optionally enable automatic cache updates by adding the");
-            println!("following config to your config file:\n");
-            println!("  [updates]");
-            println!("  auto_update = true\n");
-            println!("The path to your config file can be looked up with `tldr --show-paths`.");
-            println!("To create an initial config file, use `tldr --seed-config`.\n");
-            println!("You can find more tips and tricks in our docs:\n");
-            println!("  https://tealdeer-rs.github.io/tealdeer/config_updates.html");
-            CheckCacheResult::CacheMissing
-        }
-    }
-}
-
 /// Clear the cache
-fn clear_cache(cache: &Cache, quietly: bool) -> Result<()> {
-    let cache_dir_found = cache.clear().context("Could not clear cache")?;
+fn clear_cache(cache: Cache, quietly: bool) -> Result<()> {
+    let cache_dir = cache.config().pages_directory.display();
+    cache.clear().context("Could not clear cache")?;
     if !quietly {
-        let cache_dir = cache.cache_dir().display();
-        if cache_dir_found {
-            eprintln!("Successfully cleared cache at `{cache_dir}`.");
-        } else {
-            eprintln!("Cache directory not found at `{cache_dir}`, nothing to do.");
-        }
+        eprintln!("Successfully cleared cache at `{cache_dir}`.");
     }
     Ok(())
 }
 
 /// Update the cache
-fn update_cache(cache: &Cache, archive_source: &str, quietly: bool) -> Result<()> {
+fn update_cache(
+    cache: &mut Cache,
+    archive_source: &str,
+    tls_backend: TlsBackend,
+    quietly: bool,
+) -> Result<()> {
     cache
-        .update(archive_source)
+        .update(archive_source, tls_backend)
         .context("Could not update cache")?;
     if !quietly {
         eprintln!("Successfully updated cache.");
@@ -333,8 +281,6 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         return Ok(ExitCode::SUCCESS);
     }
 
-    let platforms = compute_platforms(args.platforms.as_ref());
-
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
         let path = PageLookupResult::with_page(file);
@@ -342,56 +288,120 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         return Ok(ExitCode::SUCCESS);
     }
 
-    // Instantiate cache. This will not yet create the cache directory!
-    let cache = Cache::new(
-        &config.directories.cache_dir.path,
-        enable_styles,
-        config.updates.tls_backend,
-    );
+    let platforms = compute_platforms(args.platforms.as_ref());
+    let languages = args
+        .language
+        .as_deref()
+        .map_or_else(get_languages_from_env, |lang| vec![Language(lang)]);
 
-    // Clear cache, pass through
+    let cache_config = CacheConfig {
+        pages_directory: &config.directories.cache_dir.path().join(TLDR_PAGES_DIR),
+        custom_pages_directory: config
+            .directories
+            .custom_pages_dir
+            .as_ref()
+            .map(PathWithSource::path),
+        platforms: &platforms,
+        languages: &languages,
+    };
+
+    // TODO: remove in tealdeer 1.9
+    let old_config = CacheConfig {
+        pages_directory: &config.directories.cache_dir.path().join(TLDR_OLD_PAGES_DIR),
+        ..cache_config
+    };
+    if let Ok(Some(old_cache)) = Cache::open(old_config) {
+        old_cache.clear()?;
+        eprintln!("Cleared pages from old cache location.");
+    }
+
     if args.clear_cache {
-        clear_cache(&cache, args.quiet)?;
+        if let Some(cache) = Cache::open(cache_config)? {
+            clear_cache(cache, args.quiet)?;
+        }
+        return Ok(ExitCode::SUCCESS);
     }
 
-    if should_update_cache(&cache, &args, &config) {
-        update_cache(&cache, &config.updates.archive_source, args.quiet)?;
-    } else if (args.list || !args.command.is_empty())
-        && check_cache(&cache, &args, enable_styles) == CheckCacheResult::CacheMissing
-    {
-        // Cache is needed, but missing
-        return Ok(ExitCode::FAILURE);
-    }
+    let cache = if args.update || config.updates.auto_update && !args.no_auto_update {
+        let (mut cache, was_created) = Cache::open_or_create(cache_config)?;
+        if was_created || args.update || cache.age()? >= config.updates.auto_update_interval {
+            update_cache(
+                &mut cache,
+                &config.updates.archive_source,
+                config.updates.tls_backend,
+                args.quiet,
+            )?;
+        }
 
-    // List cached commands and exit
+        cache
+    } else if args.list || !command.is_empty() {
+        // Cache is needed for these commands to work
+        let Some(cache) = Cache::open(cache_config)? else {
+            print_error(
+                enable_styles,
+                &anyhow::anyhow!(
+                    "Page cache not found. Please run `tldr --update` to download the cache."
+                ),
+            );
+            println!("\nNote: You can optionally enable automatic cache updates by adding the");
+            println!("following config to your config file:\n");
+            println!("  [updates]");
+            println!("  auto_update = true\n");
+            println!("The path to your config file can be looked up with `tldr --show-paths`.");
+            println!("To create an initial config file, use `tldr --seed-config`.\n");
+            println!("You can find more tips and tricks in our docs:\n");
+            println!("  https://tealdeer-rs.github.io/tealdeer/config_updates.html");
+
+            return Ok(ExitCode::FAILURE);
+        };
+
+        let age = cache.age()?;
+        if age > config::MAX_CACHE_AGE && !args.quiet {
+            print_warning(
+                enable_styles,
+                &format!(
+                    "The cache hasn't been updated for {} days.\n\
+                     You should probably run `tldr --update` soon.",
+                    age.as_secs() / 24 / 3600
+                ),
+            );
+        }
+
+        cache
+    } else {
+        // There is nothing left to do
+        return Ok(ExitCode::SUCCESS);
+    };
+
     if args.list {
-        println!(
-            "{}",
-            cache.list_pages(custom_pages_dir, &platforms).join("\n")
-        );
+        for page in cache.list_pages()? {
+            println!("{page}");
+        }
 
         return Ok(ExitCode::SUCCESS);
     }
 
     // Show command from cache
     if !command.is_empty() {
-        // Collect languages
-        let languages = args
-            .language
-            .as_deref()
-            .map_or_else(get_languages_from_env, |lang| vec![Language(lang)]);
+        // TODO: Remove this check 1 year after version 1.7.0 was released
+        if cache.old_custom_pages_exist()? {
+            print_warning(
+                enable_styles,
+                &format!(
+                    "Custom pages using the old naming convention were found in {}.\n\
+                     Please rename them to follow the new convention:\n\
+                     - `<name>.page` → `<name>.page.md`\n\
+                     - `<name>.patch` → `<name>.patch.md`",
+                    cache
+                        .config()
+                        .custom_pages_directory
+                        .expect("Old custom pages can only exist in custom pages directory")
+                        .display(),
+                ),
+            );
+        }
 
-        // Search for command in cache
-        let Some(lookup_result) = cache.find_page(
-            &command,
-            &languages,
-            config
-                .directories
-                .custom_pages_dir
-                .as_ref()
-                .map(PathWithSource::path),
-            &platforms,
-        ) else {
+        let Some(lookup_result) = cache.find_page(&command) else {
             if !args.quiet {
                 print_warning(
                     enable_styles,

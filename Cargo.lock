@@ -1068,7 +1068,6 @@ dependencies = [
  "tempfile",
  "toml",
  "ureq",
- "walkdir",
  "yansi",
  "zip",
 ]
