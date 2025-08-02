@@ -623,42 +623,42 @@ pub fn make_default_config(path: Option<&Path>) -> Result<PathBuf> {
     Ok(config_file_path)
 }
 
-#[test]
-fn test_serialize_deserialize() {
-    let raw_config = RawConfig::default();
-    let serialized = toml::to_string(&raw_config).unwrap();
-    let deserialized: RawConfig = toml::from_str(&serialized).unwrap();
-    assert_eq!(raw_config, deserialized);
-}
-
-#[test]
-fn test_relative_path_resolution() {
-    let mut raw_config = RawConfig::default();
-    raw_config.directories.cache_dir = Some("../cache".into());
-    raw_config.directories.custom_pages_dir = Some("../custom_pages".into());
-
-    let config = Config::from_raw(
-        &raw_config,
-        PathWithSource {
-            path: PathBuf::from("/path/to/config/config.toml"),
-            source: PathSource::OsConvention,
-        },
-    )
-    .unwrap();
-
-    assert_eq!(
-        config.directories.cache_dir.path(),
-        Path::new("/path/to/config/../cache")
-    );
-    assert_eq!(
-        config.directories.custom_pages_dir.unwrap().path(),
-        Path::new("/path/to/config/../custom_pages")
-    );
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn serialize_deserialize() {
+        let raw_config = RawConfig::default();
+        let serialized = toml::to_string(&raw_config).unwrap();
+        let deserialized: RawConfig = toml::from_str(&serialized).unwrap();
+        assert_eq!(raw_config, deserialized);
+    }
+
+    #[test]
+    fn relative_path_resolution() {
+        let mut raw_config = RawConfig::default();
+        raw_config.directories.cache_dir = Some("../cache".into());
+        raw_config.directories.custom_pages_dir = Some("../custom_pages".into());
+
+        let config = Config::from_raw(
+            &raw_config,
+            PathWithSource {
+                path: PathBuf::from("/path/to/config/config.toml"),
+                source: PathSource::OsConvention,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            config.directories.cache_dir.path(),
+            Path::new("/path/to/config/../cache")
+        );
+        assert_eq!(
+            config.directories.custom_pages_dir.unwrap().path(),
+            Path::new("/path/to/config/../custom_pages")
+        );
+    }
 
     mod language {
         use super::*;
