@@ -250,16 +250,6 @@ struct RawConfig {
     directories: RawDirectoriesConfig,
 }
 
-impl RawConfig {
-    fn new() -> Self {
-        Self::default()
-    }
-
-    fn load(content: &str) -> Result<Self> {
-        toml::from_str(content).context("Failed to parse TOML config file")
-    }
-}
-
 impl Default for RawConfig {
     fn default() -> Self {
         let mut raw_config = RawConfig {
@@ -468,7 +458,7 @@ impl ConfigLoader {
     fn read_internal(path: PathWithSource, allow_not_found: bool) -> Result<Self> {
         match fs::read_to_string(&path.path) {
             Ok(content) => Ok(Self {
-                raw: RawConfig::load(&content).with_context(|| {
+                raw: toml::from_str(&content).with_context(|| {
                     format!(
                         "Could not parse config file contents as toml from {}.",
                         path.path.display()
@@ -577,7 +567,7 @@ pub fn make_default_config(path: Option<&Path>) -> Result<PathBuf> {
 
     // Create default config
     let serialized_config =
-        toml::to_string(&RawConfig::new()).context("Failed to serialize default config")?;
+        toml::to_string(&RawConfig::default()).context("Failed to serialize default config")?;
 
     // Write default config
     let mut config_file =
@@ -591,7 +581,7 @@ pub fn make_default_config(path: Option<&Path>) -> Result<PathBuf> {
 
 #[test]
 fn test_serialize_deserialize() {
-    let raw_config = RawConfig::new();
+    let raw_config = RawConfig::default();
     let serialized = toml::to_string(&raw_config).unwrap();
     let deserialized: RawConfig = toml::from_str(&serialized).unwrap();
     assert_eq!(raw_config, deserialized);
@@ -599,7 +589,7 @@ fn test_serialize_deserialize() {
 
 #[test]
 fn test_relative_path_resolution() {
-    let mut raw_config = RawConfig::new();
+    let mut raw_config = RawConfig::default();
     raw_config.directories.cache_dir = Some("../cache".into());
     raw_config.directories.custom_pages_dir = Some("../custom_pages".into());
 
