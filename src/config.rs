@@ -1,7 +1,7 @@
 use std::{
     env, fmt,
     fs::{self, File},
-    io::{ErrorKind, Write},
+    io::{self, ErrorKind, Write},
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -451,48 +451,59 @@ impl<'a> Config<'a> {
             file_path: config_file_path,
         })
     }
+}
 
-    /// Load and read the config file from the given path into
-    /// a [Config] and return it.
-    ///
-    /// path: The path to the config file.
-    pub fn load(path: &Path) -> Result<Self> {
-        let content = fs::read_to_string(path)?.leak();
-        let raw_config = RawConfig::load(content)?;
+/// The [`ConfigLoader`] is used to load a [`Config`] from a file. Since the [`Config`] keeps references to the file
+/// contents it was created from, these file contents need to be kept alive outside of the [`Config`]. The
+/// [`ConfigLoader`] thus offers the following flow:
+/// 1. Read a resource using [`ConfigLoader::read`] or [`ConfigLoader::read_default_path`].
+/// 2. Parse the contents to a [`Config`] that borrows the [`ConfigLoader`].
+pub struct ConfigLoader {
+    file_contents: Option<String>,
+    path: PathWithSource,
+}
 
-        let config = Self::from_raw(
-            raw_config,
-            PathWithSource {
-                path: path.into(),
+impl ConfigLoader {
+    /// Create a loader that uses the file at `path`.
+    pub fn read(path: PathBuf) -> io::Result<Self> {
+        Ok(Self {
+            file_contents: Some(fs::read_to_string(&path)?),
+            path: PathWithSource {
+                path,
                 source: PathSource::Cli,
             },
-        )
-        .context("Could not process raw config")?;
-
-        Ok(config)
+        })
     }
 
-    /// Load and read the config file from the default path into
-    /// a [Config] and return it.
-    pub fn load_default_path() -> Result<Self> {
-        // Determine path
-        let config_file_path =
-            get_default_config_path().context("Could not determine config path")?;
+    /// Create a loader that uses the default config file location. If no file is present at the default location,
+    /// [`ConfigLoader::load`] will return the default configuration.
+    pub fn read_default_path() -> Result<Self> {
+        let path = get_default_config_path().context("Could not determine default config path")?;
+        match fs::read_to_string(&path.path) {
+            Ok(content) => Ok(Self {
+                file_contents: Some(content),
+                path,
+            }),
+            Err(e) if e.kind() == ErrorKind::NotFound => Ok(Self {
+                file_contents: None,
+                path,
+            }),
+            Err(e) => Err(e).context(format!(
+                "Could not read config file contents from {}.",
+                path.path().display()
+            )),
+        }
+    }
 
-        let raw_config = match fs::read_to_string(config_file_path.path()) {
-            Ok(content) => RawConfig::load(content.leak())?,
-            Err(e) if e.kind() == ErrorKind::NotFound => RawConfig::default(),
-            Err(e) => {
-                return Err(e).context(format!(
-                    "Failed to open config file at {}",
-                    config_file_path.path().display()
-                ));
-            }
-        };
-        let config =
-            Self::from_raw(raw_config, config_file_path).context("Could not process raw config")?;
-
-        Ok(config)
+    /// Parse the read resource into a [`Config`].
+    pub fn load(&self) -> Result<Config<'_>> {
+        let raw_config = self
+            .file_contents
+            .as_ref()
+            .map(|contents| RawConfig::load(contents))
+            .transpose()?
+            .unwrap_or_default();
+        Config::from_raw(raw_config, self.path.clone()).context("Could not process raw config")
     }
 }
 
