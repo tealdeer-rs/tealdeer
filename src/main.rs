@@ -82,11 +82,21 @@ fn update_cache(
     tls_backend: TlsBackend,
     quietly: bool,
 ) -> Result<()> {
-    cache
+    let downloaded_languages = cache
         .update(archive_source, tls_backend)
         .context("Could not update cache")?;
     if !quietly {
         eprintln!("Successfully updated cache.");
+        eprint!("Pages for the following languages were downloaded: ");
+        let language_strings: Vec<_> = downloaded_languages
+            .into_iter()
+            .map(|lang| lang.0)
+            .collect();
+        if language_strings.is_empty() {
+            eprintln!("(none)");
+        } else {
+            eprintln!("{}", language_strings.join(", "));
+        }
     }
     Ok(())
 }
@@ -250,9 +260,9 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     }
 
     let platforms = compute_platforms(args.platforms.as_ref());
-    let languages = match args.language.as_deref() {
-        Some(lang) => &[Language(lang)] as &[_],
-        None => &config.search.languages,
+    let (search_languages, download_languages): (&[_], &[_]) = match args.language.as_deref() {
+        Some(lang) => (&[Language(lang)], &[Language(lang)]),
+        None => (&config.search.languages, &config.updates.download_languages),
     };
 
     let cache_config = CacheConfig {
@@ -263,7 +273,8 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
             .as_ref()
             .map(PathWithSource::path),
         platforms: &platforms,
-        languages,
+        search_languages,
+        download_languages,
     };
 
     // TODO: remove in tealdeer 1.9

@@ -6,7 +6,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
-use log::debug;
+use log::{debug, info};
 use ureq::{
     http::StatusCode,
     tls::{RootCerts, TlsConfig, TlsProvider},
@@ -27,7 +27,8 @@ pub struct CacheConfig<'a> {
     pub pages_directory: &'a Path,
     pub custom_pages_directory: Option<&'a Path>,
     pub platforms: &'a [PlatformType],
-    pub languages: &'a [Language<'a>],
+    pub search_languages: &'a [Language<'a>],
+    pub download_languages: &'a [Language<'a>],
 }
 
 /// The directory backing this cache is checked to be populated at construction.
@@ -110,7 +111,7 @@ impl<'a> Cache<'a> {
             .filter(|path| path.is_file());
 
         for &platform in self.config.platforms {
-            for language in self.config.languages {
+            for language in self.config.search_languages {
                 let mut search_path = self.config.pages_directory.to_path_buf();
                 search_path.push(language.directory_name());
                 search_path.push(platform.directory_name());
@@ -159,7 +160,7 @@ impl<'a> Cache<'a> {
         };
 
         let mut search_path = self.config.pages_directory.to_path_buf();
-        for language in self.config.languages {
+        for language in self.config.search_languages {
             search_path.push(language.directory_name());
             for platform in self.config.platforms {
                 search_path.push(platform.directory_name());
@@ -206,15 +207,23 @@ impl<'a> Cache<'a> {
         })
     }
 
-    pub fn update(&mut self, archive_url: &str, tls_backend: TlsBackend) -> Result<()> {
+    /// Download archives for the languages in `self.config().download_languages` and replace the
+    /// pages directory with the newly downloaded pages. As not all languages might have pages
+    /// available (for example, `en_US` instead of `en`), an iterator yielding all languages which
+    /// were successfully downloaded is returned.
+    pub fn update(
+        &mut self,
+        archive_url: &str,
+        tls_backend: TlsBackend,
+    ) -> Result<impl IntoIterator<Item = Language<'_>>> {
         let client = Self::build_client(tls_backend);
 
         // Download everything before deleting anything
-        let archives = self
+        let mut archives = self
             .config
-            .languages
+            .download_languages
             .iter()
-            .map(|lang| {
+            .map(|&lang| {
                 Ok((
                     lang,
                     Self::download(
@@ -236,16 +245,18 @@ impl<'a> Cache<'a> {
         fs::remove_dir_all(self.config.pages_directory)?;
         fs::create_dir(self.config.pages_directory)?;
 
-        for (lang, archive) in archives {
-            if let Some(mut archive) = archive {
-                debug!("Extracting archive for {lang:?}");
+        for (lang, archive) in &mut archives {
+            if let Some(archive) = archive {
+                info!("Extracting archive for {lang:?}");
                 archive.extract(self.config.pages_directory.join(lang.directory_name()))?;
             } else {
-                debug!("No archive found for {lang:?}");
+                info!("No archive found for {lang:?}");
             }
         }
 
-        Ok(())
+        Ok(archives
+            .into_iter()
+            .filter_map(|(lang, archive)| archive.is_some().then_some(lang)))
     }
 
     pub fn config(&self) -> &CacheConfig<'a> {
@@ -347,7 +358,7 @@ impl Cache<'_> {
 
     /// Download the archive from the specified URL.
     fn download(client: &Agent, archive_url: &str) -> Result<Option<Vec<u8>>> {
-        debug!("Downloading archive from {archive_url}");
+        info!("Downloading archive from {archive_url}");
         let response = client.get(archive_url).call();
         match response {
             Ok(response) if response.status().is_success() => {

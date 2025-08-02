@@ -190,6 +190,8 @@ struct RawUpdatesConfig {
     pub archive_source: String,
     #[serde(default)]
     pub tls_backend: RawTlsBackend,
+    #[serde(default)]
+    pub download_languages: Option<Vec<String>>,
 }
 
 impl Default for RawUpdatesConfig {
@@ -199,38 +201,8 @@ impl Default for RawUpdatesConfig {
             auto_update_interval_hours: DEFAULT_UPDATE_INTERVAL_HOURS,
             archive_source: default_archive_source(),
             tls_backend: RawTlsBackend::default(),
+            download_languages: None,
         }
-    }
-}
-
-impl<'a> TryFrom<&'a RawUpdatesConfig> for UpdatesConfig<'a> {
-    type Error = anyhow::Error;
-
-    fn try_from(raw_updates_config: &'a RawUpdatesConfig) -> Result<Self> {
-        let tls_backend = match raw_updates_config.tls_backend {
-            #[cfg(feature = "native-tls")]
-            RawTlsBackend::NativeTls => TlsBackend::NativeTls,
-            #[cfg(feature = "rustls-with-webpki-roots")]
-            RawTlsBackend::RustlsWithWebpkiRoots => TlsBackend::RustlsWithWebpkiRoots,
-            #[cfg(feature = "rustls-with-native-roots")]
-            RawTlsBackend::RustlsWithNativeRoots => TlsBackend::RustlsWithNativeRoots,
-            // when compiling without all TLS backend features, we want to handle config error.
-            #[allow(unreachable_patterns)]
-            _ => return Err(anyhow!(
-                "Unsupported TLS backend: {}. This tealdeer build has support for the following options: {}",
-                raw_updates_config.tls_backend,
-                SUPPORTED_TLS_BACKENDS.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", ")
-            ))
-        };
-
-        Ok(Self {
-            auto_update: raw_updates_config.auto_update,
-            auto_update_interval: Duration::from_secs(
-                raw_updates_config.auto_update_interval_hours * 3600,
-            ),
-            archive_source: &raw_updates_config.archive_source,
-            tls_backend,
-        })
     }
 }
 
@@ -299,6 +271,7 @@ pub struct UpdatesConfig<'a> {
     pub auto_update_interval: Duration,
     pub archive_source: &'a str,
     pub tls_backend: TlsBackend,
+    pub download_languages: Vec<Language<'a>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -330,7 +303,7 @@ pub struct SearchConfig<'a> {
     pub languages: Vec<Language<'a>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Language<'a>(pub &'a str);
 
 fn get_languages<'a>(
@@ -410,6 +383,28 @@ pub enum TlsBackend {
     RustlsWithNativeRoots,
 }
 
+impl TryFrom<RawTlsBackend> for TlsBackend {
+    type Error = anyhow::Error;
+
+    fn try_from(raw: RawTlsBackend) -> Result<Self, Self::Error> {
+        match raw {
+            #[cfg(feature = "native-tls")]
+            RawTlsBackend::NativeTls => Ok(TlsBackend::NativeTls),
+            #[cfg(feature = "rustls-with-webpki-roots")]
+            RawTlsBackend::RustlsWithWebpkiRoots => Ok(TlsBackend::RustlsWithWebpkiRoots),
+            #[cfg(feature = "rustls-with-native-roots")]
+            RawTlsBackend::RustlsWithNativeRoots => Ok(TlsBackend::RustlsWithNativeRoots),
+            // when compiling without all TLS backend features, we want to handle config error.
+            #[allow(unreachable_patterns)]
+            _ => Err(anyhow!(
+                "Unsupported TLS backend: {}. This tealdeer build has support for the following options: {}",
+                raw,
+                SUPPORTED_TLS_BACKENDS.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", ")
+            ))
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Config<'a> {
     pub style: StyleConfig,
@@ -428,7 +423,7 @@ impl<'a> Config<'a> {
     fn from_raw(raw_config: &'a RawConfig, config_file_path: PathWithSource) -> Result<Self> {
         let style = (&raw_config.style).into();
         let display = (&raw_config.display).into();
-        let updates = (&raw_config.updates).try_into()?;
+
         let search = SearchConfig {
             languages: raw_config
                 .search
@@ -437,6 +432,19 @@ impl<'a> Config<'a> {
                 .map_or_else(get_languages_from_env, |langs| {
                     langs.iter().map(|lang| Language(lang)).collect()
                 }),
+        };
+
+        let updates = UpdatesConfig {
+            auto_update: raw_config.updates.auto_update,
+            auto_update_interval: Duration::from_secs(
+                raw_config.updates.auto_update_interval_hours * 3600,
+            ),
+            archive_source: &raw_config.updates.archive_source,
+            tls_backend: raw_config.updates.tls_backend.try_into()?,
+            download_languages: raw_config.updates.download_languages.as_ref().map_or_else(
+                || search.languages.clone(),
+                |languages| languages.iter().map(|lang| Language(lang)).collect(),
+            ),
         };
 
         let relative_path_root = config_file_path

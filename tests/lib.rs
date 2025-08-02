@@ -996,6 +996,30 @@ fn test_search_language_precedence() {
     run(env_cases);
 }
 
+#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
+#[test]
+fn test_update_language_arg() {
+    let testenv = TestEnv::new();
+    testenv
+        .command()
+        .env("LANG", "it")
+        .arg("--update")
+        .assert()
+        .success()
+        .stderr(contains("it"))
+        .stderr(contains("en"));
+
+    testenv
+        .command()
+        .env("LANG", "en")
+        .args(["--language", "it"])
+        .arg("--update")
+        .assert()
+        .success()
+        .stderr(contains("it"))
+        .stderr(contains("en").not());
+}
+
 #[test]
 fn test_list_flag_rendering() {
     let testenv = TestEnv::new().write_custom_pages_config();
