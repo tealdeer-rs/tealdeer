@@ -327,7 +327,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         if was_created || args.update || cache.age()? >= config.updates.auto_update_interval {
             update_cache(
                 &mut cache,
-                &config.updates.archive_source,
+                config.updates.archive_source,
                 config.updates.tls_backend,
                 args.quiet,
             )?;
