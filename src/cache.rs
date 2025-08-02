@@ -14,13 +14,13 @@ use ureq::{
 };
 use zip::ZipArchive;
 
-use crate::{config::TlsBackend, types::PlatformType};
+use crate::{
+    config::{Language, TlsBackend},
+    types::PlatformType,
+};
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 pub static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
-
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Language<'a>(pub &'a str);
 
 #[derive(Clone)]
 pub struct CacheConfig<'a> {

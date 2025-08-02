@@ -3,6 +3,7 @@ use std::{
     fs::{self, File},
     io::{ErrorKind, Write},
     path::{Path, PathBuf},
+    sync::LazyLock,
     time::Duration,
 };
 
@@ -12,7 +13,7 @@ use serde::Serialize as _;
 use serde_derive::{Deserialize, Serialize};
 use yansi::{Color, Style};
 
-use crate::types::PathSource;
+use crate::{extensions::Dedup as _, types::PathSource};
 
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
@@ -317,6 +318,49 @@ pub struct DirectoriesConfig {
     pub custom_pages_dir: Option<PathWithSource>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Language<'a>(pub &'a str);
+
+fn get_languages<'a>(
+    env_lang: Option<&'a str>,
+    env_language: Option<&'a str>,
+) -> Vec<Language<'a>> {
+    // Language list according to
+    // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#language
+
+    let Some(env_lang) = env_lang else {
+        return vec![Language("en")];
+    };
+
+    // Create an iterator that contains $LANGUAGE (':' separated list) followed by $LANG (single language)
+    let locales = env_language.unwrap_or("").split(':').chain([env_lang]);
+
+    let mut lang_list = Vec::new();
+    for locale in locales {
+        // Language plus country code (e.g. `en_US`)
+        if locale.len() >= 5 && locale.chars().nth(2) == Some('_') {
+            lang_list.push(Language(&locale[..5]));
+        }
+        // Language code only (e.g. `en`)
+        if locale.len() >= 2 && locale != "POSIX" {
+            lang_list.push(Language(&locale[..2]));
+        }
+    }
+
+    lang_list.push(Language("en"));
+    lang_list.clear_duplicates();
+    lang_list
+}
+
+pub fn get_languages_from_env<'a>() -> Vec<Language<'a>> {
+    static LANG: LazyLock<Option<String>> = LazyLock::new(|| std::env::var("LANG").ok());
+    static LANGUAGE: LazyLock<Option<String>> = LazyLock::new(|| std::env::var("LANGUAGE").ok());
+    get_languages(
+        LANG.as_ref().map(String::as_str),
+        LANGUAGE.as_ref().map(String::as_str),
+    )
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum RawTlsBackend {
@@ -610,4 +654,72 @@ fn test_relative_path_resolution() {
         config.directories.custom_pages_dir.unwrap().path(),
         Path::new("/path/to/config/../custom_pages")
     );
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    mod language {
+        use super::*;
+
+        #[test]
+        fn missing_lang_env() {
+            let lang_list = get_languages(None, Some("de:fr"));
+            assert_eq!(lang_list, [Language("en")]);
+            let lang_list = get_languages(None, None);
+            assert_eq!(lang_list, [Language("en")]);
+        }
+
+        #[test]
+        fn missing_language_env() {
+            let lang_list = get_languages(Some("de"), None);
+            assert_eq!(lang_list, [Language("de"), Language("en")]);
+        }
+
+        #[test]
+        fn preference_order() {
+            let lang_list = get_languages(Some("de"), Some("fr:cn"));
+            assert_eq!(
+                lang_list,
+                [
+                    Language("fr"),
+                    Language("cn"),
+                    Language("de"),
+                    Language("en")
+                ]
+            );
+        }
+
+        #[test]
+        fn country_code_expansion() {
+            let lang_list = get_languages(Some("pt_BR"), None);
+            assert_eq!(
+                lang_list,
+                [Language("pt_BR"), Language("pt"), Language("en")]
+            );
+        }
+
+        #[test]
+        fn ignore_posix_and_c() {
+            let lang_list = get_languages(Some("POSIX"), None);
+            assert_eq!(lang_list, [Language("en")]);
+            let lang_list = get_languages(Some("C"), None);
+            assert_eq!(lang_list, [Language("en")]);
+        }
+
+        #[test]
+        fn no_duplicates() {
+            let lang_list = get_languages(Some("de"), Some("fr:de:cn:de"));
+            assert_eq!(
+                lang_list,
+                [
+                    Language("fr"),
+                    Language("de"),
+                    Language("cn"),
+                    Language("en")
+                ]
+            );
+        }
+    }
 }
