@@ -242,6 +242,11 @@ struct RawDirectoriesConfig {
     pub custom_pages_dir: Option<PathBuf>,
 }
 
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+struct RawSearchConfig {
+    pub languages: Option<Vec<String>>,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default)]
 struct RawConfig {
@@ -249,6 +254,7 @@ struct RawConfig {
     display: RawDisplayConfig,
     updates: RawUpdatesConfig,
     directories: RawDirectoriesConfig,
+    search: RawSearchConfig,
 }
 
 impl Default for RawConfig {
@@ -258,6 +264,7 @@ impl Default for RawConfig {
             display: RawDisplayConfig::default(),
             updates: RawUpdatesConfig::default(),
             directories: RawDirectoriesConfig::default(),
+            search: RawSearchConfig::default(),
         };
 
         // Set default config
@@ -316,6 +323,11 @@ impl fmt::Display for PathWithSource {
 pub struct DirectoriesConfig {
     pub cache_dir: PathWithSource,
     pub custom_pages_dir: Option<PathWithSource>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SearchConfig<'a> {
+    pub languages: Vec<Language<'a>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -404,6 +416,7 @@ pub struct Config<'a> {
     pub display: DisplayConfig,
     pub updates: UpdatesConfig<'a>,
     pub directories: DirectoriesConfig,
+    pub search: SearchConfig<'a>,
     pub file_path: PathWithSource,
 }
 
@@ -416,6 +429,16 @@ impl<'a> Config<'a> {
         let style = (&raw_config.style).into();
         let display = (&raw_config.display).into();
         let updates = (&raw_config.updates).try_into()?;
+        let search = SearchConfig {
+            languages: raw_config
+                .search
+                .languages
+                .as_ref()
+                .map_or_else(get_languages_from_env, |langs| {
+                    langs.iter().map(|lang| Language(lang)).collect()
+                }),
+        };
+
         let relative_path_root = config_file_path
             .path()
             .parent()
@@ -482,6 +505,7 @@ impl<'a> Config<'a> {
             display,
             updates,
             directories,
+            search,
             file_path: config_file_path,
         })
     }

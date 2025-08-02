@@ -22,7 +22,7 @@ On Linux, this will usually be `~/.config/tealdeer/config.toml`.
 Here's an example configuration file. Note that this example does not contain
 all possible config options. For details on the things that can be configured,
 please refer to the subsections of this documentation page
-([display](config_display.html), [style](config_style.html),
+([display](config_display.html), [style](config_style.html), [search](config_search.html),
 [updates](config_updates.html) or [directories](config_directories.html)).
 
 ```toml

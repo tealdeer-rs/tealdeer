@@ -11,6 +11,7 @@ use std::{
 use assert_cmd::prelude::*;
 use predicates::{
     boolean::PredicateBooleanExt,
+    ord::eq,
     prelude::predicate::str::{contains, diff, is_empty, is_match},
 };
 use tempfile::{Builder as TempfileBuilder, TempDir};
@@ -41,10 +42,7 @@ impl TestEnv {
         create_dir_all(this.config_dir()).unwrap();
         create_dir_all(this.custom_pages_dir()).unwrap();
 
-        this.append_to_config(format!(
-            "directories.cache_dir = '{}'\n",
-            this.cache_dir().to_str().unwrap(),
-        ));
+        this.init_config();
 
         this
     }
@@ -69,6 +67,15 @@ impl TestEnv {
             .expect("Failed to open config file")
             .write_all(content.as_ref().as_bytes())
             .expect("Failed to append to config file.");
+    }
+    fn delete_config(&self) {
+        fs::remove_file(self.config_dir().join("config.toml")).unwrap();
+    }
+    fn init_config(&self) {
+        self.append_to_config(format!(
+            "directories.cache_dir = '{}'\n",
+            self.cache_dir().to_str().unwrap(),
+        ));
     }
 
     fn create_secondary_config(self) -> Self {
@@ -101,10 +108,20 @@ impl TestEnv {
 
     /// Add entry for that environment to an OS-specific subfolder.
     fn add_os_entry(&self, os: &str, name: &str, contents: &str) {
+        self.add_os_lang_entry(os, "en", name, contents);
+    }
+
+    /// Add entry for that environment to a language-specific subfolder.
+    fn add_lang_entry(&self, lang: &str, name: &str, contents: &str) {
+        self.add_os_lang_entry("common", lang, name, contents);
+    }
+
+    /// Add entry for that environment to an OS- and language specific subfolder.
+    fn add_os_lang_entry(&self, os: &str, lang: &str, name: &str, contents: &str) {
         let dir = self
             .cache_dir()
             .join(TLDR_PAGES_DIR)
-            .join("pages.en")
+            .join(format!("pages.{lang}"))
             .join(os);
         create_dir_all(&dir).unwrap();
 
@@ -152,6 +169,19 @@ impl TestEnv {
         }
         let run = build.run().expect("Failed to build tealdeer for testing");
         let mut cmd = run.command();
+
+        // Avoid inheriting those from the test process. We can't just use .env_clear() because
+        // this breaks tests on Windows in GitHub Actions.
+        let relevant_env_variables = [
+            "LANG",
+            "LANGUAGE",
+            "TEALDEER_CACHE_DIR",
+            "EDITOR",
+            "NO_COLOR",
+        ];
+        for variable_name in relevant_env_variables {
+            cmd.env_remove(variable_name);
+        }
         cmd.env("TEALDEER_CONFIG_DIR", self.config_dir().to_str().unwrap());
         cmd
     }
@@ -906,6 +936,64 @@ fn test_common_platform_is_used_as_fallback() {
         .args(["--platform", "linux", "in-common"])
         .assert()
         .success();
+}
+
+#[test]
+fn test_search_language_precedence() {
+    let testenv = TestEnv::new();
+    for lang in ["en", "de", "it", "fr", "pl", "nl"] {
+        testenv.add_lang_entry(lang, lang, "");
+    }
+
+    let run = |cases: &[(Vec<(&str, &str)>, Vec<&str>, &str)]| {
+        for (extra_env, extra_args, expected) in cases {
+            let mut cmd = testenv.command();
+            for (key, value) in extra_env {
+                cmd.env(key, value);
+            }
+            cmd.args(extra_args);
+            cmd.arg("--list");
+            cmd.assert().success().stdout(eq(*expected));
+        }
+    };
+
+    let env_cases = &[
+        (vec![], vec![], "en\n"),
+        (vec![("LANGUAGE", "de:it")], vec![], "en\n"),
+        (
+            vec![("LANG", "fr"), ("LANGUAGE", "de:it")],
+            vec![],
+            "de\nen\nfr\nit\n",
+        ),
+        (
+            vec![("LANG", "fr"), ("LANGUAGE", "de:it")],
+            vec!["--language", "pl"],
+            "pl\n",
+        ),
+    ];
+    run(env_cases);
+
+    // Environment is only used when config setting is not set
+    testenv.append_to_config("search.languages = ['nl']\n");
+    let config_cases = &[
+        (vec![], vec![], "nl\n"),
+        (vec![("LANGUAGE", "de:it")], vec![], "nl\n"),
+        (vec![("LANG", "fr"), ("LANGUAGE", "de:it")], vec![], "nl\n"),
+        (
+            vec![("LANG", "fr"), ("LANGUAGE", "de:it")],
+            vec!["--language", "pl"],
+            "pl\n",
+        ),
+    ];
+    run(config_cases);
+
+    // The above update setting does not change anything
+    testenv.append_to_config("updates.download_languages = ['cz']");
+    run(config_cases);
+    testenv.delete_config();
+    testenv.init_config();
+    testenv.append_to_config("updates.download_languages = ['cz']");
+    run(env_cases);
 }
 
 #[test]

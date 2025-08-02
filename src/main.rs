@@ -37,7 +37,7 @@ use anyhow::{anyhow, Context, Result};
 use app_dirs::AppInfo;
 use cache::{CacheConfig, TLDR_OLD_PAGES_DIR};
 use clap::Parser;
-use config::{get_languages_from_env, ConfigLoader, Language, StyleConfig, TlsBackend};
+use config::{ConfigLoader, Language, StyleConfig, TlsBackend};
 use log::debug;
 
 mod cache;
@@ -250,10 +250,10 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     }
 
     let platforms = compute_platforms(args.platforms.as_ref());
-    let languages = args
-        .language
-        .as_deref()
-        .map_or_else(get_languages_from_env, |lang| vec![Language(lang)]);
+    let languages = match args.language.as_deref() {
+        Some(lang) => &[Language(lang)] as &[_],
+        None => &config.search.languages,
+    };
 
     let cache_config = CacheConfig {
         pages_directory: &config.directories.cache_dir.path().join(TLDR_PAGES_DIR),
@@ -263,7 +263,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
             .as_ref()
             .map(PathWithSource::path),
         platforms: &platforms,
-        languages: &languages,
+        languages,
     };
 
     // TODO: remove in tealdeer 1.9
