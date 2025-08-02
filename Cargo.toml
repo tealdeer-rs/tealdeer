@@ -28,7 +28,7 @@ log = "0.4"
 serde = "1.0.21"
 serde_derive = "1.0.21"
 ureq = { version = "3.0.8", default-features = false, features = ["gzip"] }
-toml = "0.8.19"
+toml = "0.9"
 yansi = "1"
 zip = { version = "2.3.0", default-features = false, features = ["deflate"] }
 
