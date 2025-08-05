@@ -1,7 +1,7 @@
 use std::{
     env, fmt,
     fs::{self, File},
-    io::{ErrorKind, Read, Write},
+    io::{ErrorKind, Write},
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -138,8 +138,8 @@ struct RawStyleConfig {
     pub example_variable: RawStyle,
 }
 
-impl From<RawStyleConfig> for StyleConfig {
-    fn from(raw_style_config: RawStyleConfig) -> Self {
+impl From<&RawStyleConfig> for StyleConfig {
+    fn from(raw_style_config: &RawStyleConfig) -> Self {
         Self {
             command_name: raw_style_config.command_name.into(),
             description: raw_style_config.description.into(),
@@ -158,8 +158,8 @@ struct RawDisplayConfig {
     pub use_pager: bool,
 }
 
-impl From<RawDisplayConfig> for DisplayConfig {
-    fn from(raw_display_config: RawDisplayConfig) -> Self {
+impl From<&RawDisplayConfig> for DisplayConfig {
+    fn from(raw_display_config: &RawDisplayConfig) -> Self {
         Self {
             compact: raw_display_config.compact,
             use_pager: raw_display_config.use_pager,
@@ -202,10 +202,10 @@ impl Default for RawUpdatesConfig {
     }
 }
 
-impl TryFrom<RawUpdatesConfig> for UpdatesConfig {
+impl<'a> TryFrom<&'a RawUpdatesConfig> for UpdatesConfig<'a> {
     type Error = anyhow::Error;
 
-    fn try_from(raw_updates_config: RawUpdatesConfig) -> Result<Self> {
+    fn try_from(raw_updates_config: &'a RawUpdatesConfig) -> Result<Self> {
         let tls_backend = match raw_updates_config.tls_backend {
             #[cfg(feature = "native-tls")]
             RawTlsBackend::NativeTls => TlsBackend::NativeTls,
@@ -227,7 +227,7 @@ impl TryFrom<RawUpdatesConfig> for UpdatesConfig {
             auto_update_interval: Duration::from_secs(
                 raw_updates_config.auto_update_interval_hours * 3600,
             ),
-            archive_source: raw_updates_config.archive_source,
+            archive_source: &raw_updates_config.archive_source,
             tls_backend,
         })
     }
@@ -248,20 +248,6 @@ struct RawConfig {
     display: RawDisplayConfig,
     updates: RawUpdatesConfig,
     directories: RawDirectoriesConfig,
-}
-
-impl RawConfig {
-    fn new() -> Self {
-        Self::default()
-    }
-
-    fn load(mut config: impl Read) -> Result<RawConfig> {
-        let mut content = String::new();
-        config
-            .read_to_string(&mut content)
-            .context("Failed to read from config file")?;
-        toml::from_str(&content).context("Failed to parse TOML config file")
-    }
 }
 
 impl Default for RawConfig {
@@ -300,10 +286,10 @@ pub struct DisplayConfig {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct UpdatesConfig {
+pub struct UpdatesConfig<'a> {
     pub auto_update: bool,
     pub auto_update_interval: Duration,
-    pub archive_source: String,
+    pub archive_source: &'a str,
     pub tls_backend: TlsBackend,
 }
 
@@ -369,23 +355,23 @@ pub enum TlsBackend {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Config {
+pub struct Config<'a> {
     pub style: StyleConfig,
     pub display: DisplayConfig,
-    pub updates: UpdatesConfig,
+    pub updates: UpdatesConfig<'a>,
     pub directories: DirectoriesConfig,
     pub file_path: PathWithSource,
 }
 
-impl Config {
+impl<'a> Config<'a> {
     /// Convert a `RawConfig` to a high-level `Config`.
     ///
     /// For this, some values need to be converted to other types and some
     /// defaults need to be set (sometimes based on env variables).
-    fn from_raw(raw_config: RawConfig, config_file_path: PathWithSource) -> Result<Self> {
-        let style = raw_config.style.into();
-        let display = raw_config.display.into();
-        let updates = raw_config.updates.try_into()?;
+    fn from_raw(raw_config: &'a RawConfig, config_file_path: PathWithSource) -> Result<Self> {
+        let style = (&raw_config.style).into();
+        let display = (&raw_config.display).into();
+        let updates = (&raw_config.updates).try_into()?;
         let relative_path_root = config_file_path
             .path()
             .parent()
@@ -404,7 +390,7 @@ impl Config {
                 path: PathBuf::from(env_var),
                 source: PathSource::EnvVar,
             }
-        } else if let Some(config_value) = raw_config.directories.cache_dir {
+        } else if let Some(config_value) = &raw_config.directories.cache_dir {
             // If the user explicitly configured a cache directory, use that.
             PathWithSource {
                 // Resolve possible relative path. It would be nicer to clean up the path, but Rust stdlib
@@ -425,6 +411,7 @@ impl Config {
         let custom_pages_dir = raw_config
             .directories
             .custom_pages_dir
+            .as_ref()
             .map(|path| PathWithSource {
                 // Resolve possible relative path.
                 path: relative_path_root.join(path),
@@ -454,47 +441,64 @@ impl Config {
             file_path: config_file_path,
         })
     }
+}
 
-    /// Load and read the config file from the given path into
-    /// a [Config] and return it.
-    ///
-    /// path: The path to the config file.
-    pub fn load(path: &Path) -> Result<Self> {
-        let raw_config = RawConfig::load(File::open(path)?)?;
+/// The [`ConfigLoader`] is used to load a [`Config`] from a file.
+///
+/// Since the rich [`Config`] keeps references to [`RawConfig`], the raw config needs to be kept alive outside of the
+/// [`Config`]. The [`ConfigLoader`] thus offers the following flow:
+/// 1. Read a raw config using [`ConfigLoader::read`] or [`ConfigLoader::read_default_path`].
+/// 2. Validate the contents to a [`Config`] that borrows the [`ConfigLoader`].
+pub struct ConfigLoader {
+    raw: RawConfig,
+    path: PathWithSource,
+}
 
-        let config = Self::from_raw(
-            raw_config,
-            PathWithSource {
-                path: path.into(),
-                source: PathSource::Cli,
-            },
-        )
-        .context("Could not process raw config")?;
-
-        Ok(config)
+impl ConfigLoader {
+    fn read_internal(path: PathWithSource, allow_not_found: bool) -> Result<Self> {
+        match fs::read_to_string(&path.path) {
+            Ok(content) => Ok(Self {
+                raw: toml::from_str(&content).with_context(|| {
+                    format!(
+                        "Could not parse config file contents as toml from {}.",
+                        path.path.display()
+                    )
+                })?,
+                path,
+            }),
+            Err(e) if allow_not_found && e.kind() == ErrorKind::NotFound => Ok(Self {
+                raw: RawConfig::default(),
+                path,
+            }),
+            Err(e) => Err(e).context(format!(
+                "Could not read config file contents from {}.",
+                path.path().display()
+            )),
+        }
     }
 
-    /// Load and read the config file from the default path into
-    /// a [Config] and return it.
-    pub fn load_default_path() -> Result<Self> {
-        // Determine path
-        let config_file_path =
-            get_default_config_path().context("Could not determine config path")?;
+    /// Create a loader that uses the config at `path`.
+    pub fn read(path: PathBuf) -> Result<Self> {
+        Self::read_internal(
+            PathWithSource {
+                path,
+                source: PathSource::Cli,
+            },
+            false,
+        )
+    }
 
-        let raw_config = match File::open(config_file_path.path()) {
-            Ok(file) => RawConfig::load(file)?,
-            Err(e) if e.kind() == ErrorKind::NotFound => RawConfig::default(),
-            Err(e) => {
-                return Err(e).context(format!(
-                    "Failed to open config file at {}",
-                    config_file_path.path().display()
-                ));
-            }
-        };
-        let config =
-            Self::from_raw(raw_config, config_file_path).context("Could not process raw config")?;
+    /// Create a loader that uses the default config file location. If no file is present at the default location, the
+    /// default configuration is used.
+    pub fn read_default_path() -> Result<Self> {
+        let path = get_default_config_path().context("Could not determine default config path.")?;
+        Self::read_internal(path, true)
+    }
 
-        Ok(config)
+    /// Parse the read [`RawConfig`] into a [`Config`].
+    pub fn load(&self) -> Result<Config<'_>> {
+        Config::from_raw(&self.raw, self.path.clone())
+            .context("Could not process raw config into rich config")
     }
 }
 
@@ -563,7 +567,7 @@ pub fn make_default_config(path: Option<&Path>) -> Result<PathBuf> {
 
     // Create default config
     let serialized_config =
-        toml::to_string(&RawConfig::new()).context("Failed to serialize default config")?;
+        toml::to_string(&RawConfig::default()).context("Failed to serialize default config")?;
 
     // Write default config
     let mut config_file =
@@ -577,7 +581,7 @@ pub fn make_default_config(path: Option<&Path>) -> Result<PathBuf> {
 
 #[test]
 fn test_serialize_deserialize() {
-    let raw_config = RawConfig::new();
+    let raw_config = RawConfig::default();
     let serialized = toml::to_string(&raw_config).unwrap();
     let deserialized: RawConfig = toml::from_str(&serialized).unwrap();
     assert_eq!(raw_config, deserialized);
@@ -585,12 +589,12 @@ fn test_serialize_deserialize() {
 
 #[test]
 fn test_relative_path_resolution() {
-    let mut raw_config = RawConfig::new();
+    let mut raw_config = RawConfig::default();
     raw_config.directories.cache_dir = Some("../cache".into());
     raw_config.directories.custom_pages_dir = Some("../custom_pages".into());
 
     let config = Config::from_raw(
-        raw_config,
+        &raw_config,
         PathWithSource {
             path: PathBuf::from("/path/to/config/config.toml"),
             source: PathSource::OsConvention,

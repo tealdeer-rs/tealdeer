@@ -38,7 +38,7 @@ use anyhow::{anyhow, Context, Result};
 use app_dirs::AppInfo;
 use cache::{CacheConfig, Language, TLDR_OLD_PAGES_DIR};
 use clap::Parser;
-use config::{StyleConfig, TlsBackend};
+use config::{ConfigLoader, StyleConfig, TlsBackend};
 use log::debug;
 
 mod cache;
@@ -233,12 +233,15 @@ fn main() -> ExitCode {
 fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     // Look up config file, if none is found fall back to default config.
     debug!("Loading config");
-    let mut config = match &args.config_path {
+    let config_loader = match &args.config_path {
         Some(path) if !args.seed_config => {
-            Config::load(path).context("Could not load config from given path")?
+            ConfigLoader::read(path.clone()).context("Could not read config from given path")?
         }
-        _ => Config::load_default_path().context("Could not load config from default path")?,
+        _ => {
+            ConfigLoader::read_default_path().context("Could not read config from default path")?
+        }
     };
+    let mut config = config_loader.load()?;
 
     // Override styles if needed
     if !enable_styles {
@@ -327,7 +330,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         if was_created || args.update || cache.age()? >= config.updates.auto_update_interval {
             update_cache(
                 &mut cache,
-                &config.updates.archive_source,
+                config.updates.archive_source,
                 config.updates.tls_backend,
                 args.quiet,
             )?;
