@@ -21,7 +21,7 @@ jobs:
             exe_suffix: .exe
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
@@ -50,7 +50,7 @@ jobs:
     name: run clippy lints
     runs-on: ubuntu-latest
     steps:
-       - uses: actions/checkout@v4
+       - uses: actions/checkout@v5
        - uses: dtolnay/rust-toolchain@master
          with:
            toolchain: stable
@@ -62,7 +62,7 @@ jobs:
     name: run rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
@@ -74,7 +74,7 @@ jobs:
     name: build docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v2
         with:
