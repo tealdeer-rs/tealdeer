@@ -701,6 +701,15 @@ mod test {
         }
 
         #[test]
+        fn with_encoding() {
+            let lang_list = get_languages(Some("de_DE.UTF-8"), None);
+            assert_eq!(
+                lang_list,
+                [Language("de_DE"), Language("de"), Language("en")]
+            );
+        }
+
+        #[test]
         fn ignore_posix_and_c() {
             let lang_list = get_languages(Some("POSIX"), None);
             assert_eq!(lang_list, [Language("en")]);
