@@ -1,5 +1,7 @@
 # Section: \[updates\]
 
+This config section contains settings related to updating the tealdeer cache.
+
 ## Automatic updates
 
 Tealdeer can refresh the cache automatically when it is outdated. This
@@ -24,7 +26,23 @@ is set to `false`.
     auto_update = true
     auto_update_interval_hours = 24
 
-### archive_source
+## Download configuration
+
+### `download_languages`
+
+The list of languages which should be downloaded when updating.
+If unspecified, the languages listed in the `search.languages` setting are used.
+Thus, this setting is the most useful to instruct tealdeer to download pages in additional languages that are not searched by default.
+Either way, the language used can be overwritten using the `--language` command line flag.
+
+    [search]
+    languages = ["de", "en"]
+
+    [updates]
+    # sometimes I like to read the Italian description
+    download_languages = ["de", "en", "it"]
+
+### `archive_source`
 
 URL for the location of the tldr pages archive. By default the pages are
 fetched from the latest `tldr-pages/tldr` GitHub release.

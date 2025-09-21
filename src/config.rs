@@ -3,6 +3,7 @@ use std::{
     fs::{self, File},
     io::{ErrorKind, Write},
     path::{Path, PathBuf},
+    sync::LazyLock,
     time::Duration,
 };
 
@@ -12,7 +13,7 @@ use serde::Serialize as _;
 use serde_derive::{Deserialize, Serialize};
 use yansi::{Color, Style};
 
-use crate::types::PathSource;
+use crate::{extensions::Dedup as _, types::PathSource};
 
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
@@ -189,6 +190,8 @@ struct RawUpdatesConfig {
     pub archive_source: String,
     #[serde(default)]
     pub tls_backend: RawTlsBackend,
+    #[serde(default)]
+    pub download_languages: Option<Vec<String>>,
 }
 
 impl Default for RawUpdatesConfig {
@@ -198,38 +201,8 @@ impl Default for RawUpdatesConfig {
             auto_update_interval_hours: DEFAULT_UPDATE_INTERVAL_HOURS,
             archive_source: default_archive_source(),
             tls_backend: RawTlsBackend::default(),
+            download_languages: None,
         }
-    }
-}
-
-impl<'a> TryFrom<&'a RawUpdatesConfig> for UpdatesConfig<'a> {
-    type Error = anyhow::Error;
-
-    fn try_from(raw_updates_config: &'a RawUpdatesConfig) -> Result<Self> {
-        let tls_backend = match raw_updates_config.tls_backend {
-            #[cfg(feature = "native-tls")]
-            RawTlsBackend::NativeTls => TlsBackend::NativeTls,
-            #[cfg(feature = "rustls-with-webpki-roots")]
-            RawTlsBackend::RustlsWithWebpkiRoots => TlsBackend::RustlsWithWebpkiRoots,
-            #[cfg(feature = "rustls-with-native-roots")]
-            RawTlsBackend::RustlsWithNativeRoots => TlsBackend::RustlsWithNativeRoots,
-            // when compiling without all TLS backend features, we want to handle config error.
-            #[allow(unreachable_patterns)]
-            _ => return Err(anyhow!(
-                "Unsupported TLS backend: {}. This tealdeer build has support for the following options: {}",
-                raw_updates_config.tls_backend,
-                SUPPORTED_TLS_BACKENDS.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", ")
-            ))
-        };
-
-        Ok(Self {
-            auto_update: raw_updates_config.auto_update,
-            auto_update_interval: Duration::from_secs(
-                raw_updates_config.auto_update_interval_hours * 3600,
-            ),
-            archive_source: &raw_updates_config.archive_source,
-            tls_backend,
-        })
     }
 }
 
@@ -241,6 +214,11 @@ struct RawDirectoriesConfig {
     pub custom_pages_dir: Option<PathBuf>,
 }
 
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+struct RawSearchConfig {
+    pub languages: Option<Vec<String>>,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default)]
 struct RawConfig {
@@ -248,6 +226,7 @@ struct RawConfig {
     display: RawDisplayConfig,
     updates: RawUpdatesConfig,
     directories: RawDirectoriesConfig,
+    search: RawSearchConfig,
 }
 
 impl Default for RawConfig {
@@ -257,6 +236,7 @@ impl Default for RawConfig {
             display: RawDisplayConfig::default(),
             updates: RawUpdatesConfig::default(),
             directories: RawDirectoriesConfig::default(),
+            search: RawSearchConfig::default(),
         };
 
         // Set default config
@@ -291,6 +271,7 @@ pub struct UpdatesConfig<'a> {
     pub auto_update_interval: Duration,
     pub archive_source: &'a str,
     pub tls_backend: TlsBackend,
+    pub download_languages: Vec<Language<'a>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -315,6 +296,54 @@ impl fmt::Display for PathWithSource {
 pub struct DirectoriesConfig {
     pub cache_dir: PathWithSource,
     pub custom_pages_dir: Option<PathWithSource>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SearchConfig<'a> {
+    pub languages: Vec<Language<'a>>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Language<'a>(pub &'a str);
+
+fn get_languages<'a>(
+    env_lang: Option<&'a str>,
+    env_language: Option<&'a str>,
+) -> Vec<Language<'a>> {
+    // Language list according to
+    // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#language
+
+    let Some(env_lang) = env_lang else {
+        return vec![Language("en")];
+    };
+
+    // Create an iterator that contains $LANGUAGE (':' separated list) followed by $LANG (single language)
+    let locales = env_language.unwrap_or("").split(':').chain([env_lang]);
+
+    let mut lang_list = Vec::new();
+    for locale in locales {
+        // Language plus country code (e.g. `en_US`)
+        if locale.len() >= 5 && locale.chars().nth(2) == Some('_') {
+            lang_list.push(Language(&locale[..5]));
+        }
+        // Language code only (e.g. `en`)
+        if locale.len() >= 2 && locale != "POSIX" {
+            lang_list.push(Language(&locale[..2]));
+        }
+    }
+
+    lang_list.push(Language("en"));
+    lang_list.clear_duplicates();
+    lang_list
+}
+
+pub fn get_languages_from_env<'a>() -> Vec<Language<'a>> {
+    static LANG: LazyLock<Option<String>> = LazyLock::new(|| std::env::var("LANG").ok());
+    static LANGUAGE: LazyLock<Option<String>> = LazyLock::new(|| std::env::var("LANGUAGE").ok());
+    get_languages(
+        LANG.as_ref().map(String::as_str),
+        LANGUAGE.as_ref().map(String::as_str),
+    )
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
@@ -354,12 +383,35 @@ pub enum TlsBackend {
     RustlsWithNativeRoots,
 }
 
+impl TryFrom<RawTlsBackend> for TlsBackend {
+    type Error = anyhow::Error;
+
+    fn try_from(raw: RawTlsBackend) -> Result<Self, Self::Error> {
+        match raw {
+            #[cfg(feature = "native-tls")]
+            RawTlsBackend::NativeTls => Ok(TlsBackend::NativeTls),
+            #[cfg(feature = "rustls-with-webpki-roots")]
+            RawTlsBackend::RustlsWithWebpkiRoots => Ok(TlsBackend::RustlsWithWebpkiRoots),
+            #[cfg(feature = "rustls-with-native-roots")]
+            RawTlsBackend::RustlsWithNativeRoots => Ok(TlsBackend::RustlsWithNativeRoots),
+            // when compiling without all TLS backend features, we want to handle config error.
+            #[allow(unreachable_patterns)]
+            _ => Err(anyhow!(
+                "Unsupported TLS backend: {}. This tealdeer build has support for the following options: {}",
+                raw,
+                SUPPORTED_TLS_BACKENDS.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", ")
+            ))
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Config<'a> {
     pub style: StyleConfig,
     pub display: DisplayConfig,
     pub updates: UpdatesConfig<'a>,
     pub directories: DirectoriesConfig,
+    pub search: SearchConfig<'a>,
     pub file_path: PathWithSource,
 }
 
@@ -371,7 +423,30 @@ impl<'a> Config<'a> {
     fn from_raw(raw_config: &'a RawConfig, config_file_path: PathWithSource) -> Result<Self> {
         let style = (&raw_config.style).into();
         let display = (&raw_config.display).into();
-        let updates = (&raw_config.updates).try_into()?;
+
+        let search = SearchConfig {
+            languages: raw_config
+                .search
+                .languages
+                .as_ref()
+                .map_or_else(get_languages_from_env, |langs| {
+                    langs.iter().map(|lang| Language(lang)).collect()
+                }),
+        };
+
+        let updates = UpdatesConfig {
+            auto_update: raw_config.updates.auto_update,
+            auto_update_interval: Duration::from_secs(
+                raw_config.updates.auto_update_interval_hours * 3600,
+            ),
+            archive_source: &raw_config.updates.archive_source,
+            tls_backend: raw_config.updates.tls_backend.try_into()?,
+            download_languages: raw_config.updates.download_languages.as_ref().map_or_else(
+                || search.languages.clone(),
+                |languages| languages.iter().map(|lang| Language(lang)).collect(),
+            ),
+        };
+
         let relative_path_root = config_file_path
             .path()
             .parent()
@@ -438,6 +513,7 @@ impl<'a> Config<'a> {
             display,
             updates,
             directories,
+            search,
             file_path: config_file_path,
         })
     }
@@ -579,35 +655,112 @@ pub fn make_default_config(path: Option<&Path>) -> Result<PathBuf> {
     Ok(config_file_path)
 }
 
-#[test]
-fn test_serialize_deserialize() {
-    let raw_config = RawConfig::default();
-    let serialized = toml::to_string(&raw_config).unwrap();
-    let deserialized: RawConfig = toml::from_str(&serialized).unwrap();
-    assert_eq!(raw_config, deserialized);
-}
+#[cfg(test)]
+mod test {
+    use super::*;
 
-#[test]
-fn test_relative_path_resolution() {
-    let mut raw_config = RawConfig::default();
-    raw_config.directories.cache_dir = Some("../cache".into());
-    raw_config.directories.custom_pages_dir = Some("../custom_pages".into());
+    #[test]
+    fn serialize_deserialize() {
+        let raw_config = RawConfig::default();
+        let serialized = toml::to_string(&raw_config).unwrap();
+        let deserialized: RawConfig = toml::from_str(&serialized).unwrap();
+        assert_eq!(raw_config, deserialized);
+    }
 
-    let config = Config::from_raw(
-        &raw_config,
-        PathWithSource {
-            path: PathBuf::from("/path/to/config/config.toml"),
-            source: PathSource::OsConvention,
-        },
-    )
-    .unwrap();
+    #[test]
+    fn relative_path_resolution() {
+        let mut raw_config = RawConfig::default();
+        raw_config.directories.cache_dir = Some("../cache".into());
+        raw_config.directories.custom_pages_dir = Some("../custom_pages".into());
 
-    assert_eq!(
-        config.directories.cache_dir.path(),
-        Path::new("/path/to/config/../cache")
-    );
-    assert_eq!(
-        config.directories.custom_pages_dir.unwrap().path(),
-        Path::new("/path/to/config/../custom_pages")
-    );
+        let config = Config::from_raw(
+            &raw_config,
+            PathWithSource {
+                path: PathBuf::from("/path/to/config/config.toml"),
+                source: PathSource::OsConvention,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            config.directories.cache_dir.path(),
+            Path::new("/path/to/config/../cache")
+        );
+        assert_eq!(
+            config.directories.custom_pages_dir.unwrap().path(),
+            Path::new("/path/to/config/../custom_pages")
+        );
+    }
+
+    mod language {
+        use super::*;
+
+        #[test]
+        fn missing_lang_env() {
+            let lang_list = get_languages(None, Some("de:fr"));
+            assert_eq!(lang_list, [Language("en")]);
+            let lang_list = get_languages(None, None);
+            assert_eq!(lang_list, [Language("en")]);
+        }
+
+        #[test]
+        fn missing_language_env() {
+            let lang_list = get_languages(Some("de"), None);
+            assert_eq!(lang_list, [Language("de"), Language("en")]);
+        }
+
+        #[test]
+        fn preference_order() {
+            let lang_list = get_languages(Some("de"), Some("fr:cn"));
+            assert_eq!(
+                lang_list,
+                [
+                    Language("fr"),
+                    Language("cn"),
+                    Language("de"),
+                    Language("en")
+                ]
+            );
+        }
+
+        #[test]
+        fn country_code_expansion() {
+            let lang_list = get_languages(Some("pt_BR"), None);
+            assert_eq!(
+                lang_list,
+                [Language("pt_BR"), Language("pt"), Language("en")]
+            );
+        }
+
+        #[test]
+        fn with_encoding() {
+            let lang_list = get_languages(Some("de_DE.UTF-8"), None);
+            assert_eq!(
+                lang_list,
+                [Language("de_DE"), Language("de"), Language("en")]
+            );
+        }
+
+        #[test]
+        fn ignore_posix_and_c() {
+            let lang_list = get_languages(Some("POSIX"), None);
+            assert_eq!(lang_list, [Language("en")]);
+            let lang_list = get_languages(Some("C"), None);
+            assert_eq!(lang_list, [Language("en")]);
+        }
+
+        #[test]
+        fn no_duplicates() {
+            let lang_list = get_languages(Some("de"), Some("fr:de:cn:de"));
+            assert_eq!(
+                lang_list,
+                [
+                    Language("fr"),
+                    Language("de"),
+                    Language("cn"),
+                    Language("en")
+                ]
+            );
+        }
+    }
 }
