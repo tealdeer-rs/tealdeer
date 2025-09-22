@@ -43,7 +43,8 @@ tempfile = "3.1.0"
 filetime = "0.2.10"
 
 [features]
-default = ["native-tls", "rustls-with-webpki-roots", "rustls-with-native-roots"]
+# native-tls is not enabled by default, because it is difficult to build for musl
+default = ["rustls-with-webpki-roots", "rustls-with-native-roots"]
 logging = ["env_logger"]
 
 # At least one of variants for `ureq` HTTP client must be selected.
