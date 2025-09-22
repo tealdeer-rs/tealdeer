@@ -12,3 +12,13 @@ Either way, the language used can be overwritten using the `--language` command 
     [search]
     # Show pages in German if available, otherwise show in English
     languages = ["de", "en"]
+
+## `try_all_platforms`
+
+Whether or not all known platforms should be tried when searching for pages.
+For example, pages for Windows would also be found when running on Linux.
+By default, this setting is `true`.
+
+    [search]
+    # Don't use extra platforms in search
+    try_all_platforms = false

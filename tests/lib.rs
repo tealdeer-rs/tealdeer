@@ -73,7 +73,8 @@ impl TestEnv {
     }
     fn init_config(&self) {
         self.append_to_config(format!(
-            "directories.cache_dir = '{}'\n",
+            "directories.cache_dir = '{}'\n
+            search.try_all_platforms = false\n",
             self.cache_dir().to_str().unwrap(),
         ));
     }
@@ -713,6 +714,32 @@ fn test_os_specific_page() {
         .args(["--platform", "sunos", "truss"])
         .assert()
         .success();
+}
+
+#[test]
+fn test_try_all_platforms() {
+    let testenv = TestEnv::new().create_secondary_config();
+
+    testenv.add_os_entry("sunos", "sunos-command", "");
+
+    let mut cmd = testenv.command();
+    cmd.args([
+        "--config-path",
+        testenv
+            .config_dir()
+            .join("config-secondary.toml")
+            .to_str()
+            .unwrap(),
+        "sunos-command",
+    ]);
+
+    cmd.assert().success();
+
+    testenv.append_to_secondary_config("search.try_all_platforms = false");
+    cmd.assert().failure();
+
+    cmd.args(["--platform", "sunos"]);
+    cmd.assert().success();
 }
 
 #[test]

@@ -36,7 +36,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use app_dirs::AppInfo;
 use cache::{CacheConfig, TLDR_OLD_PAGES_DIR};
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use config::{ConfigLoader, Language, StyleConfig, TlsBackend};
 use log::debug;
 
@@ -259,7 +259,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         return Ok(ExitCode::SUCCESS);
     }
 
-    let platforms = compute_platforms(args.platforms.as_ref());
+    let platforms = compute_platforms(args.platforms.as_ref(), config.search.try_all_platforms);
     let (search_languages, download_languages): (&[_], &[_]) = match args.language.as_deref() {
         Some(lang) => (&[Language(lang)], &[Language(lang)]),
         None => (&config.search.languages, &config.updates.download_languages),
@@ -395,16 +395,22 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     Ok(ExitCode::SUCCESS)
 }
 
-/// Returns the passed or default platform types and appends `PlatformType::Common` as fallback.
-fn compute_platforms(platforms: Option<&Vec<PlatformType>>) -> Vec<PlatformType> {
-    match platforms {
-        Some(p) => {
-            let mut result = p.clone();
-            if !result.contains(&PlatformType::Common) {
-                result.push(PlatformType::Common);
-            }
-            result
-        }
-        None => vec![PlatformType::current(), PlatformType::Common],
+fn compute_platforms(platforms: Option<&Vec<PlatformType>>, try_all: bool) -> Vec<PlatformType> {
+    let mut platforms = platforms
+        .cloned()
+        .unwrap_or_else(|| vec![PlatformType::current()]);
+
+    if !platforms.contains(&PlatformType::Common) {
+        platforms.push(PlatformType::Common);
     }
+
+    if try_all {
+        for &platform in PlatformType::value_variants() {
+            if !platforms.contains(&platform) {
+                platforms.push(platform);
+            }
+        }
+    }
+
+    platforms
 }
