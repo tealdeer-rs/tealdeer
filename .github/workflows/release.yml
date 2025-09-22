@@ -93,7 +93,7 @@ jobs:
           toolchain: stable
           targets: "${{ matrix.arch }}-apple-darwin"
       - name: Build
-        run: cargo build --release --target ${{ matrix.arch }}-apple-darwin --no-default-features --features webpki-roots
+        run: cargo build --release --target ${{ matrix.arch }}-apple-darwin
       - uses: actions/upload-artifact@v4
         with:
           name: "tealdeer-macos-${{ matrix.arch }}"
