@@ -74,7 +74,7 @@ impl TestEnv {
     fn init_config(&self) {
         self.append_to_config(format!(
             "directories.cache_dir = '{}'\n
-            search.try_all_platforms = false\n",
+            search.include_all_platforms = false\n",
             self.cache_dir().to_str().unwrap(),
         ));
     }
@@ -717,7 +717,7 @@ fn test_os_specific_page() {
 }
 
 #[test]
-fn test_try_all_platforms() {
+fn test_include_all_platforms() {
     let testenv = TestEnv::new().create_secondary_config();
 
     testenv.add_os_entry("sunos", "sunos-command", "");
@@ -736,11 +736,11 @@ fn test_try_all_platforms() {
         cmd
     };
 
-    // try_all_platforms is enabled by default
+    // include_all_platforms is enabled by default
     cmd().assert().success();
     cmd().args(["--platform", "linux"]).assert().failure();
 
-    testenv.append_to_secondary_config("search.try_all_platforms = false");
+    testenv.append_to_secondary_config("search.include_all_platforms = false");
     cmd().assert().failure();
 
     cmd().args(["--platform", "sunos"]).assert().success();

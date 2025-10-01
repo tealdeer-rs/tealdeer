@@ -217,7 +217,7 @@ struct RawDirectoriesConfig {
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawSearchConfig {
     pub languages: Option<Vec<String>>,
-    pub try_all_platforms: Option<bool>,
+    pub include_all_platforms: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -302,7 +302,7 @@ pub struct DirectoriesConfig {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SearchConfig<'a> {
     pub languages: Vec<Language<'a>>,
-    pub try_all_platforms: bool,
+    pub include_all_platforms: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -434,7 +434,7 @@ impl<'a> Config<'a> {
                 .map_or_else(get_languages_from_env, |langs| {
                     langs.iter().map(|lang| Language(lang)).collect()
                 }),
-            try_all_platforms: raw_config.search.try_all_platforms.unwrap_or(true),
+            include_all_platforms: raw_config.search.include_all_platforms.unwrap_or(true),
         };
 
         let updates = UpdatesConfig {

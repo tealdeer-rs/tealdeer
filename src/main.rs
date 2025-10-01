@@ -259,7 +259,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         return Ok(ExitCode::SUCCESS);
     }
 
-    let platforms = compute_platforms(args.platforms, config.search.try_all_platforms);
+    let platforms = compute_platforms(args.platforms, config.search.include_all_platforms);
     let (search_languages, download_languages): (&[_], &[_]) = match args.language.as_deref() {
         Some(lang) => (&[Language(lang)], &[Language(lang)]),
         None => (&config.search.languages, &config.updates.download_languages),
@@ -395,7 +395,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     Ok(ExitCode::SUCCESS)
 }
 
-fn compute_platforms(platforms: Option<Vec<PlatformType>>, try_all: bool) -> Vec<PlatformType> {
+fn compute_platforms(platforms: Option<Vec<PlatformType>>, include_all: bool) -> Vec<PlatformType> {
     match platforms {
         Some(mut platforms) => {
             if !platforms.contains(&PlatformType::Common) {
@@ -405,7 +405,7 @@ fn compute_platforms(platforms: Option<Vec<PlatformType>>, try_all: bool) -> Vec
         }
         None => {
             let mut platforms = vec![PlatformType::current(), PlatformType::Common];
-            if try_all {
+            if include_all {
                 for &platform in PlatformType::value_variants() {
                     if !platforms.contains(&platform) {
                         platforms.push(platform);
