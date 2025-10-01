@@ -722,24 +722,33 @@ fn test_try_all_platforms() {
 
     testenv.add_os_entry("sunos", "sunos-command", "");
 
-    let mut cmd = testenv.command();
-    cmd.args([
-        "--config-path",
-        testenv
-            .config_dir()
-            .join("config-secondary.toml")
-            .to_str()
-            .unwrap(),
-        "sunos-command",
-    ]);
+    let cmd = || {
+        let mut cmd = testenv.command();
+        cmd.args([
+            "--config-path",
+            testenv
+                .config_dir()
+                .join("config-secondary.toml")
+                .to_str()
+                .unwrap(),
+            "sunos-command",
+        ]);
+        cmd
+    };
 
-    cmd.assert().success();
+    // try_all_platforms is enabled by default
+    cmd().assert().success();
+    cmd().args(["--platform", "linux"]).assert().failure();
 
     testenv.append_to_secondary_config("search.try_all_platforms = false");
-    cmd.assert().failure();
+    cmd().assert().failure();
 
-    cmd.args(["--platform", "sunos"]);
-    cmd.assert().success();
+    cmd().args(["--platform", "sunos"]).assert().success();
+    cmd().args(["--platform", "linux"]).assert().failure();
+    cmd()
+        .args(["--platform", "linux", "--platform", "sunos"])
+        .assert()
+        .success();
 }
 
 #[test]

@@ -17,7 +17,8 @@ Either way, the language used can be overwritten using the `--language` command 
 
 Whether or not all known platforms should be tried when searching for pages.
 For example, pages for Windows would also be found when running on Linux.
-By default, this setting is `true`.
+This option is enabled by default.
+Either way, the platforms used can be overwritten using the `--platform` command line flag.
 
     [search]
     # Don't use extra platforms in search

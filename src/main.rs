@@ -259,7 +259,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         return Ok(ExitCode::SUCCESS);
     }
 
-    let platforms = compute_platforms(args.platforms.as_ref(), config.search.try_all_platforms);
+    let platforms = compute_platforms(args.platforms, config.search.try_all_platforms);
     let (search_languages, download_languages): (&[_], &[_]) = match args.language.as_deref() {
         Some(lang) => (&[Language(lang)], &[Language(lang)]),
         None => (&config.search.languages, &config.updates.download_languages),
@@ -395,22 +395,24 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     Ok(ExitCode::SUCCESS)
 }
 
-fn compute_platforms(platforms: Option<&Vec<PlatformType>>, try_all: bool) -> Vec<PlatformType> {
-    let mut platforms = platforms
-        .cloned()
-        .unwrap_or_else(|| vec![PlatformType::current()]);
-
-    if !platforms.contains(&PlatformType::Common) {
-        platforms.push(PlatformType::Common);
-    }
-
-    if try_all {
-        for &platform in PlatformType::value_variants() {
-            if !platforms.contains(&platform) {
-                platforms.push(platform);
+fn compute_platforms(platforms: Option<Vec<PlatformType>>, try_all: bool) -> Vec<PlatformType> {
+    match platforms {
+        Some(mut platforms) => {
+            if !platforms.contains(&PlatformType::Common) {
+                platforms.push(PlatformType::Common);
             }
+            platforms
+        }
+        None => {
+            let mut platforms = vec![PlatformType::current(), PlatformType::Common];
+            if try_all {
+                for &platform in PlatformType::value_variants() {
+                    if !platforms.contains(&platform) {
+                        platforms.push(platform);
+                    }
+                }
+            }
+            platforms
         }
     }
-
-    platforms
 }
