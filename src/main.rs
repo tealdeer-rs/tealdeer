@@ -36,7 +36,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use app_dirs::AppInfo;
 use cache::{CacheConfig, TLDR_OLD_PAGES_DIR};
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use config::{ConfigLoader, Language, StyleConfig, TlsBackend};
 use log::debug;
 
@@ -55,7 +55,7 @@ use crate::{
     cli::Cli,
     config::{get_config_dir, make_default_config, Config, PathWithSource},
     output::print_page,
-    types::{ColorOptions, PlatformType},
+    types::ColorOptions,
     utils::{print_error, print_warning},
 };
 
@@ -259,7 +259,10 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         return Ok(ExitCode::SUCCESS);
     }
 
-    let platforms = compute_platforms(args.platforms, config.search.include_all_platforms);
+    if let Some(platforms) = args.platforms {
+        config.search.platforms = platforms;
+    }
+
     let (search_languages, download_languages): (&[_], &[_]) = match args.language.as_deref() {
         Some(lang) => (&[Language(lang)], &[Language(lang)]),
         None => (&config.search.languages, &config.updates.download_languages),
@@ -272,7 +275,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
             .custom_pages_dir
             .as_ref()
             .map(PathWithSource::path),
-        platforms: &platforms,
+        platforms: &config.search.platforms,
         search_languages,
         download_languages,
     };
@@ -393,26 +396,4 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     }
 
     Ok(ExitCode::SUCCESS)
-}
-
-fn compute_platforms(platforms: Option<Vec<PlatformType>>, include_all: bool) -> Vec<PlatformType> {
-    match platforms {
-        Some(mut platforms) => {
-            if !platforms.contains(&PlatformType::Common) {
-                platforms.push(PlatformType::Common);
-            }
-            platforms
-        }
-        None => {
-            let mut platforms = vec![PlatformType::current(), PlatformType::Common];
-            if include_all {
-                for &platform in PlatformType::value_variants() {
-                    if !platforms.contains(&platform) {
-                        platforms.push(platform);
-                    }
-                }
-            }
-            platforms
-        }
-    }
 }

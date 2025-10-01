@@ -9,11 +9,15 @@ use std::{
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use app_dirs::{get_app_root, AppDataType};
+use clap::ValueEnum;
 use serde::Serialize as _;
 use serde_derive::{Deserialize, Serialize};
 use yansi::{Color, Style};
 
-use crate::{extensions::Dedup as _, types::PathSource};
+use crate::{
+    extensions::Dedup as _,
+    types::{PathSource, PlatformType},
+};
 
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const MAX_CACHE_AGE: Duration = Duration::from_secs(2_592_000); // 30 days
@@ -214,10 +218,59 @@ struct RawDirectoriesConfig {
     pub custom_pages_dir: Option<PathBuf>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum RawPlatformType {
+    Current,
+    All,
+    #[serde(untagged)]
+    Platform(PlatformType),
+}
+
+impl RawPlatformType {
+    pub fn flatten(raw_platforms: impl IntoIterator<Item = Self>) -> Vec<PlatformType> {
+        let mut flattened = Vec::new();
+        for raw_platform in raw_platforms {
+            match raw_platform {
+                RawPlatformType::Current => flattened.push(PlatformType::current()),
+                RawPlatformType::Platform(platform) => flattened.push(platform),
+                RawPlatformType::All => flattened.extend(PlatformType::value_variants()),
+            }
+        }
+        flattened.clear_duplicates();
+        flattened
+    }
+}
+
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct RawSearchConfig {
     pub languages: Option<Vec<String>>,
-    pub include_all_platforms: Option<bool>,
+    pub platforms: Option<Vec<RawPlatformType>>,
+}
+
+impl<'a> From<&'a RawSearchConfig> for SearchConfig<'a> {
+    fn from(raw_search_config: &'a RawSearchConfig) -> Self {
+        let languages = raw_search_config
+            .languages
+            .as_ref()
+            .map_or_else(get_languages_from_env, |langs| {
+                langs.iter().map(|lang| Language(lang)).collect()
+            });
+        let platforms = if let Some(raw_platforms) = raw_search_config.platforms.as_ref() {
+            RawPlatformType::flatten(raw_platforms.iter().copied())
+        } else {
+            RawPlatformType::flatten([
+                RawPlatformType::Current,
+                RawPlatformType::Platform(PlatformType::Common),
+                RawPlatformType::All,
+            ])
+        };
+
+        Self {
+            languages,
+            platforms,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -302,7 +355,7 @@ pub struct DirectoriesConfig {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SearchConfig<'a> {
     pub languages: Vec<Language<'a>>,
-    pub include_all_platforms: bool,
+    pub platforms: Vec<PlatformType>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -425,17 +478,7 @@ impl<'a> Config<'a> {
     fn from_raw(raw_config: &'a RawConfig, config_file_path: PathWithSource) -> Result<Self> {
         let style = (&raw_config.style).into();
         let display = (&raw_config.display).into();
-
-        let search = SearchConfig {
-            languages: raw_config
-                .search
-                .languages
-                .as_ref()
-                .map_or_else(get_languages_from_env, |langs| {
-                    langs.iter().map(|lang| Language(lang)).collect()
-                }),
-            include_all_platforms: raw_config.search.include_all_platforms.unwrap_or(true),
-        };
+        let search: SearchConfig<'a> = (&raw_config.search).into();
 
         let updates = UpdatesConfig {
             auto_update: raw_config.updates.auto_update,
