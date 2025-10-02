@@ -25,6 +25,7 @@ Options:
       --show-paths           Show file and directory paths used by tealdeer
       --seed-config          Create a basic config
       --color <WHEN>         Control whether to use color [possible values: always, auto, never]
+      --show-title           Show the title of the page
   -v, --version              Print the version
   -h, --help                 Print help
 
