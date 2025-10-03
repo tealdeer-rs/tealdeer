@@ -369,10 +369,7 @@ impl Cache<'_> {
             }
             Ok(response) if response.status() == StatusCode::NOT_FOUND => Ok(None),
             _ => {
-                bail!(
-                    "Could not download tldr pages from {archive_url}: {:?}",
-                    response,
-                )
+                bail!("Could not download tldr pages from {archive_url}: {response:?}",)
             }
         }
     }

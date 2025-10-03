@@ -68,7 +68,7 @@ where
                 process_snippet(PageSnippet::Linebreak)?;
             }
 
-            LineType::Other(text) => debug!("Unknown line type: {:?}", text),
+            LineType::Other(text) => debug!("Unknown line type: {text:?}"),
         }
     }
     process_snippet(PageSnippet::Linebreak)?;

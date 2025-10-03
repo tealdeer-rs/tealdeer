@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use clap::{arg, builder::ArgAction, command, ArgGroup, Parser};
+use clap::{builder::ArgAction, ArgGroup, Parser};
 
 use crate::types::{ColorOptions, PlatformType};
 
