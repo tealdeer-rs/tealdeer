@@ -12,7 +12,7 @@ repository = "https://github.com/tealdeer-rs/tealdeer/"
 documentation = "https://tealdeer-rs.github.io/tealdeer/"
 version = "1.7.2"
 include = ["/src/**/*", "/tests/**/*", "/Cargo.toml", "/README.md", "/LICENSE-*", "/screenshot.png", "completion/*"]
-rust-version = "1.80"
+rust-version = "1.85"
 edition = "2021"
 
 [[bin]]
@@ -30,7 +30,7 @@ serde_derive = "1.0.21"
 ureq = { version = "3.0.8", default-features = false, features = ["gzip"] }
 toml = "0.8.19"
 yansi = "1"
-zip = { version = "2.3.0", default-features = false, features = ["deflate"] }
+zip = { version = "5.1.1", default-features = false, features = ["deflate"] }
 
 [target.'cfg(not(windows))'.dependencies]
 pager = "0.16"

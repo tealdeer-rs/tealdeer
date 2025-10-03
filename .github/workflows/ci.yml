@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
-        toolchain: [stable, 1.80.1]
+        toolchain: [stable, 1.85.0]
         include:
           - platform: windows-latest
             exe_suffix: .exe
