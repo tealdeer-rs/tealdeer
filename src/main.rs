@@ -216,11 +216,6 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         config.style = StyleConfig::default();
     }
 
-    // Override show_title if specified on command line
-    if args.show_title {
-        config.display.show_title = true;
-    }
-
     let custom_pages_dir = config
         .directories
         .custom_pages_dir
