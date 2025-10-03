@@ -740,6 +740,9 @@ fn test_config_platforms() {
 
     set_config_platforms("['linux', 'all']");
     testenv.command().arg("sunos-command").assert().success();
+
+    set_config_platforms("['current', 'all']");
+    testenv.command().arg("sunos-command").assert().success();
 }
 
 #[test]
@@ -947,6 +950,14 @@ fn test_macos_is_alias_for_osx() {
         .args(["--platform", "osx", "--list"])
         .assert()
         .stdout("maconly\n");
+
+    testenv.append_to_config("search.platforms = ['osx']\n");
+    testenv.command().arg("--list").assert().stdout("maconly\n");
+
+    testenv.delete_config();
+    testenv.init_config();
+    testenv.append_to_config("search.platforms = ['macos']\n");
+    testenv.command().arg("--list").assert().stdout("maconly\n");
 }
 
 #[test]

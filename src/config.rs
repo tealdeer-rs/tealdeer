@@ -223,6 +223,7 @@ struct RawDirectoriesConfig {
 enum RawPlatformType {
     Current,
     All,
+    MacOs, // alias for Platform(PlatformType::OsX)
     #[serde(untagged)]
     Platform(PlatformType),
 }
@@ -234,6 +235,7 @@ impl RawPlatformType {
             match raw_platform {
                 RawPlatformType::Current => flattened.push(PlatformType::current()),
                 RawPlatformType::Platform(platform) => flattened.push(platform),
+                RawPlatformType::MacOs => flattened.push(PlatformType::OsX),
                 RawPlatformType::All => flattened.extend(PlatformType::value_variants()),
             }
         }
