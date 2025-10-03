@@ -55,7 +55,7 @@ fetched from the latest `tldr-pages/tldr` GitHub release.
 
 ```toml
 [updates]
-archive_source = https://my-company.example.com/tldr/
+archive_source = "https://my-company.example.com/tldr/"
 ```
 
 ### `tls_backend`
