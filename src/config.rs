@@ -157,6 +157,8 @@ struct RawDisplayConfig {
     pub compact: bool,
     #[serde(default)]
     pub use_pager: bool,
+    #[serde(default)]
+    pub show_title: bool,
 }
 
 impl From<&RawDisplayConfig> for DisplayConfig {
@@ -164,6 +166,7 @@ impl From<&RawDisplayConfig> for DisplayConfig {
         Self {
             compact: raw_display_config.compact,
             use_pager: raw_display_config.use_pager,
+            show_title: raw_display_config.show_title,
         }
     }
 }
@@ -263,6 +266,7 @@ pub struct StyleConfig {
 pub struct DisplayConfig {
     pub compact: bool,
     pub use_pager: bool,
+    pub show_title: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -29,6 +29,7 @@ please refer to the subsections of this documentation page
 [display]
 compact = false
 use_pager = true
+show_title = false
 
 [style.command_name]
 foreground = "red"

@@ -807,6 +807,42 @@ fn test_correct_rendering_with_config() {
         .stdout(diff(expected));
 }
 
+/// An end-to-end integration test for rendering with show_title config option enabled.
+#[test]
+fn test_show_title_config() {
+    // Test that default behavior without show_title shows no title
+    let testenv = TestEnv::new().install_default_cache();
+    let expected_no_title = include_str!("rendered/inkscape-default.expected");
+
+    testenv
+        .command()
+        .args(["--color", "always", "inkscape-v2"])
+        .assert()
+        .success()
+        .stdout(diff(expected_no_title));
+
+    // Configure to enable show_title
+    testenv.append_to_config("display.show_title = true\n");
+
+    let expected_no_color = include_str!("rendered/inkscape-with-title-no-color.expected");
+
+    testenv
+        .command()
+        .args(["inkscape-v2"])
+        .assert()
+        .success()
+        .stdout(diff(expected_no_color));
+
+    let expected = include_str!("rendered/inkscape-with-title.expected");
+
+    testenv
+        .command()
+        .args(["--color", "always", "inkscape-v2"])
+        .assert()
+        .success()
+        .stdout(diff(expected));
+}
+
 #[test]
 fn test_spaces_find_command() {
     let testenv = TestEnv::new().install_default_cache();

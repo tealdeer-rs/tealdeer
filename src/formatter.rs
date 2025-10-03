@@ -12,6 +12,7 @@ pub enum PageSnippet<'a> {
     NormalCode(&'a str),
     Description(&'a str),
     Text(&'a str),
+    Title(&'a str),
     Linebreak,
 }
 
@@ -20,7 +21,9 @@ impl PageSnippet<'_> {
         use PageSnippet::*;
 
         match self {
-            CommandName(s) | Variable(s) | NormalCode(s) | Description(s) | Text(s) => s.is_empty(),
+            CommandName(s) | Variable(s) | NormalCode(s) | Description(s) | Text(s) | Title(s) => {
+                s.is_empty()
+            }
             Linebreak => false,
         }
     }
@@ -31,6 +34,7 @@ pub fn highlight_lines<L, F, E>(
     lines: L,
     process_snippet: &mut F,
     keep_empty_lines: bool,
+    show_title: bool,
 ) -> Result<(), E>
 where
     L: Iterator<Item = LineType>,
@@ -45,8 +49,12 @@ where
                 }
             }
             LineType::Title(title) => {
-                debug!("Ignoring title");
-
+                if show_title {
+                    process_snippet(PageSnippet::Linebreak)?;
+                    process_snippet(PageSnippet::Title(&title))?;
+                } else {
+                    debug!("Ignoring title");
+                }
                 // This is safe as long as the parsed title is only the command,
                 // and the iterator yields values in order of appearance.
                 command = title;

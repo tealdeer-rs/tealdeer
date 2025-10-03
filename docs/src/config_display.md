@@ -21,3 +21,13 @@ Set this to enforce more compact output, where empty lines are stripped out
 
     [display]
     compact = true
+
+## `show_title`
+
+Display the command name at the top of the page output (default `false`).
+
+    [display]
+    show_title = true
+
+When enabled, the command name will be displayed at the top of the output,
+styled with the `command_name` style configuration.
