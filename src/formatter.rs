@@ -21,7 +21,9 @@ impl PageSnippet<'_> {
         use PageSnippet::*;
 
         match self {
-            CommandName(s) | Variable(s) | NormalCode(s) | Description(s) | Text(s) | Title(s) => s.is_empty(),
+            CommandName(s) | Variable(s) | NormalCode(s) | Description(s) | Text(s) | Title(s) => {
+                s.is_empty()
+            }
             Linebreak => false,
         }
     }
@@ -48,7 +50,6 @@ where
             }
             LineType::Title(title) => {
                 if show_title {
-                    // Display the title using the Title variant
                     process_snippet(PageSnippet::Title(&title))?;
                     process_snippet(PageSnippet::Linebreak)?;
                 } else {

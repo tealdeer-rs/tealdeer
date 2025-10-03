@@ -833,7 +833,7 @@ fn test_show_title_config() {
         .success()
         .stdout(diff(expected_no_color));
 
-    let expected= include_str!("rendered/inkscape-with-title.expected");
+    let expected = include_str!("rendered/inkscape-with-title.expected");
 
     testenv
         .command()
@@ -841,7 +841,6 @@ fn test_show_title_config() {
         .assert()
         .success()
         .stdout(diff(expected));
-
 }
 
 #[test]
