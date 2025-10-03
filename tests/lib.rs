@@ -716,6 +716,36 @@ fn test_os_specific_page() {
 }
 
 #[test]
+fn test_config_platforms() {
+    let testenv = TestEnv::new();
+    testenv.add_os_entry("sunos", "sunos-command", "");
+
+    let set_config_platforms = |platforms| {
+        testenv.delete_config();
+        testenv.init_config();
+        testenv.append_to_config(format!("search.platforms = {platforms}"));
+    };
+
+    // By default all platforms are searched
+    testenv.command().arg("sunos-command").assert().success();
+
+    set_config_platforms("[]");
+    testenv.command().arg("sunos-command").assert().failure();
+
+    set_config_platforms("['linux']");
+    testenv.command().arg("sunos-command").assert().failure();
+
+    set_config_platforms("['sunos']");
+    testenv.command().arg("sunos-command").assert().success();
+
+    set_config_platforms("['linux', 'all']");
+    testenv.command().arg("sunos-command").assert().success();
+
+    set_config_platforms("['current', 'all']");
+    testenv.command().arg("sunos-command").assert().success();
+}
+
+#[test]
 fn test_markdown_rendering() {
     let testenv = TestEnv::new().install_default_cache();
 
@@ -956,6 +986,14 @@ fn test_macos_is_alias_for_osx() {
         .args(["--platform", "osx", "--list"])
         .assert()
         .stdout("maconly\n");
+
+    testenv.append_to_config("search.platforms = ['osx']\n");
+    testenv.command().arg("--list").assert().stdout("maconly\n");
+
+    testenv.delete_config();
+    testenv.init_config();
+    testenv.append_to_config("search.platforms = ['macos']\n");
+    testenv.command().arg("--list").assert().stdout("maconly\n");
 }
 
 #[test]

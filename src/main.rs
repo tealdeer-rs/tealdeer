@@ -39,6 +39,7 @@ use cache::{CacheConfig, TLDR_OLD_PAGES_DIR};
 use clap::Parser;
 use config::{ConfigLoader, Language, StyleConfig, TlsBackend};
 use log::debug;
+use types::PlatformType;
 
 mod cache;
 mod cli;
@@ -55,7 +56,7 @@ use crate::{
     cli::Cli,
     config::{get_config_dir, make_default_config, Config, PathWithSource},
     output::print_page,
-    types::{ColorOptions, PlatformType},
+    types::ColorOptions,
     utils::{print_error, print_warning},
 };
 
@@ -259,7 +260,13 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         return Ok(ExitCode::SUCCESS);
     }
 
-    let platforms = compute_platforms(args.platforms.as_ref());
+    if let Some(platforms) = args.platforms {
+        config.search.platforms = platforms;
+        if !config.search.platforms.contains(&PlatformType::Common) {
+            config.search.platforms.push(PlatformType::Common);
+        }
+    }
+
     let (search_languages, download_languages): (&[_], &[_]) = match args.language.as_deref() {
         Some(lang) => (&[Language(lang)], &[Language(lang)]),
         None => (&config.search.languages, &config.updates.download_languages),
@@ -272,7 +279,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
             .custom_pages_dir
             .as_ref()
             .map(PathWithSource::path),
-        platforms: &platforms,
+        platforms: &config.search.platforms,
         search_languages,
         download_languages,
     };
@@ -393,18 +400,4 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     }
 
     Ok(ExitCode::SUCCESS)
-}
-
-/// Returns the passed or default platform types and appends `PlatformType::Common` as fallback.
-fn compute_platforms(platforms: Option<&Vec<PlatformType>>) -> Vec<PlatformType> {
-    match platforms {
-        Some(p) => {
-            let mut result = p.clone();
-            if !result.contains(&PlatformType::Common) {
-                result.push(PlatformType::Common);
-            }
-            result
-        }
-        None => vec![PlatformType::current(), PlatformType::Common],
-    }
 }
