@@ -23,6 +23,7 @@ Set this to enforce more compact output, where empty lines are stripped out
     compact = true
 
 ## `show_title`
+
 Display the command name at the top of the page output (default `false`).
 
     [display]

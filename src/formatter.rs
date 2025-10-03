@@ -50,8 +50,8 @@ where
             }
             LineType::Title(title) => {
                 if show_title {
-                    process_snippet(PageSnippet::Title(&title))?;
                     process_snippet(PageSnippet::Linebreak)?;
+                    process_snippet(PageSnippet::Title(&title))?;
                 } else {
                     debug!("Ignoring title");
                 }

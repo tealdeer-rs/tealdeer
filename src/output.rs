@@ -93,7 +93,7 @@ fn print_snippet(
         NormalCode(s) => write!(writer, "{}", s.paint(style.example_code)),
         Description(s) => writeln!(writer, "  {}", s.paint(style.description)),
         Text(s) => writeln!(writer, "  {}", s.paint(style.example_text)),
-        Title(s) => writeln!(writer, "{}", s.paint(style.command_name)),
+        Title(s) => writeln!(writer, "  {}", s.paint(style.command_name)),
         Linebreak => writeln!(writer),
     }
 }
