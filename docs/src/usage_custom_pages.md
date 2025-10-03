@@ -28,11 +28,15 @@ your custom page will be shown instead of the upstream version in the cache.
 
 Path:
 
-    $CUSTOM_PAGES_DIR/<command>.page.md
+```plain
+$CUSTOM_PAGES_DIR/<command>.page.md
+```
 
 Example:
 
-    ~/.local/share/tealdeer/pages/ufw.page.md
+```plain
+~/.local/share/tealdeer/pages/ufw.page.md
+```
 
 ## Custom Patches
 
@@ -43,8 +47,12 @@ pages.
 
 Path:
 
-    $CUSTOM_PAGES_DIR/<command>.patch.md
+```plain
+$CUSTOM_PAGES_DIR/<command>.patch.md
+```
 
 Example:
 
-    ~/.local/share/tealdeer/pages/ufw.patch.md
+```plain
+~/.local/share/tealdeer/pages/ufw.patch.md
+```

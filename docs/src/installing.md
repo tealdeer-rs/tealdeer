@@ -38,21 +38,29 @@ Simply download the binary for your platform and run it!
 
 Build and install the tool via cargo...
 
-    $ cargo install tealdeer
+```shell
+$ cargo install tealdeer
+```
 
 ## Build From Source
 
 Release build:
 
-    $ cargo build --release
+```shell
+$ cargo build --release
+```
 
 Release build with bundled CA roots:
 
-    $ cargo build --release --no-default-features --features rustls-with-webpki-roots
+```shell
+$ cargo build --release --no-default-features --features rustls-with-webpki-roots
+```
 
 Debug build with logging support:
 
-    $ cargo build --features logging
+```shell
+$ cargo build --features logging
+```
 
 (To enable logging at runtime, export the `RUST_LOG=tldr=debug` env variable.)
 

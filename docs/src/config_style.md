@@ -26,16 +26,22 @@ Colors can be specified in one of three ways:
 
   Example:
 
-      foreground = "green"
+  ```toml
+  foreground = "green"
+  ```
 
 - 256 color ANSI code (*tealdeer v1.5.0+*)
 
   Example:
 
-      foreground = { ansi = 4 }
+  ```toml
+  foreground = { ansi = 4 }
+  ```
 
 - 24-bit RGB color (*tealdeer v1.5.0+*)
 
   Example:
 
-      background = { rgb = { r = 255, g = 255, b = 255 } }
+  ```toml
+  background = { rgb = { r = 255, g = 255, b = 255 } }
+  ```
