@@ -13,8 +13,10 @@ default.
 Specifies whether the auto-update feature should be enabled (defaults to
 `false`).
 
-    [updates]
-    auto_update = true
+```toml
+[updates]
+auto_update = true
+```
 
 ### `auto_update_interval_hours`
 
@@ -22,9 +24,11 @@ Duration, since the last cache update, after which the cache will be
 refreshed (defaults to 720 hours). This parameter is ignored if `auto_update`
 is set to `false`.
 
-    [updates]
-    auto_update = true
-    auto_update_interval_hours = 24
+```toml
+[updates]
+auto_update = true
+auto_update_interval_hours = 24
+```
 
 ## Download configuration
 
@@ -35,20 +39,24 @@ If unspecified, the languages listed in the `search.languages` setting are used.
 Thus, this setting is the most useful to instruct tealdeer to download pages in additional languages that are not searched by default.
 Either way, the language used can be overwritten using the `--language` command line flag.
 
-    [search]
-    languages = ["de", "en"]
+```toml
+[search]
+languages = ["de", "en"]
 
-    [updates]
-    # sometimes I like to read the Italian description
-    download_languages = ["de", "en", "it"]
+[updates]
+# sometimes I like to read the Italian description
+download_languages = ["de", "en", "it"]
+```
 
 ### `archive_source`
 
 URL for the location of the tldr pages archive. By default the pages are
 fetched from the latest `tldr-pages/tldr` GitHub release.
 
-    [updates]
-    archive_source = https://my-company.example.com/tldr/
+```toml
+[updates]
+archive_source = https://my-company.example.com/tldr/
+```
 
 ### `tls_backend`
 
@@ -62,9 +70,10 @@ Available options:
   - Secure Transport on macOS
   - OpenSSL on other platforms
 
-    [updates]
-    tls_backend = "native-tls"
-
+```toml
+[updates]
+tls_backend = "native-tls"
+```
 
 [rustls]: https://github.com/rustls/rustls
 [rustls-webpki]: https://github.com/rustls/webpki
