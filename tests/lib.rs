@@ -73,8 +73,7 @@ impl TestEnv {
     }
     fn init_config(&self) {
         self.append_to_config(format!(
-            "directories.cache_dir = '{}'\n
-            search.include_all_platforms = false\n",
+            "directories.cache_dir = '{}'\n",
             self.cache_dir().to_str().unwrap(),
         ));
     }
@@ -717,38 +716,30 @@ fn test_os_specific_page() {
 }
 
 #[test]
-fn test_include_all_platforms() {
-    let testenv = TestEnv::new().create_secondary_config();
-
+fn test_config_platforms() {
+    let testenv = TestEnv::new();
     testenv.add_os_entry("sunos", "sunos-command", "");
 
-    let cmd = || {
-        let mut cmd = testenv.command();
-        cmd.args([
-            "--config-path",
-            testenv
-                .config_dir()
-                .join("config-secondary.toml")
-                .to_str()
-                .unwrap(),
-            "sunos-command",
-        ]);
-        cmd
+    let set_config_platforms = |platforms| {
+        testenv.delete_config();
+        testenv.init_config();
+        testenv.append_to_config(format!("search.platforms = {platforms}"));
     };
 
-    // include_all_platforms is enabled by default
-    cmd().assert().success();
-    cmd().args(["--platform", "linux"]).assert().failure();
+    // By default all platforms are searched
+    testenv.command().arg("sunos-command").assert().success();
 
-    testenv.append_to_secondary_config("search.include_all_platforms = false");
-    cmd().assert().failure();
+    set_config_platforms("[]");
+    testenv.command().arg("sunos-command").assert().failure();
 
-    cmd().args(["--platform", "sunos"]).assert().success();
-    cmd().args(["--platform", "linux"]).assert().failure();
-    cmd()
-        .args(["--platform", "linux", "--platform", "sunos"])
-        .assert()
-        .success();
+    set_config_platforms("['linux']");
+    testenv.command().arg("sunos-command").assert().failure();
+
+    set_config_platforms("['sunos']");
+    testenv.command().arg("sunos-command").assert().success();
+
+    set_config_platforms("['linux', 'all']");
+    testenv.command().arg("sunos-command").assert().success();
 }
 
 #[test]
