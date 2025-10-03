@@ -13,6 +13,86 @@ Possible log types:
 - `[docs]` for documentation changes.
 - `[chore]` for maintenance work.
 
+### [v1.8.0][v1.8.0] (2025-10-03)
+
+One year and one day have passed since tealdeer version 1.7.0 was released, so
+it's time for an update! Tealdeer 1.8 comes with a complete rewrite of the page
+cache and contains many long awaited improvements around it.
+
+Firstly, tealdeer now supports language-specific downloads. This means that only
+the pages matching the configured languages are downloaded when updating the
+cache. The languages used for searching pages can be configured separately to
+the ones used for updating, so it is possible to download pages in languages
+that are not usually queried.
+
+Next to configuring which languages are used for searching, it is now also
+possible to specify which platforms are used in the config file. Importantly,
+the default behavior for page search has changed so that all platforms are
+searched if no page is found for the platform that tealdeer is running on. To
+restore the behavior of tealdeer 1.7, users should set
+```toml
+[search]
+platforms = ["current", "common"]
+```
+in their config file.
+
+Coming back to updating, the default build configuration of tealdeer now
+includes multiple TLS backends. This means that tealdeer does not have to be
+rebuilt to try out a different TLS backend. The used backend can be chosen in
+the config file. By default, tealdeer comes with support for rustls using webpki
+certificates or system certificates. Native TLS is supported, but not enabled by
+default to avoid build troubles with OpenSSL and musl.
+
+For details, please refer to the [user documentation].
+
+#### Changes:
+
+- [added] Resolve paths in config `[directories]` relative to the config directory ([#306])
+- [added] Add `common` platform to CLI ([#401])
+- [added] Add configuration option for `archive_source` ([#337])
+- [added] Allows configuring TLS backend ([#386])
+- [added] Add args: `--edit-page` and `--edit-patch` ([#388])
+- [added] Add an option to specify a custom config file to be used ([#422])
+- [added] Upload binaries from build step as artifact ([#423])
+- [added] Add `search.languages` and `updates.download_languages` settings ([#430])
+- [added] Add `search.platforms` config option and search all platforms by default ([#435])
+- [added] Add `display.show_title` option to display command titles in output ([#439])
+- [chore] Various test improvements ([#399])
+- [chore] Add tests for osx/macos alias ([#407])
+- [chore] Move most of `main` to `try_main` ([#400])
+- [chore] Only create a single temporary directory in integration tests ([#411])
+- [chore] Replace reqwest with ureq ([#417])
+- [chore] Introduce Language struct ([#425])
+- [chore] Cache rewrite ([#416])
+- [chore] Allow references in `Config` ([#429])
+- [docs] Highlight code examples in user docs ([#440])
+- [removed] Remove native-tls from default feature set ([#436])
+
+#### Contributors to this version:
+
+- [Christoph Loy][@beatbrot]
+- [Erick Guan][@erickguan]
+- [@MHS-0][@MHS-0]
+- [Matěj Kafka][@MatejKafka]
+- [Nachiket Kanore][@nachiketkanore]
+- [Niklas Mohrin][@niklasmohrin]
+- [Predrag Minic][@mipedja]
+- [@hex1c][@hex1c]
+- [lyj][@lengyijun]
+
+Thanks!
+
+#### Notes to package maintainers
+
+1. The MSRV has been bumped to 1.85.
+2. Consider whether you want to include the `native-tls` feature in your build
+   of tealdeer. The feature is disabled for the binaries in the GitHub release
+   because we target musl, but it might work out of the box for your
+   distribution.
+3. We have added the `ignore-online-tests` feature to automatically mark all
+   tests that require an internet connection as skipped, so you can use this
+   feature instead of maintaining a list of these tests yourself.
+
 ### [v1.7.2][v1.7.2] (2025-03-18)
 
 This patch release updates the `zip` dependency to mitigate a potential security
@@ -34,11 +114,11 @@ This patch release updates the `yansi` dependency to version 1, so that the
 previous versions of `yansi` can be removed from the package sets of Linux
 distributions. This change should not impact the behavior of tealdeer.
 
-Changes:
+#### Changes:
 
 - [chore] Upgrade yansi: 0.5.1 -> 1.0.1 ([#389])
 
-Contributors to this version:
+#### Contributors to this version:
 
 - [Blair Noctis][@nc7s]
 
@@ -74,7 +154,7 @@ On a personal note, this will be the last release from me
 ([Danilo](https://github.com/dbrgn/)) as primary maintainer of tealdeer. For
 details, see [#376](https://github.com/tealdeer-rs/tealdeer/issues/376).
 
-Changes:
+#### Changes:
 
 - [added] Allow querying multiple platforms ([#300])
 - [added] Add BSD platform support ([#354])
@@ -94,7 +174,7 @@ Changes:
 - [chore] Update Cargo.toml license field following SPDX 2.1 ([#336])
 - [chore] Dependency updates
 
-Contributors to this version:
+#### Contributors to this version:
 
 - [Adam Henley][@adamazing]
 - [Andrea Frigido][@frisoft]
@@ -118,12 +198,12 @@ Thanks!
 
 ### [v1.6.1][v1.6.1] (2022-10-24)
 
-Changes:
+#### Changes:
 
 - [fixed] Fix path source for custom pages dir ([#297])
 - [chore] Update dependendencies ([#299])
 
-Contributors to this version:
+#### Contributors to this version:
 
 - [Cyrus Yip][@CyrusYip]
 - [Danilo Bargen][@dbrgn]
@@ -142,7 +222,7 @@ The `TEALDEER_CACHE_DIR` env variable is now deprecated.
 A note to packagers: Shell completions have been moved to the `completion/`
 subdirectory! Packaging scripts might need to be updated.
 
-Changes:
+#### Changes:
 
 - [added] Allow overriding cache directory through config ([#276])
 - [added] Add `--no-auto-update` CLI flag ([#257])
@@ -163,7 +243,7 @@ Changes:
 - [chore] Use anyhow for error handling ([#249])
 - [chore] Switch to Rust 2021 edition ([#284])
 
-Contributors to this version:
+#### Contributors to this version:
 
 - [@bagohart][@bagohart]
 - [@cyqsimon][@cyqsimon]
@@ -212,7 +292,7 @@ Note that the MSRV (Minimal Supported Rust Version) of the project
 > When publishing a tealdeer release, the Rust version required to build it
 > should be stable for at least a month.
 
-Changes:
+#### Changes:
 
 - [added] Support custom pages and patches ([#142][i142])
 - [added] Multi-language support ([#125][i125], [#161][i161])
@@ -243,7 +323,7 @@ Changes:
 - [chore] All release binaries are now generated in CI. Binaries for macOS and Windows are also provided. ([#240][i240])
 - [chore] Update all dependencies
 
-Contributors to this version:
+#### Contributors to this version:
 
 - [@bl-ue][@bl-ue]
 - [Cameron Tod][@cam8001]
@@ -272,7 +352,7 @@ co-maintainer. Thank you for your help!
 
 - [fixed] Syntax error in zsh completion file ([#138][i138])
 
-Contributors to this version:
+#### Contributors to this version:
 
 - [Danilo Bargen][@dbrgn]
 - [Bruno A. Muciño][@mucinoab]
@@ -289,7 +369,7 @@ Thanks!
 - [changed] Make `--list` option comply with official spec ([#112][i112])
 - [changed] Move cache age warning to stderr ([#113][i113])
 
-Contributors to this version:
+#### Contributors to this version:
 
 - [Atul Bhosale][@Atul9]
 - [Danilo Bargen][@dbrgn]
@@ -315,7 +395,7 @@ Thanks!
 - [fixed] Fix Fish autocompletion on macOS ([#87][i87])
 - [fixed] Fix compilation on Windows by disabling pager ([#99][i99])
 
-Contributors to this version:
+#### Contributors to this version:
 
 - [Bruno Heridet][@Delapouite]
 - [Danilo Bargen][@dbrgn]
@@ -341,7 +421,7 @@ Thanks!
 - [changed] Move to Rust 2018, require Rust 1.32 ([#69][i69] / [#84][i84])
 - [fixed] Add (back) support for proxies ([#68][i68])
 
-Contributors to this version:
+#### Contributors to this version:
 
 - [Bar Hatsor][@Bassets]
 - [Danilo Bargen][@dbrgn]
@@ -364,7 +444,7 @@ Thanks!
 - [changed] Require at least Rust 1.28 to build (previous: 1.19)
 - [fixed] Fix building on systems with openssl 1.1.1 ([#47][i47])
 
-Contributors to this version:
+#### Contributors to this version:
 
 - [Danilo Bargen][@dbrgn]
 - [@equal-l2][@equal-l2]
@@ -397,7 +477,7 @@ Thanks!
 
 - First crates.io release
 
-
+[user documentation]: https://tealdeer-rs.github.io/tealdeer/
 
 [@0ndorio]: https://github.com/0ndorio
 [@adamazing]: https://github.com/adamazing
@@ -460,6 +540,14 @@ Thanks!
 [@Walker-00]: https://github.com/Walker-00
 [@YDX-2147483647]: https://github.com/YDX-2147483647
 [@zedseven]: https://github.com/zedseven
+[@beatbrot]: https://github.com/beatbrot
+[@erickguan]: https://github.com/erickguan
+[@MHS-0]: https://github.com/MHS-0
+[@MatejKafka]: https://github.com/MatejKafka
+[@nachiketkanore]: https://github.com/nachiketkanore
+[@mipedja]: https://github.com/mipedja
+[@hex1c]: https://github.com/hex1c
+[@lengyijun]: https://github.com/lengyijun
 
 [v1.0.0]: https://github.com/tealdeer-rs/tealdeer/compare/v0.4.0...v1.0.0
 [v1.1.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.0.0...v1.1.0
@@ -473,6 +561,7 @@ Thanks!
 [v1.7.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.6.1...v1.7.0
 [v1.7.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.7.0...v1.7.1
 [v1.7.2]: https://github.com/tealdeer-rs/tealdeer/compare/v1.7.1...v1.7.2
+[v1.8.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.7.2...v1.8.0
 
 [i34]: https://github.com/tealdeer-rs/tealdeer/issues/34
 [i43]: https://github.com/tealdeer-rs/tealdeer/issues/43
@@ -544,6 +633,7 @@ Thanks!
 [#300]: https://github.com/tealdeer-rs/tealdeer/pull/300
 [#303]: https://github.com/tealdeer-rs/tealdeer/pull/303
 [#305]: https://github.com/tealdeer-rs/tealdeer/pull/305
+[#306]: https://github.com/tealdeer-rs/tealdeer/pull/306
 [#314]: https://github.com/tealdeer-rs/tealdeer/pull/314
 [#315]: https://github.com/tealdeer-rs/tealdeer/pull/315
 [#322]: https://github.com/tealdeer-rs/tealdeer/pull/322
@@ -552,8 +642,28 @@ Thanks!
 [#331]: https://github.com/tealdeer-rs/tealdeer/pull/331
 [#333]: https://github.com/tealdeer-rs/tealdeer/pull/333
 [#336]: https://github.com/tealdeer-rs/tealdeer/pull/336
+[#337]: https://github.com/tealdeer-rs/tealdeer/pull/337
 [#342]: https://github.com/tealdeer-rs/tealdeer/pull/342
 [#354]: https://github.com/tealdeer-rs/tealdeer/pull/354
 [#355]: https://github.com/tealdeer-rs/tealdeer/pull/355
 [#362]: https://github.com/tealdeer-rs/tealdeer/pull/362
+[#386]: https://github.com/tealdeer-rs/tealdeer/pull/386
+[#388]: https://github.com/tealdeer-rs/tealdeer/pull/388
 [#389]: https://github.com/tealdeer-rs/tealdeer/pull/389
+[#399]: https://github.com/tealdeer-rs/tealdeer/pull/399
+[#400]: https://github.com/tealdeer-rs/tealdeer/pull/400
+[#401]: https://github.com/tealdeer-rs/tealdeer/pull/401
+[#407]: https://github.com/tealdeer-rs/tealdeer/pull/407
+[#411]: https://github.com/tealdeer-rs/tealdeer/pull/411
+[#416]: https://github.com/tealdeer-rs/tealdeer/pull/416
+[#417]: https://github.com/tealdeer-rs/tealdeer/pull/417
+[#422]: https://github.com/tealdeer-rs/tealdeer/pull/422
+[#423]: https://github.com/tealdeer-rs/tealdeer/pull/423
+[#425]: https://github.com/tealdeer-rs/tealdeer/pull/425
+[#426]: https://github.com/tealdeer-rs/tealdeer/pull/426
+[#429]: https://github.com/tealdeer-rs/tealdeer/pull/429
+[#430]: https://github.com/tealdeer-rs/tealdeer/pull/430
+[#435]: https://github.com/tealdeer-rs/tealdeer/pull/435
+[#436]: https://github.com/tealdeer-rs/tealdeer/pull/436
+[#439]: https://github.com/tealdeer-rs/tealdeer/pull/439
+[#440]: https://github.com/tealdeer-rs/tealdeer/pull/440

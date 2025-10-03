@@ -50,10 +50,10 @@ Release build:
 $ cargo build --release
 ```
 
-Release build with bundled CA roots:
+Release build with native TLS support:
 
 ```shell
-$ cargo build --release --no-default-features --features rustls-with-webpki-roots
+$ cargo build --release --features native-tls
 ```
 
 Debug build with logging support:
