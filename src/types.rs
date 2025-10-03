@@ -118,16 +118,12 @@ impl PlatformType {
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum ColorOptions {
     Always,
+    #[default]
     Auto,
     Never,
-}
-
-impl Default for ColorOptions {
-    fn default() -> Self {
-        Self::Auto
-    }
 }
 
 #[derive(Debug, Eq, PartialEq)]

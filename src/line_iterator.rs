@@ -53,7 +53,7 @@ impl<R: BufRead> Iterator for LineIterator<R> {
         match bytes_read {
             Ok(0) => None,
             Err(e) => {
-                warn!("Could not read line from reader: {:?}", e);
+                warn!("Could not read line from reader: {e:?}");
                 None
             }
             Ok(_) => {
@@ -68,7 +68,7 @@ impl<R: BufRead> Iterator for LineIterator<R> {
                             .find(|b| matches!(b, Ok(b'\n') | Err(_)))
                             .transpose()
                         {
-                            warn!("Could not read line from reader: {:?}", e);
+                            warn!("Could not read line from reader: {e:?}");
                             return None;
                         }
                         self.first_line = false;
