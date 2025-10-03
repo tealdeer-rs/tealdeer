@@ -39,6 +39,7 @@ use cache::{CacheConfig, TLDR_OLD_PAGES_DIR};
 use clap::Parser;
 use config::{ConfigLoader, Language, StyleConfig, TlsBackend};
 use log::debug;
+use types::PlatformType;
 
 mod cache;
 mod cli;
@@ -261,6 +262,9 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
 
     if let Some(platforms) = args.platforms {
         config.search.platforms = platforms;
+        if !config.search.platforms.contains(&PlatformType::Common) {
+            config.search.platforms.push(PlatformType::Common);
+        }
     }
 
     let (search_languages, download_languages): (&[_], &[_]) = match args.language.as_deref() {
