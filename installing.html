@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="installing.html" class="active"><strong aria-hidden="true">1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">2.</strong> Usage</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usage_custom_pages.html"><strong aria-hidden="true">2.1.</strong> Custom Pages and Patches</a></li></ol></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config_display.html"><strong aria-hidden="true">3.1.</strong> Section: [display]</a></li><li class="chapter-item expanded "><a href="config_style.html"><strong aria-hidden="true">3.2.</strong> Section: [style]</a></li><li class="chapter-item expanded "><a href="config_updates.html"><strong aria-hidden="true">3.3.</strong> Section: [updates]</a></li><li class="chapter-item expanded "><a href="config_directories.html"><strong aria-hidden="true">3.4.</strong> Section: [directories]</a></li></ol></li><li class="chapter-item expanded "><a href="tips_and_tricks.html"><strong aria-hidden="true">4.</strong> Tips and Tricks</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="installing.html" class="active"><strong aria-hidden="true">1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">2.</strong> Usage</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usage_custom_pages.html"><strong aria-hidden="true">2.1.</strong> Custom Pages and Patches</a></li></ol></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config_display.html"><strong aria-hidden="true">3.1.</strong> Section: [display]</a></li><li class="chapter-item expanded "><a href="config_style.html"><strong aria-hidden="true">3.2.</strong> Section: [style]</a></li><li class="chapter-item expanded "><a href="config_search.html"><strong aria-hidden="true">3.3.</strong> Section: [search]</a></li><li class="chapter-item expanded "><a href="config_updates.html"><strong aria-hidden="true">3.4.</strong> Section: [updates]</a></li><li class="chapter-item expanded "><a href="config_directories.html"><strong aria-hidden="true">3.5.</strong> Section: [directories]</a></li></ol></li><li class="chapter-item expanded "><a href="tips_and_tricks.html"><strong aria-hidden="true">4.</strong> Tips and Tricks</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -196,17 +196,17 @@ autocompletions</a>.</p>
 Simply download the binary for your platform and run it!</p>
 <h2><a class="header" href="#through-cargo-install" id="through-cargo-install">Through <code>cargo install</code></a></h2>
 <p>Build and install the tool via cargo...</p>
-<pre><code>$ cargo install tealdeer
+<pre><code class="language-shell">$ cargo install tealdeer
 </code></pre>
 <h2><a class="header" href="#build-from-source" id="build-from-source">Build From Source</a></h2>
 <p>Release build:</p>
-<pre><code>$ cargo build --release
+<pre><code class="language-shell">$ cargo build --release
 </code></pre>
-<p>Release build with bundled CA roots:</p>
-<pre><code>$ cargo build --release --no-default-features --features webpki-roots
+<p>Release build with native TLS support:</p>
+<pre><code class="language-shell">$ cargo build --release --features native-tls
 </code></pre>
 <p>Debug build with logging support:</p>
-<pre><code>$ cargo build --features logging
+<pre><code class="language-shell">$ cargo build --features logging
 </code></pre>
 <p>(To enable logging at runtime, export the <code>RUST_LOG=tldr=debug</code> env variable.)</p>
 <h2><a class="header" href="#autocompletion" id="autocompletion">Autocompletion</a></h2>

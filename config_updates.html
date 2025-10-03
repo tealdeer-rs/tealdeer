@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="installing.html"><strong aria-hidden="true">1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">2.</strong> Usage</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usage_custom_pages.html"><strong aria-hidden="true">2.1.</strong> Custom Pages and Patches</a></li></ol></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config_display.html"><strong aria-hidden="true">3.1.</strong> Section: [display]</a></li><li class="chapter-item expanded "><a href="config_style.html"><strong aria-hidden="true">3.2.</strong> Section: [style]</a></li><li class="chapter-item expanded "><a href="config_updates.html" class="active"><strong aria-hidden="true">3.3.</strong> Section: [updates]</a></li><li class="chapter-item expanded "><a href="config_directories.html"><strong aria-hidden="true">3.4.</strong> Section: [directories]</a></li></ol></li><li class="chapter-item expanded "><a href="tips_and_tricks.html"><strong aria-hidden="true">4.</strong> Tips and Tricks</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="installing.html"><strong aria-hidden="true">1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">2.</strong> Usage</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usage_custom_pages.html"><strong aria-hidden="true">2.1.</strong> Custom Pages and Patches</a></li></ol></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config_display.html"><strong aria-hidden="true">3.1.</strong> Section: [display]</a></li><li class="chapter-item expanded "><a href="config_style.html"><strong aria-hidden="true">3.2.</strong> Section: [style]</a></li><li class="chapter-item expanded "><a href="config_search.html"><strong aria-hidden="true">3.3.</strong> Section: [search]</a></li><li class="chapter-item expanded "><a href="config_updates.html" class="active"><strong aria-hidden="true">3.4.</strong> Section: [updates]</a></li><li class="chapter-item expanded "><a href="config_directories.html"><strong aria-hidden="true">3.5.</strong> Section: [directories]</a></li></ol></li><li class="chapter-item expanded "><a href="tips_and_tricks.html"><strong aria-hidden="true">4.</strong> Tips and Tricks</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -164,6 +164,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#section-updates" id="section-updates">Section: [updates]</a></h1>
+<p>This config section contains settings related to updating the tealdeer cache.</p>
 <h2><a class="header" href="#automatic-updates" id="automatic-updates">Automatic updates</a></h2>
 <p>Tealdeer can refresh the cache automatically when it is outdated. This
 behavior can be configured in the <code>updates</code> section and is disabled by
@@ -171,16 +172,52 @@ default.</p>
 <h3><a class="header" href="#auto_update" id="auto_update"><code>auto_update</code></a></h3>
 <p>Specifies whether the auto-update feature should be enabled (defaults to
 <code>false</code>).</p>
-<pre><code>[updates]
+<pre><code class="language-toml">[updates]
 auto_update = true
 </code></pre>
 <h3><a class="header" href="#auto_update_interval_hours" id="auto_update_interval_hours"><code>auto_update_interval_hours</code></a></h3>
 <p>Duration, since the last cache update, after which the cache will be
 refreshed (defaults to 720 hours). This parameter is ignored if <code>auto_update</code>
 is set to <code>false</code>.</p>
-<pre><code>[updates]
+<pre><code class="language-toml">[updates]
 auto_update = true
 auto_update_interval_hours = 24
+</code></pre>
+<h2><a class="header" href="#download-configuration" id="download-configuration">Download configuration</a></h2>
+<h3><a class="header" href="#download_languages" id="download_languages"><code>download_languages</code></a></h3>
+<p>The list of languages which should be downloaded when updating.
+If unspecified, the languages listed in the <code>search.languages</code> setting are used.
+Thus, this setting is the most useful to instruct tealdeer to download pages in additional languages that are not searched by default.
+Either way, the language used can be overwritten using the <code>--language</code> command line flag.</p>
+<pre><code class="language-toml">[search]
+languages = [&quot;de&quot;, &quot;en&quot;]
+
+[updates]
+# sometimes I like to read the Italian description
+download_languages = [&quot;de&quot;, &quot;en&quot;, &quot;it&quot;]
+</code></pre>
+<h3><a class="header" href="#archive_source" id="archive_source"><code>archive_source</code></a></h3>
+<p>URL for the location of the tldr pages archive. By default the pages are
+fetched from the latest <code>tldr-pages/tldr</code> GitHub release.</p>
+<pre><code class="language-toml">[updates]
+archive_source = &quot;https://my-company.example.com/tldr/&quot;
+</code></pre>
+<h3><a class="header" href="#tls_backend" id="tls_backend"><code>tls_backend</code></a></h3>
+<p>Specifies which TLS backend to use. Try changing this setting if you encounter certificate errors.</p>
+<p>Available options:</p>
+<ul>
+<li><code>rustls-with-native-roots</code> - <a href="https://github.com/rustls/rustls">Rustls</a> (a TLS library in Rust) with native roots</li>
+<li><code>rustls-with-webpki-roots</code> - Rustls with <a href="https://github.com/rustls/webpki">WebPKI</a> roots</li>
+<li><code>native-tls</code> - Native TLS
+<ul>
+<li>SChannel on Windows</li>
+<li>Secure Transport on macOS</li>
+<li>OpenSSL on other platforms</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-toml">[updates]
+tls_backend = &quot;native-tls&quot;
 </code></pre>
 
                     </main>
@@ -188,7 +225,7 @@ auto_update_interval_hours = 24
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="config_style.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="config_search.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
@@ -206,7 +243,7 @@ auto_update_interval_hours = 24
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="config_style.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="config_search.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - Tealdeer User Manual</title>
+        <title>Section: [search] - Tealdeer User Manual</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html" class="active">Introduction</a></li><li class="chapter-item expanded "><a href="installing.html"><strong aria-hidden="true">1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">2.</strong> Usage</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usage_custom_pages.html"><strong aria-hidden="true">2.1.</strong> Custom Pages and Patches</a></li></ol></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config_display.html"><strong aria-hidden="true">3.1.</strong> Section: [display]</a></li><li class="chapter-item expanded "><a href="config_style.html"><strong aria-hidden="true">3.2.</strong> Section: [style]</a></li><li class="chapter-item expanded "><a href="config_search.html"><strong aria-hidden="true">3.3.</strong> Section: [search]</a></li><li class="chapter-item expanded "><a href="config_updates.html"><strong aria-hidden="true">3.4.</strong> Section: [updates]</a></li><li class="chapter-item expanded "><a href="config_directories.html"><strong aria-hidden="true">3.5.</strong> Section: [directories]</a></li></ol></li><li class="chapter-item expanded "><a href="tips_and_tricks.html"><strong aria-hidden="true">4.</strong> Tips and Tricks</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="installing.html"><strong aria-hidden="true">1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">2.</strong> Usage</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usage_custom_pages.html"><strong aria-hidden="true">2.1.</strong> Custom Pages and Patches</a></li></ol></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config_display.html"><strong aria-hidden="true">3.1.</strong> Section: [display]</a></li><li class="chapter-item expanded "><a href="config_style.html"><strong aria-hidden="true">3.2.</strong> Section: [style]</a></li><li class="chapter-item expanded "><a href="config_search.html" class="active"><strong aria-hidden="true">3.3.</strong> Section: [search]</a></li><li class="chapter-item expanded "><a href="config_updates.html"><strong aria-hidden="true">3.4.</strong> Section: [updates]</a></li><li class="chapter-item expanded "><a href="config_directories.html"><strong aria-hidden="true">3.5.</strong> Section: [directories]</a></li></ol></li><li class="chapter-item expanded "><a href="tips_and_tricks.html"><strong aria-hidden="true">4.</strong> Tips and Tricks</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,26 +163,44 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#tealdeer-introduction" id="tealdeer-introduction">Tealdeer: Introduction</a></h1>
-<p>Tealdeer is a very fast implementation of
-<a href="https://github.com/tldr-pages/tldr">tldr</a> in Rust: Simplified, example based
-and community-driven man pages.</p>
-<p><img src="screenshot-default.png" alt="Screenshot" /></p>
-<p>This documentation shows how to install, use and configure tealdeer.</p>
-<h2><a class="header" href="#links" id="links">Links</a></h2>
+                        <h1><a class="header" href="#section-search" id="section-search">Section: [search]</a></h1>
+<p>This config section is used to configure the page search in the cache.
+The settings apply to <code>tldr &lt;page&gt;</code> and <code>tldr --list</code>.</p>
+<h2><a class="header" href="#languages" id="languages"><code>languages</code></a></h2>
+<p>The list of languages that should be considered when searching.
+If unspecified, the list of languages will be inferred from the <code>LANG</code> and <code>LANGUAGE</code> environment variables.
+Either way, the language used can be overwritten using the <code>--language</code> command line flag.</p>
+<pre><code class="language-toml">[search]
+# Show pages in German if available, otherwise show in English
+languages = [&quot;de&quot;, &quot;en&quot;]
+</code></pre>
+<h2><a class="header" href="#platforms" id="platforms"><code>platforms</code></a></h2>
+<p>The list of platforms that should be considered when searching.
+In addition to the platforms listed in the help text of the <code>--platform</code> flag, there are two special platforms available:</p>
 <ul>
-<li><a href="https://github.com/tealdeer-rs/tealdeer">GitHub Project Page</a></li>
-<li><a href="https://tldr.sh/">TLDR Pages Project</a></li>
+<li><code>&quot;current&quot;</code>: equals the platform that tealdeer was compiled for</li>
+<li><code>&quot;all&quot;</code>: adds all remaining platforms to the list</li>
 </ul>
+<p>Tealdeer searches the platforms in order of appearance in this list.
+The default list of platforms is <code>[&quot;current&quot;, &quot;common&quot;, &quot;all&quot;]</code>.
+The list of platforms can be overwritten using the <code>--platform</code> command line flag.</p>
+<pre><code class="language-toml">[search]
+# Search for linux and common, and then search windows before trying the remaining platforms
+platforms = [&quot;linux&quot;, &quot;common&quot;, &quot;windows&quot;, &quot;all&quot;]
+</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
+                            <a rel="prev" href="config_style.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
 
                         
-                            <a rel="next" href="installing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="config_updates.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -194,9 +212,13 @@ and community-driven man pages.</p>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
+                    <a rel="prev" href="config_style.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
 
                 
-                    <a rel="next" href="installing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="config_updates.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

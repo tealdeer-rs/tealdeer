@@ -1,4 +1,4 @@
-tealdeer 1.7.2: A fast TLDR client
+tealdeer 1.8.0: A fast TLDR client
 Danilo Bargen <mail@dbrgn.ch>, Niklas Mohrin <dev@niklasmohrin.de>
 
 Usage: tldr [OPTIONS] [COMMAND]...
@@ -8,14 +8,17 @@ Arguments:
 
 Options:
   -l, --list                 List all commands in the cache
+      --edit-page            Edit custom page with `EDITOR`
+      --edit-patch           Edit custom patch with `EDITOR`
   -f, --render <FILE>        Render a specific markdown file
   -p, --platform <PLATFORM>  Override the operating system, can be specified multiple times in order
                              of preference [possible values: linux, macos, sunos, windows, android,
-                             freebsd, netbsd, openbsd]
+                             freebsd, netbsd, openbsd, common]
   -L, --language <LANGUAGE>  Override the language
   -u, --update               Update the local cache
       --no-auto-update       If auto update is configured, disable it for this run
   -c, --clear-cache          Clear the local cache
+      --config-path <FILE>   Override config file location
       --pager                Use a pager to page output
   -r, --raw                  Display the raw markdown instead of rendering it
   -q, --quiet                Suppress informational messages

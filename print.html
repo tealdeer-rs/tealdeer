@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="installing.html"><strong aria-hidden="true">1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">2.</strong> Usage</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usage_custom_pages.html"><strong aria-hidden="true">2.1.</strong> Custom Pages and Patches</a></li></ol></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config_display.html"><strong aria-hidden="true">3.1.</strong> Section: [display]</a></li><li class="chapter-item expanded "><a href="config_style.html"><strong aria-hidden="true">3.2.</strong> Section: [style]</a></li><li class="chapter-item expanded "><a href="config_updates.html"><strong aria-hidden="true">3.3.</strong> Section: [updates]</a></li><li class="chapter-item expanded "><a href="config_directories.html"><strong aria-hidden="true">3.4.</strong> Section: [directories]</a></li></ol></li><li class="chapter-item expanded "><a href="tips_and_tricks.html"><strong aria-hidden="true">4.</strong> Tips and Tricks</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="installing.html"><strong aria-hidden="true">1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">2.</strong> Usage</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usage_custom_pages.html"><strong aria-hidden="true">2.1.</strong> Custom Pages and Patches</a></li></ol></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config_display.html"><strong aria-hidden="true">3.1.</strong> Section: [display]</a></li><li class="chapter-item expanded "><a href="config_style.html"><strong aria-hidden="true">3.2.</strong> Section: [style]</a></li><li class="chapter-item expanded "><a href="config_search.html"><strong aria-hidden="true">3.3.</strong> Section: [search]</a></li><li class="chapter-item expanded "><a href="config_updates.html"><strong aria-hidden="true">3.4.</strong> Section: [updates]</a></li><li class="chapter-item expanded "><a href="config_directories.html"><strong aria-hidden="true">3.5.</strong> Section: [directories]</a></li></ol></li><li class="chapter-item expanded "><a href="tips_and_tricks.html"><strong aria-hidden="true">4.</strong> Tips and Tricks</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -209,17 +209,17 @@ autocompletions</a>.</p>
 Simply download the binary for your platform and run it!</p>
 <h2><a class="header" href="#through-cargo-install" id="through-cargo-install">Through <code>cargo install</code></a></h2>
 <p>Build and install the tool via cargo...</p>
-<pre><code>$ cargo install tealdeer
+<pre><code class="language-shell">$ cargo install tealdeer
 </code></pre>
 <h2><a class="header" href="#build-from-source" id="build-from-source">Build From Source</a></h2>
 <p>Release build:</p>
-<pre><code>$ cargo build --release
+<pre><code class="language-shell">$ cargo build --release
 </code></pre>
-<p>Release build with bundled CA roots:</p>
-<pre><code>$ cargo build --release --no-default-features --features webpki-roots
+<p>Release build with native TLS support:</p>
+<pre><code class="language-shell">$ cargo build --release --features native-tls
 </code></pre>
 <p>Debug build with logging support:</p>
-<pre><code>$ cargo build --features logging
+<pre><code class="language-shell">$ cargo build --features logging
 </code></pre>
 <p>(To enable logging at runtime, export the <code>RUST_LOG=tldr=debug</code> env variable.)</p>
 <h2><a class="header" href="#autocompletion" id="autocompletion">Autocompletion</a></h2>
@@ -234,7 +234,7 @@ Just copy them to their designated location:</p>
 <p>Tealdeer is straightforward to use, through the binary named <code>tldr</code>.</p>
 <p>You can view the available options using <code>tldr --help</code>:</p>
 <!-- Note: To update the file below, run `cargo run -- --help > docs/src/usage.txt`. -->
-<pre><code>tealdeer 1.7.2: A fast TLDR client
+<pre><code>tealdeer 1.8.0: A fast TLDR client
 Danilo Bargen &lt;mail@dbrgn.ch&gt;, Niklas Mohrin &lt;dev@niklasmohrin.de&gt;
 
 Usage: tldr [OPTIONS] [COMMAND]...
@@ -244,14 +244,17 @@ Arguments:
 
 Options:
   -l, --list                 List all commands in the cache
+      --edit-page            Edit custom page with `EDITOR`
+      --edit-patch           Edit custom patch with `EDITOR`
   -f, --render &lt;FILE&gt;        Render a specific markdown file
   -p, --platform &lt;PLATFORM&gt;  Override the operating system, can be specified multiple times in order
                              of preference [possible values: linux, macos, sunos, windows, android,
-                             freebsd, netbsd, openbsd]
+                             freebsd, netbsd, openbsd, common]
   -L, --language &lt;LANGUAGE&gt;  Override the language
   -u, --update               Update the local cache
       --no-auto-update       If auto update is configured, disable it for this run
   -c, --clear-cache          Clear the local cache
+      --config-path &lt;FILE&gt;   Override config file location
       --pager                Use a pager to page output
   -r, --raw                  Display the raw markdown instead of rendering it
   -q, --quiet                Suppress informational messages
@@ -287,10 +290,10 @@ tldr page with one that's better suited for you, place a file with the name
 <code>&lt;command&gt;.page.md</code> in the custom pages directory. When calling <code>tldr &lt;command&gt;</code>,
 your custom page will be shown instead of the upstream version in the cache.</p>
 <p>Path:</p>
-<pre><code>$CUSTOM_PAGES_DIR/&lt;command&gt;.page.md
+<pre><code class="language-plain">$CUSTOM_PAGES_DIR/&lt;command&gt;.page.md
 </code></pre>
 <p>Example:</p>
-<pre><code>~/.local/share/tealdeer/pages/ufw.page.md
+<pre><code class="language-plain">~/.local/share/tealdeer/pages/ufw.page.md
 </code></pre>
 <h2><a class="header" href="#custom-patches" id="custom-patches">Custom Patches</a></h2>
 <p>Sometimes you don't want to fully replace an existing upstream page, but just
@@ -298,10 +301,10 @@ want to extend it with your own examples that you frequently need. In this
 case, use a file called <code>&lt;command&gt;.patch.md</code>, it will be appended to existing
 pages.</p>
 <p>Path:</p>
-<pre><code>$CUSTOM_PAGES_DIR/&lt;command&gt;.patch.md
+<pre><code class="language-plain">$CUSTOM_PAGES_DIR/&lt;command&gt;.patch.md
 </code></pre>
 <p>Example:</p>
-<pre><code>~/.local/share/tealdeer/pages/ufw.patch.md
+<pre><code class="language-plain">~/.local/share/tealdeer/pages/ufw.patch.md
 </code></pre>
 <h1><a class="header" href="#configuration" id="configuration">Configuration</a></h1>
 <p>Tealdeer can be customized with a config file in <a href="https://toml.io/">TOML
@@ -310,21 +313,22 @@ format</a> called <code>config.toml</code>.</p>
 <p>The configuration file path follows OS conventions (e.g.
 <code>$XDG_CONFIG_HOME/tealdeer/config.toml</code> on Linux). The paths can be queried
 with the following command:</p>
-<pre><code>$ tldr --show-paths
+<pre><code class="language-shell">$ tldr --show-paths
 </code></pre>
 <p>Creating the config file can be done manually or with the help of <code>tldr</code>:</p>
-<pre><code>$ tldr --seed-config
+<pre><code class="language-shell">$ tldr --seed-config
 </code></pre>
 <p>On Linux, this will usually be <code>~/.config/tealdeer/config.toml</code>.</p>
 <h2><a class="header" href="#config-example" id="config-example">Config Example</a></h2>
 <p>Here's an example configuration file. Note that this example does not contain
 all possible config options. For details on the things that can be configured,
 please refer to the subsections of this documentation page
-(<a href="config_display.html">display</a>, <a href="config_style.html">style</a>,
+(<a href="config_display.html">display</a>, <a href="config_style.html">style</a>, <a href="config_search.html">search</a>,
 <a href="config_updates.html">updates</a> or <a href="config_directories.html">directories</a>).</p>
 <pre><code class="language-toml">[display]
 compact = false
 use_pager = true
+show_title = false
 
 [style.command_name]
 foreground = &quot;red&quot;
@@ -350,7 +354,7 @@ Variable expansion will not be performed on the path.</p>
 <p>In the <code>display</code> section you can configure the output format.</p>
 <h2><a class="header" href="#use_pager" id="use_pager"><code>use_pager</code></a></h2>
 <p>Specifies whether the pager should be used by default or not (default <code>false</code>).</p>
-<pre><code>[display]
+<pre><code class="language-toml">[display]
 use_pager = true
 </code></pre>
 <p>When enabled, <code>less -R</code> is used as pager. To override the pager command used,
@@ -359,9 +363,16 @@ set the <code>PAGER</code> environment variable.</p>
 <h2><a class="header" href="#compact" id="compact"><code>compact</code></a></h2>
 <p>Set this to enforce more compact output, where empty lines are stripped out
 (default <code>false</code>).</p>
-<pre><code>[display]
+<pre><code class="language-toml">[display]
 compact = true
 </code></pre>
+<h2><a class="header" href="#show_title" id="show_title"><code>show_title</code></a></h2>
+<p>Display the command name at the top of the page output (default <code>false</code>).</p>
+<pre><code class="language-toml">[display]
+show_title = true
+</code></pre>
+<p>When enabled, the command name will be displayed at the top of the output,
+styled with the <code>command_name</code> style configuration.</p>
 <h1><a class="header" href="#section-style" id="section-style">Section: [style]</a></h1>
 <p>Using the config file, the style (e.g. colors or underlines) can be customized.</p>
 <img src="screenshot-custom.png" alt="Screenshot of customized version" width="600">
@@ -386,23 +397,49 @@ compact = true
 <li>
 <p>Color string (<code>black</code>, <code>red</code>, <code>green</code>, <code>yellow</code>, <code>blue</code>, <code>magenta</code>, <code>cyan</code>, <code>white</code>):</p>
 <p>Example:</p>
-<pre><code>foreground = &quot;green&quot;
+<pre><code class="language-toml">foreground = &quot;green&quot;
 </code></pre>
 </li>
 <li>
 <p>256 color ANSI code (<em>tealdeer v1.5.0+</em>)</p>
 <p>Example:</p>
-<pre><code>foreground = { ansi = 4 }
+<pre><code class="language-toml">foreground = { ansi = 4 }
 </code></pre>
 </li>
 <li>
 <p>24-bit RGB color (<em>tealdeer v1.5.0+</em>)</p>
 <p>Example:</p>
-<pre><code>background = { rgb = { r = 255, g = 255, b = 255 } }
+<pre><code class="language-toml">background = { rgb = { r = 255, g = 255, b = 255 } }
 </code></pre>
 </li>
 </ul>
+<h1><a class="header" href="#section-search" id="section-search">Section: [search]</a></h1>
+<p>This config section is used to configure the page search in the cache.
+The settings apply to <code>tldr &lt;page&gt;</code> and <code>tldr --list</code>.</p>
+<h2><a class="header" href="#languages" id="languages"><code>languages</code></a></h2>
+<p>The list of languages that should be considered when searching.
+If unspecified, the list of languages will be inferred from the <code>LANG</code> and <code>LANGUAGE</code> environment variables.
+Either way, the language used can be overwritten using the <code>--language</code> command line flag.</p>
+<pre><code class="language-toml">[search]
+# Show pages in German if available, otherwise show in English
+languages = [&quot;de&quot;, &quot;en&quot;]
+</code></pre>
+<h2><a class="header" href="#platforms" id="platforms"><code>platforms</code></a></h2>
+<p>The list of platforms that should be considered when searching.
+In addition to the platforms listed in the help text of the <code>--platform</code> flag, there are two special platforms available:</p>
+<ul>
+<li><code>&quot;current&quot;</code>: equals the platform that tealdeer was compiled for</li>
+<li><code>&quot;all&quot;</code>: adds all remaining platforms to the list</li>
+</ul>
+<p>Tealdeer searches the platforms in order of appearance in this list.
+The default list of platforms is <code>[&quot;current&quot;, &quot;common&quot;, &quot;all&quot;]</code>.
+The list of platforms can be overwritten using the <code>--platform</code> command line flag.</p>
+<pre><code class="language-toml">[search]
+# Search for linux and common, and then search windows before trying the remaining platforms
+platforms = [&quot;linux&quot;, &quot;common&quot;, &quot;windows&quot;, &quot;all&quot;]
+</code></pre>
 <h1><a class="header" href="#section-updates" id="section-updates">Section: [updates]</a></h1>
+<p>This config section contains settings related to updating the tealdeer cache.</p>
 <h2><a class="header" href="#automatic-updates" id="automatic-updates">Automatic updates</a></h2>
 <p>Tealdeer can refresh the cache automatically when it is outdated. This
 behavior can be configured in the <code>updates</code> section and is disabled by
@@ -410,16 +447,52 @@ default.</p>
 <h3><a class="header" href="#auto_update" id="auto_update"><code>auto_update</code></a></h3>
 <p>Specifies whether the auto-update feature should be enabled (defaults to
 <code>false</code>).</p>
-<pre><code>[updates]
+<pre><code class="language-toml">[updates]
 auto_update = true
 </code></pre>
 <h3><a class="header" href="#auto_update_interval_hours" id="auto_update_interval_hours"><code>auto_update_interval_hours</code></a></h3>
 <p>Duration, since the last cache update, after which the cache will be
 refreshed (defaults to 720 hours). This parameter is ignored if <code>auto_update</code>
 is set to <code>false</code>.</p>
-<pre><code>[updates]
+<pre><code class="language-toml">[updates]
 auto_update = true
 auto_update_interval_hours = 24
+</code></pre>
+<h2><a class="header" href="#download-configuration" id="download-configuration">Download configuration</a></h2>
+<h3><a class="header" href="#download_languages" id="download_languages"><code>download_languages</code></a></h3>
+<p>The list of languages which should be downloaded when updating.
+If unspecified, the languages listed in the <code>search.languages</code> setting are used.
+Thus, this setting is the most useful to instruct tealdeer to download pages in additional languages that are not searched by default.
+Either way, the language used can be overwritten using the <code>--language</code> command line flag.</p>
+<pre><code class="language-toml">[search]
+languages = [&quot;de&quot;, &quot;en&quot;]
+
+[updates]
+# sometimes I like to read the Italian description
+download_languages = [&quot;de&quot;, &quot;en&quot;, &quot;it&quot;]
+</code></pre>
+<h3><a class="header" href="#archive_source" id="archive_source"><code>archive_source</code></a></h3>
+<p>URL for the location of the tldr pages archive. By default the pages are
+fetched from the latest <code>tldr-pages/tldr</code> GitHub release.</p>
+<pre><code class="language-toml">[updates]
+archive_source = &quot;https://my-company.example.com/tldr/&quot;
+</code></pre>
+<h3><a class="header" href="#tls_backend" id="tls_backend"><code>tls_backend</code></a></h3>
+<p>Specifies which TLS backend to use. Try changing this setting if you encounter certificate errors.</p>
+<p>Available options:</p>
+<ul>
+<li><code>rustls-with-native-roots</code> - <a href="https://github.com/rustls/rustls">Rustls</a> (a TLS library in Rust) with native roots</li>
+<li><code>rustls-with-webpki-roots</code> - Rustls with <a href="https://github.com/rustls/webpki">WebPKI</a> roots</li>
+<li><code>native-tls</code> - Native TLS
+<ul>
+<li>SChannel on Windows</li>
+<li>Secure Transport on macOS</li>
+<li>OpenSSL on other platforms</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-toml">[updates]
+tls_backend = &quot;native-tls&quot;
 </code></pre>
 <h1><a class="header" href="#section-directories" id="section-directories">Section: [directories]</a></h1>
 <p>This section allows overriding some directory paths.</p>
@@ -427,7 +500,7 @@ auto_update_interval_hours = 24
 <p>Override the cache directory. Remember to use an absolute path. Variable
 expansion will not be performed on the path. If the directory does not yet
 exist, it will be created.</p>
-<pre><code>[directories]
+<pre><code class="language-toml">[directories]
 cache_dir = &quot;/home/myuser/.tealdeer-cache/&quot;
 </code></pre>
 <p>If no <code>cache_dir</code> is specified, tealdeer will fall back to a location that
@@ -437,7 +510,7 @@ Use <code>tldr --show-paths</code> to show the path that is being used.</p>
 <p>Set the directory to be used to look up <a href="usage_custom_pages.html">custom
 pages</a>. Remember to use an absolute path. Variable
 expansion will not be performed on the path.</p>
-<pre><code>[directories]
+<pre><code class="language-toml">[directories]
 custom_pages_dir = &quot;/home/myuser/custom-tldr-pages/&quot;
 </code></pre>
 <h1><a class="header" href="#tips-and-tricks" id="tips-and-tricks">Tips and Tricks</a></h1>
