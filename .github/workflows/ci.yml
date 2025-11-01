@@ -39,7 +39,7 @@ jobs:
           # expects runners have the proper Native SSL library
           cargo build --features native-tls --no-default-features
           cp target/debug/tldr${{ matrix.exe_suffix}} artifacts/tldr-native-tls${{ matrix.exe_suffix}}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: tldr-debug-build-${{ matrix.platform }}-rust-${{ matrix.toolchain }}
           path: artifacts/
