@@ -13,6 +13,16 @@ Possible log types:
 - `[docs]` for documentation changes.
 - `[chore]` for maintenance work.
 
+### [v1.8.1][v1.8.1] (2025-11-11)
+
+This patch release tweaks the enabled features for ureq, the library we use to
+perform HTTP requests when updating the cache. In particular, support for socks
+proxies is now enabled.
+
+#### Changes:
+
+- [added] Enable ureq's socks-proxy feature ([#451])
+
 ### [v1.8.0][v1.8.0] (2025-10-03)
 
 One year and one day have passed since tealdeer version 1.7.0 was released, so
@@ -562,6 +572,7 @@ Thanks!
 [v1.7.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.7.0...v1.7.1
 [v1.7.2]: https://github.com/tealdeer-rs/tealdeer/compare/v1.7.1...v1.7.2
 [v1.8.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.7.2...v1.8.0
+[v1.8.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.8.0...v1.8.1
 
 [i34]: https://github.com/tealdeer-rs/tealdeer/issues/34
 [i43]: https://github.com/tealdeer-rs/tealdeer/issues/43
@@ -667,3 +678,4 @@ Thanks!
 [#436]: https://github.com/tealdeer-rs/tealdeer/pull/436
 [#439]: https://github.com/tealdeer-rs/tealdeer/pull/439
 [#440]: https://github.com/tealdeer-rs/tealdeer/pull/440
+[#451]: https://github.com/tealdeer-rs/tealdeer/pull/451
