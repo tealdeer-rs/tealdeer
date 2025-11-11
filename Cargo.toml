@@ -27,7 +27,7 @@ env_logger = { version = "0.11", optional = true }
 log = "0.4"
 serde = "1.0.21"
 serde_derive = "1.0.21"
-ureq = { version = "3.0.8", default-features = false, features = ["gzip"] }
+ureq = { version = "3.0.8", default-features = false, features = ["gzip", "socks-proxy"] }
 toml = "0.8.19"
 yansi = "1"
 zip = { version = "5.1.1", default-features = false, features = ["deflate"] }
