@@ -1447,3 +1447,217 @@ fn test_custom_pages_dir_is_not_dir() {
         .assert()
         .failure();
 }
+
+#[test]
+fn test_platform_and_language_precedence() {
+    struct Case<'a> {
+        // Test case name.
+        name: &'a str,
+        // Pages to create, as a vec of (platform, language, contents).
+        pages: Vec<(&'a str, &'a str, &'a str)>,
+        // Command-line arguments.
+        args: Vec<&'a str>,
+        // Environment variables.
+        env: Vec<(&'a str, &'a str)>,
+        // Expected output.
+        expected_content: &'a str,
+    }
+
+    let cases = vec![
+        Case {
+            name: "platform_vs_language_precedence",
+            pages: vec![
+                // Page doesn't exist for linux/de, but does for common/de
+                ("common", "de", "German common version"),
+                // Page also exists for linux/en
+                ("linux", "en", "English linux version"),
+            ],
+            args: vec![
+                "--language",
+                "de",
+                "--platform",
+                "linux",
+                "--platform",
+                "osx",
+            ],
+            env: vec![],
+            expected_content: "German common version",
+        },
+        Case {
+            name: "deep_search_succeeds",
+            pages: vec![("osx", "en", "English osx version")],
+            args: vec!["--platform", "linux", "--platform", "osx"],
+            env: vec![("LANGUAGE", "de:fr"), ("LANG", "en")],
+            expected_content: "English osx version",
+        },
+    ];
+
+    for case in cases {
+        let testenv = TestEnv::new();
+        let cmd_name = "my-cmd";
+
+        for (platform, lang, content) in &case.pages {
+            testenv.add_os_lang_entry(platform, lang, cmd_name, content);
+        }
+
+        let mut command = testenv.command();
+        command.args(["--raw"]);
+        command.args(&case.args);
+        for (key, val) in &case.env {
+            command.env(key, val);
+        }
+        command.arg(cmd_name);
+
+        command
+            .assert()
+            .success()
+            .stdout(contains(case.expected_content));
+        println!("Test case '{}' passed.", case.name);
+    }
+}
+
+#[test]
+fn test_platform_and_language_precedence_config() {
+    #[derive(Debug)]
+    enum ExitCode {
+        PageNotFound,
+    }
+
+    struct ConfigTestCase<'a> {
+        name: &'a str,
+        config: &'a str,
+        env: Vec<(&'a str, &'a str)>,
+        args: Vec<&'a str>,
+        pages: Vec<(&'a str, &'a str, &'a str)>,
+        custom_pages: Vec<(&'a str, &'a str)>,
+        expected: Result<&'a str, ExitCode>,
+    }
+
+    let cases = vec![
+        ConfigTestCase {
+            name: "search_platforms_fail",
+            config: "[search]\nplatforms = [\"linux\"]",
+            pages: vec![("sunos", "en", "SunOS version")],
+            args: vec!["my-cmd"],
+            env: vec![],
+            custom_pages: vec![],
+            expected: Err(ExitCode::PageNotFound),
+        },
+        ConfigTestCase {
+            name: "search_platforms_succeed_with_all",
+            config: "[search]\nplatforms = [\"linux\", \"all\"]",
+            pages: vec![("sunos", "en", "SunOS version")],
+            args: vec!["my-cmd"],
+            env: vec![],
+            custom_pages: vec![],
+            expected: Ok("SunOS version"),
+        },
+        ConfigTestCase {
+            name: "config_language_precedence_over_env",
+            config: "[search]\nlanguages = [\"fr\"]",
+            pages: vec![
+                ("common", "de", "German version"),
+                ("common", "fr", "French version"),
+            ],
+            args: vec!["my-cmd"],
+            env: vec![("LANG", "de")],
+            custom_pages: vec![],
+            expected: Ok("French version"),
+        },
+        ConfigTestCase {
+            name: "lang_and_language_env_vars_behavior",
+            config: "",
+            pages: vec![
+                ("common", "de", "German version"),
+                ("common", "en", "English version"),
+            ],
+            args: vec!["my-cmd"],
+            env: vec![("LANGUAGE", "de")],
+            custom_pages: vec![],
+            expected: Ok("English version"),
+        },
+        ConfigTestCase {
+            name: "cli_overrides_config",
+            config: "[search]\nplatforms = [\"linux\"]\nlanguages = [\"de\"]",
+            pages: vec![("osx", "fr", "fr osx"), ("linux", "de", "de linux")],
+            args: vec!["my-cmd", "--platform", "osx", "--language", "fr"],
+            env: vec![],
+            custom_pages: vec![],
+            expected: Ok("fr osx"),
+        },
+        ConfigTestCase {
+            name: "platform_search_order",
+            config: "[search]\nplatforms = [\"windows\", \"common\", \"linux\"]",
+            pages: vec![("linux", "en", "linux"), ("windows", "en", "windows")],
+            args: vec!["my-cmd"],
+            env: vec![],
+            custom_pages: vec![],
+            expected: Ok("windows"),
+        },
+        ConfigTestCase {
+            name: "downloaded_but_unsearched_lang",
+            config:
+                "[search]\nlanguages = [\"en\"]\n[updates]\ndownload_languages = [\"en\", \"de\"]",
+            pages: vec![("common", "de", "de")],
+            args: vec!["my-cmd"],
+            env: vec![],
+            custom_pages: vec![],
+            expected: Err(ExitCode::PageNotFound),
+        },
+        ConfigTestCase {
+            name: "custom_page_override",
+            config: "directories.custom_pages_dir = \"%%CUSTOM_PAGES_DIR%%\"",
+            pages: vec![("linux", "en", "cached page")],
+            custom_pages: vec![("my-cmd.page.md", "custom page")],
+            args: vec!["my-cmd", "--platform", "linux"],
+            env: vec![],
+            expected: Ok("custom page"),
+        },
+    ];
+
+    for case in cases {
+        let testenv = TestEnv::new();
+        testenv.delete_config();
+        testenv.init_config();
+
+        let custom_pages_dir_str = testenv
+            .custom_pages_dir()
+            .to_str()
+            .unwrap()
+            .replace('\\', "/");
+        let config_str = case
+            .config
+            .replace("%%CUSTOM_PAGES_DIR%%", &custom_pages_dir_str);
+        testenv.append_to_config(&config_str);
+
+        let cmd_name = case.args[0];
+
+        for (platform, lang, content) in &case.pages {
+            testenv.add_os_lang_entry(platform, lang, cmd_name, content);
+        }
+
+        for (file_name, content) in &case.custom_pages {
+            let dir = &testenv.custom_pages_dir();
+            create_dir_all(dir).unwrap();
+            fs::write(dir.join(file_name), content.as_bytes()).unwrap();
+        }
+
+        let mut command = testenv.command();
+        command.args(["--raw"]);
+        command.args(&case.args);
+        for (key, val) in &case.env {
+            command.env(key, val);
+        }
+
+        let assert = command.assert();
+        match case.expected {
+            Ok(expected_content) => {
+                assert.success().stdout(contains(expected_content));
+            }
+            Err(ExitCode::PageNotFound) => {
+                assert.failure().stderr(contains("not found in cache"));
+            }
+        }
+        println!("Test case '{}' passed.", case.name);
+    }
+}
