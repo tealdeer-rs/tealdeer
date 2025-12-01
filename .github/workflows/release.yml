@@ -8,7 +8,7 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Create release for tag
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -24,7 +24,7 @@ jobs:
       matrix:
         target: ["bash", "fish", "zsh"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Upload completion
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -40,7 +40,7 @@ jobs:
       matrix:
         target: ["MIT", "APACHE"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Upload license
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -66,7 +66,7 @@ jobs:
           - arch: "arm"
             libc: "musleabihf"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Pull Docker image
         run: docker pull messense/rust-musl-cross:${{ matrix.arch }}-${{ matrix.libc }}
       - name: Build in Docker
@@ -86,7 +86,7 @@ jobs:
           - arch: "x86_64"
           - arch: "aarch64"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -102,7 +102,7 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -134,7 +134,7 @@ jobs:
           - macos-aarch64
           - windows-x86_64-msvc
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/download-artifact@v6
       - name: Upload binary
         if: startsWith(github.ref, 'refs/tags/')
