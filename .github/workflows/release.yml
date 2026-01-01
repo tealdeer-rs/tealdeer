@@ -135,7 +135,7 @@ jobs:
           - windows-x86_64-msvc
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
       - name: Upload binary
         if: startsWith(github.ref, 'refs/tags/')
         run: |
