@@ -3,6 +3,7 @@ use std::{
     fs::{self, File},
     io::{ErrorKind, Write},
     path::{Path, PathBuf},
+    str::FromStr,
     sync::LazyLock,
     time::Duration,
 };
@@ -583,9 +584,33 @@ pub struct ConfigLoader {
 }
 
 impl ConfigLoader {
-    fn read_internal(path: PathWithSource, allow_not_found: bool) -> Result<Self> {
-        match fs::read_to_string(&path.path) {
-            Ok(content) => Ok(Self {
+    fn read_internal(
+        path: PathWithSource,
+        allow_not_found: bool,
+        override_str: Option<String>,
+    ) -> Result<Self> {
+        match (fs::read_to_string(&path.path), override_str) {
+            (Ok(content), Some(override_str)) => {
+                let mut config_table = toml::Table::from_str(&content).with_context(|| {
+                    format!(
+                        "Could not parse config file contents as toml from {}.",
+                        path.path.display()
+                    )
+                })?;
+
+                let override_config_table =
+                    toml::Table::from_str(&override_str).with_context(|| {
+                        format!("Could not parse override-config string as toml: {override_str}")
+                    })?;
+
+                Self::override_config_with(&mut config_table, override_config_table);
+
+                Ok(Self {
+                    raw: config_table.try_into()?,
+                    path,
+                })
+            }
+            (Ok(content), None) => Ok(Self {
                 raw: toml::from_str(&content).with_context(|| {
                     format!(
                         "Could not parse config file contents as toml from {}.",
@@ -594,33 +619,63 @@ impl ConfigLoader {
                 })?,
                 path,
             }),
-            Err(e) if allow_not_found && e.kind() == ErrorKind::NotFound => Ok(Self {
+            (Err(e), Some(override_str)) if allow_not_found && e.kind() == ErrorKind::NotFound => {
+                let default_override_config = toml::from_str(&override_str).with_context(|| {
+                    format!("Could not parse override-config string as toml: {override_str}")
+                })?;
+                Ok(Self {
+                    raw: default_override_config,
+                    path,
+                })
+            }
+            (Err(e), None) if allow_not_found && e.kind() == ErrorKind::NotFound => Ok(Self {
                 raw: RawConfig::default(),
                 path,
             }),
-            Err(e) => Err(e).context(format!(
+            (Err(e), _) => Err(e).context(format!(
                 "Could not read config file contents from {}.",
                 path.path().display()
             )),
         }
     }
 
+    fn override_config_with(config_table: &mut toml::Table, override_config_table: toml::Table) {
+        for (key, override_value) in override_config_table {
+            let Some(entry) = config_table.get_mut(&key) else {
+                config_table.insert(key, override_value);
+                continue;
+            };
+
+            match (entry, override_value) {
+                (toml::Value::Table(entry_table), toml::Value::Table(override_table)) => {
+                    Self::override_config_with(entry_table, override_table);
+                }
+                (entry, override_value) => {
+                    *entry = override_value;
+                }
+            }
+        }
+    }
+
     /// Create a loader that uses the config at `path`.
-    pub fn read(path: PathBuf) -> Result<Self> {
+    /// `override_str`: If set, overrides the default value of the config
+    pub fn read(path: PathBuf, override_str: Option<String>) -> Result<Self> {
         Self::read_internal(
             PathWithSource {
                 path,
                 source: PathSource::Cli,
             },
             false,
+            override_str,
         )
     }
 
     /// Create a loader that uses the default config file location. If no file is present at the default location, the
     /// default configuration is used.
-    pub fn read_default_path() -> Result<Self> {
+    /// `override_str`: If set, overrides the default value of the config
+    pub fn read_default_path(override_str: Option<String>) -> Result<Self> {
         let path = get_default_config_path().context("Could not determine default config path.")?;
-        Self::read_internal(path, true)
+        Self::read_internal(path, true, override_str)
     }
 
     /// Parse the read [`RawConfig`] into a [`Config`].
@@ -742,6 +797,110 @@ mod test {
             config.directories.custom_pages_dir.unwrap().path(),
             Path::new("/path/to/config/../custom_pages")
         );
+    }
+
+    mod override_config {
+        use super::*;
+
+        fn base_config() -> toml::Table {
+            toml::Table::from_str(
+                "
+            global_value = false
+
+            [some]
+            value = 0
+
+            [some.inner]
+            value1 = 1
+            value2 = \"a string\"
+
+            [some.other]
+            value1 = 3
+            value2 = [ 1, \"text\", true ]
+            ",
+            )
+            .unwrap()
+        }
+
+        #[test]
+        fn add_value() {
+            let mut original_config = base_config();
+            let override_config = toml::Table::from_str("some.new.value = 'new text'").unwrap();
+
+            ConfigLoader::override_config_with(&mut original_config, override_config);
+
+            assert_eq!(
+                original_config["some"]["value"].as_integer().unwrap(),
+                0
+            );
+
+            assert_eq!(
+                original_config["some"]["inner"]["value1"].as_integer().unwrap(),
+                1
+            );
+
+            assert_eq!(
+                original_config["some"]["inner"]["value2"].as_str().unwrap(),
+                "a string"
+            );
+
+            assert_eq!(
+                original_config["some"]["other"]["value1"]
+                    .as_integer()
+                    .unwrap(),
+                3,
+            );
+
+            let v2array = original_config["some"]["other"]["value2"]
+                .as_array()
+                .unwrap();
+            assert_eq!(v2array[0].as_integer().unwrap(), 1);
+            assert_eq!(v2array[1].as_str().unwrap(), "text");
+            assert_eq!(v2array[2].as_bool().unwrap(), true);
+
+            assert_eq!(original_config["global_value"].as_bool().unwrap(), false);
+
+            assert_eq!(original_config["some"]["new"]["value"].as_str().unwrap(), "new text");
+        }
+
+        #[test]
+        fn change_value() {
+            let mut original_config = base_config();
+            let override_config = toml::Table::from_str("some.inner.value1 = 'some text'").unwrap();
+
+            ConfigLoader::override_config_with(&mut original_config, override_config);
+
+            assert_eq!(
+                original_config["some"]["value"].as_integer().unwrap(),
+                0
+            );
+
+            assert_eq!(
+                original_config["some"]["inner"]["value1"].as_str().unwrap(),
+                "some text"
+            );
+
+            assert_eq!(
+                original_config["some"]["inner"]["value2"].as_str().unwrap(),
+                "a string"
+            );
+
+            assert_eq!(
+                original_config["some"]["other"]["value1"]
+                    .as_integer()
+                    .unwrap(),
+                3,
+            );
+
+            let v2array = original_config["some"]["other"]["value2"]
+                .as_array()
+                .unwrap();
+            assert_eq!(v2array[0].as_integer().unwrap(), 1);
+            assert_eq!(v2array[1].as_str().unwrap(), "text");
+            assert_eq!(v2array[2].as_bool().unwrap(), true);
+
+            assert_eq!(original_config["global_value"].as_bool().unwrap(), false);
+        }
     }
 
     mod language {

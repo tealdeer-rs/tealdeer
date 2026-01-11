@@ -205,10 +205,10 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     debug!("Loading config");
     let config_loader = match &args.config_path {
         Some(path) if !args.seed_config => {
-            ConfigLoader::read(path.clone()).context("Could not read config from given path")?
+            ConfigLoader::read(path.clone(), args.override_config).context("Could not read config from given path")?
         }
         _ => {
-            ConfigLoader::read_default_path().context("Could not read config from default path")?
+            ConfigLoader::read_default_path(args.override_config).context("Could not read config from default path")?
         }
     };
     let mut config = config_loader.load()?;
