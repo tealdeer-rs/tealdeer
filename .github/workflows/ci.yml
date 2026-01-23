@@ -1,90 +1,86 @@
+name: CI
 on:
   push:
     branches:
       - main
+      - "v*.x"
   pull_request:
   schedule:
     - cron: '30 3 * * 2'
-
-name: CI
+  workflow_dispatch:
 
 jobs:
-
   test:
     name: run tests
     strategy:
+      fail-fast: false
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [1.54, stable]
+        toolchain: [stable, 1.54]
+        include:
+          - platform: windows-latest
+            exe_suffix: .exe
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ matrix.rust }}
-          override: true
+          toolchain: ${{ matrix.toolchain }}
+      - run: mkdir artifacts
       - name: Build with default features
-        uses: actions-rs/cargo@v1
+        run: |
+          cargo build
+          cp target/debug/tldr${{ matrix.exe_suffix}} artifacts/tldr-default${{ matrix.exe_suffix}}
+      - name: Build with logging
+        run: |
+          cargo build --features logging --no-default-features
+          cp target/debug/tldr${{ matrix.exe_suffix}} artifacts/tldr-logging${{ matrix.exe_suffix}}
+      - uses: actions/upload-artifact@v5
         with:
-          command: build
-      - name: Build with all features
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --all-features
+          name: tldr-debug-build-${{ matrix.platform }}-rust-${{ matrix.toolchain }}
+          path: artifacts/
       - name: Run tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all-features
+        run: cargo test -- --test-threads 1
 
   clippy:
     name: run clippy lints
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: clippy
-          override: true
-      - uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features
+       - uses: actions/checkout@v5
+       - uses: dtolnay/rust-toolchain@master
+         with:
+           toolchain: stable
+           components: clippy
+       - name: run clippy lints
+         run: cargo clippy --features logging
 
   fmt:
     name: run rustfmt
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: 1.54
-        override: true
-    - run: rustup component add rustfmt
-    - uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --all -- --check
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: rustfmt
+      - name: run rustfmt
+        run: cargo fmt --all -- --check
 
   docs:
     name: build docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5
       - name: Setup mdBook
-        uses: peaceiris/actions-mdbook@v1
+        uses: peaceiris/actions-mdbook@v2
         with:
           mdbook-version: '0.4.4'
-      - uses: actions-rs/toolchain@v1
+      - name: Setup toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
-          override: true
+            toolchain: stable
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
+        run: cargo build
       - name: Ensure that docs can be built
         run: cd docs && mdbook build
       - name: Generate usage string
