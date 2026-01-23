@@ -1275,7 +1275,7 @@ dependencies = [
 
 [[package]]
 name = "tealdeer"
-version = "1.5.0"
+version = "1.5.1"
 dependencies = [
  "ansi_term",
  "app_dirs2",

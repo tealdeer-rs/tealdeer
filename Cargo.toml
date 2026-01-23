@@ -10,7 +10,7 @@ name = "tealdeer"
 readme = "README.md"
 repository = "https://github.com/dbrgn/tealdeer/"
 documentation = "https://dbrgn.github.io/tealdeer/"
-version = "1.5.0"
+version = "1.5.1"
 include = ["/src/**/*", "/tests/**/*", "/Cargo.toml", "/README.md", "/LICENSE-*", "/screenshot.png", "/bash_tealdeer", "/fish_tealdeer"]
 edition = "2018"
 

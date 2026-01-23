@@ -1,4 +1,4 @@
-tealdeer 1.5.0
+tealdeer 1.5.1
 Danilo Bargen <mail@dbrgn.ch>, Niklas Mohrin <dev@niklasmohrin.de>
 A fast TLDR client
 
