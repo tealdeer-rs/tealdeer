@@ -49,7 +49,7 @@ const APP_INFO: AppInfo = AppInfo {
     name: NAME,
     author: NAME,
 };
-const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
+const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/releases/latest/download/tldr.zip";
 
 // Note: flag names are specified explicitly in clap attributes
 // to improve readability and allow contributors to grep names like "clear-cache"
