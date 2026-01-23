@@ -55,7 +55,7 @@ const APP_INFO: AppInfo = AppInfo {
     name: NAME,
     author: NAME,
 };
-const ARCHIVE_URL: &str = "https://tldr.sh/assets/tldr.zip";
+const ARCHIVE_URL: &str = "https://github.com/tldr-pages/tldr/releases/latest/download/tldr.zip";
 
 /// The cache should be updated if it was explicitly requested,
 /// or if an automatic update is due and allowed.
