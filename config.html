@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="installing.html"><strong aria-hidden="true">1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">2.</strong> Usage</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usage_custom_pages.html"><strong aria-hidden="true">2.1.</strong> Custom Pages and Patches</a></li></ol></li><li class="chapter-item expanded "><a href="config.html" class="active"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config_display.html"><strong aria-hidden="true">3.1.</strong> Section: [display]</a></li><li class="chapter-item expanded "><a href="config_style.html"><strong aria-hidden="true">3.2.</strong> Section: [style]</a></li><li class="chapter-item expanded "><a href="config_search.html"><strong aria-hidden="true">3.3.</strong> Section: [search]</a></li><li class="chapter-item expanded "><a href="config_updates.html"><strong aria-hidden="true">3.4.</strong> Section: [updates]</a></li><li class="chapter-item expanded "><a href="config_directories.html"><strong aria-hidden="true">3.5.</strong> Section: [directories]</a></li></ol></li><li class="chapter-item expanded "><a href="tips_and_tricks.html"><strong aria-hidden="true">4.</strong> Tips and Tricks</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="installing.html"><strong aria-hidden="true">1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">2.</strong> Usage</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usage_custom_pages.html"><strong aria-hidden="true">2.1.</strong> Custom Pages and Patches</a></li></ol></li><li class="chapter-item expanded "><a href="config.html" class="active"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config_display.html"><strong aria-hidden="true">3.1.</strong> Section: [display]</a></li><li class="chapter-item expanded "><a href="config_style.html"><strong aria-hidden="true">3.2.</strong> Section: [style]</a></li><li class="chapter-item expanded "><a href="config_updates.html"><strong aria-hidden="true">3.3.</strong> Section: [updates]</a></li><li class="chapter-item expanded "><a href="config_directories.html"><strong aria-hidden="true">3.4.</strong> Section: [directories]</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -170,22 +170,21 @@ format</a> called <code>config.toml</code>.</p>
 <p>The configuration file path follows OS conventions (e.g.
 <code>$XDG_CONFIG_HOME/tealdeer/config.toml</code> on Linux). The paths can be queried
 with the following command:</p>
-<pre><code class="language-shell">$ tldr --show-paths
+<pre><code>$ tldr --show-paths
 </code></pre>
 <p>Creating the config file can be done manually or with the help of <code>tldr</code>:</p>
-<pre><code class="language-shell">$ tldr --seed-config
+<pre><code>$ tldr --seed-config
 </code></pre>
 <p>On Linux, this will usually be <code>~/.config/tealdeer/config.toml</code>.</p>
 <h2><a class="header" href="#config-example" id="config-example">Config Example</a></h2>
 <p>Here's an example configuration file. Note that this example does not contain
 all possible config options. For details on the things that can be configured,
 please refer to the subsections of this documentation page
-(<a href="config_display.html">display</a>, <a href="config_style.html">style</a>, <a href="config_search.html">search</a>,
+(<a href="config_display.html">display</a>, <a href="config_style.html">style</a>,
 <a href="config_updates.html">updates</a> or <a href="config_directories.html">directories</a>).</p>
 <pre><code class="language-toml">[display]
 compact = false
 use_pager = true
-show_title = false
 
 [style.command_name]
 foreground = &quot;red&quot;
@@ -207,6 +206,12 @@ auto_update = true
 <p>The directory where the configuration file resides may be overwritten by the
 environment variable <code>TEALDEER_CONFIG_DIR</code>. Remember to use an absolute path.
 Variable expansion will not be performed on the path.</p>
+<h2><a class="header" href="#override-cache-directory" id="override-cache-directory">Override Cache Directory</a></h2>
+<p>Similarly, the cache directory where the pages are downloaded to, also follows
+OS conventions. On Linux, it will usually be at <code>~/.cache/tealdeer/</code>. The path
+can be overwritten using the environment variable <code>TEALDEER_CACHE_DIR</code>.
+Remember to use an absolute path. Variable expansion will not be performed on
+the path.</p>
 
                     </main>
 
