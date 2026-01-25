@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - Tealdeer User Manual</title>
+        <title>Tips and Tricks - Tealdeer User Manual</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html" class="active">Introduction</a></li><li class="chapter-item expanded "><a href="installing.html"><strong aria-hidden="true">1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">2.</strong> Usage</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usage_custom_pages.html"><strong aria-hidden="true">2.1.</strong> Custom Pages and Patches</a></li></ol></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config_display.html"><strong aria-hidden="true">3.1.</strong> Section: [display]</a></li><li class="chapter-item expanded "><a href="config_style.html"><strong aria-hidden="true">3.2.</strong> Section: [style]</a></li><li class="chapter-item expanded "><a href="config_updates.html"><strong aria-hidden="true">3.3.</strong> Section: [updates]</a></li><li class="chapter-item expanded "><a href="config_directories.html"><strong aria-hidden="true">3.4.</strong> Section: [directories]</a></li></ol></li><li class="chapter-item expanded "><a href="tips_and_tricks.html"><strong aria-hidden="true">4.</strong> Tips and Tricks</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="installing.html"><strong aria-hidden="true">1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">2.</strong> Usage</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usage_custom_pages.html"><strong aria-hidden="true">2.1.</strong> Custom Pages and Patches</a></li></ol></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config_display.html"><strong aria-hidden="true">3.1.</strong> Section: [display]</a></li><li class="chapter-item expanded "><a href="config_style.html"><strong aria-hidden="true">3.2.</strong> Section: [style]</a></li><li class="chapter-item expanded "><a href="config_updates.html"><strong aria-hidden="true">3.3.</strong> Section: [updates]</a></li><li class="chapter-item expanded "><a href="config_directories.html"><strong aria-hidden="true">3.4.</strong> Section: [directories]</a></li></ol></li><li class="chapter-item expanded "><a href="tips_and_tricks.html" class="active"><strong aria-hidden="true">4.</strong> Tips and Tricks</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,28 +163,56 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#tealdeer-introduction" id="tealdeer-introduction">Tealdeer: Introduction</a></h1>
-<p>Tealdeer is a very fast implementation of
-<a href="https://github.com/tldr-pages/tldr">tldr</a> in Rust: Simplified, example based
-and community-driven man pages.</p>
-<p><img src="screenshot-default.png" alt="Screenshot" /></p>
-<p>This documentation shows how to install, use and configure tealdeer.</p>
-<h2><a class="header" href="#links" id="links">Links</a></h2>
-<ul>
-<li><a href="https://github.com/tealdeer-rs/tealdeer">GitHub Project Page</a></li>
-<li><a href="https://tldr.sh/">TLDR Pages Project</a></li>
-</ul>
+                        <h1><a class="header" href="#tips-and-tricks" id="tips-and-tricks">Tips and Tricks</a></h1>
+<p>This page features some example use cases of Tealdeer.</p>
+<h2><a class="header" href="#showing-a-random-page-on-shell-start" id="showing-a-random-page-on-shell-start">Showing a random page on shell start</a></h2>
+<p>To display a randomly selected page, you can invoke <code>tldr</code> twice: One time to
+select a page and a second time to display this page. To randomly select a page,
+we use <code>shuf</code> from the GNU coreutils:</p>
+<pre><code class="language-bash">tldr --quiet $(tldr --quiet --list | shuf -n1)
+</code></pre>
+<p>You can also add the above command to your <code>.bashrc</code> (or similar shell
+configuration file) to display a random page every time you start a new shell
+session.</p>
+<h2><a class="header" href="#displaying-all-pages-with-their-summary" id="displaying-all-pages-with-their-summary">Displaying all pages with their summary</a></h2>
+<p>If you want to extend the output of <code>tldr --list</code> with the first line summary of
+each page, you can run the following Python script:</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+
+import subprocess
+
+commands = subprocess.run(
+    [&quot;tldr&quot;, &quot;--quiet&quot;, &quot;--list&quot;],
+    capture_output=True,
+    encoding=&quot;utf-8&quot;,
+).stdout.splitlines()
+
+for command in commands:
+    output = subprocess.run(
+        [&quot;tldr&quot;, &quot;--quiet&quot;, command],
+        capture_output=True,
+        encoding=&quot;utf-8&quot;,
+    ).stdout
+    description = output.lstrip().split(&quot;\n\n&quot;)[0]
+    description = &quot; &quot;.join(description.split())
+    print(f&quot;{command} =&gt; {description}&quot;)
+</code></pre>
+<p>Note that there are a lot of pages and the script will run Tealdeer once for
+every page, so the script may take a couple of seconds to finish.</p>
+<h2><a class="header" href="#extending-this-chapter" id="extending-this-chapter">Extending this chapter</a></h2>
+<p>If you have an interesting setup with Tealdeer, feel free to share your
+configuration on <a href="https://github.com/tealdeer-rs/tealdeer">our Github repository</a>.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-
-                        
-                            <a rel="next" href="installing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <i class="fa fa-angle-right"></i>
+                            <a rel="prev" href="config_directories.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
                             </a>
+                        
+
                         
 
                         <div style="clear: both"></div>
@@ -194,11 +222,11 @@ and community-driven man pages.</p>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-
-                
-                    <a rel="next" href="installing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <i class="fa fa-angle-right"></i>
+                    <a rel="prev" href="config_directories.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
                     </a>
+                
+
                 
             </nav>
 

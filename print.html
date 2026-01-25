@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="installing.html"><strong aria-hidden="true">1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">2.</strong> Usage</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usage_custom_pages.html"><strong aria-hidden="true">2.1.</strong> Custom Pages and Patches</a></li></ol></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config_display.html"><strong aria-hidden="true">3.1.</strong> Section: [display]</a></li><li class="chapter-item expanded "><a href="config_style.html"><strong aria-hidden="true">3.2.</strong> Section: [style]</a></li><li class="chapter-item expanded "><a href="config_updates.html"><strong aria-hidden="true">3.3.</strong> Section: [updates]</a></li><li class="chapter-item expanded "><a href="config_directories.html"><strong aria-hidden="true">3.4.</strong> Section: [directories]</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="installing.html"><strong aria-hidden="true">1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">2.</strong> Usage</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usage_custom_pages.html"><strong aria-hidden="true">2.1.</strong> Custom Pages and Patches</a></li></ol></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config_display.html"><strong aria-hidden="true">3.1.</strong> Section: [display]</a></li><li class="chapter-item expanded "><a href="config_style.html"><strong aria-hidden="true">3.2.</strong> Section: [style]</a></li><li class="chapter-item expanded "><a href="config_updates.html"><strong aria-hidden="true">3.3.</strong> Section: [updates]</a></li><li class="chapter-item expanded "><a href="config_directories.html"><strong aria-hidden="true">3.4.</strong> Section: [directories]</a></li></ol></li><li class="chapter-item expanded "><a href="tips_and_tricks.html"><strong aria-hidden="true">4.</strong> Tips and Tricks</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -170,14 +170,14 @@
 <a href="https://github.com/tldr-pages/tldr">tldr</a> in Rust: Simplified, example based
 and community-driven man pages.</p>
 <p><img src="screenshot-default.png" alt="Screenshot" /></p>
-<p>This documentation shows how to install, use and configure Tealdeer.</p>
+<p>This documentation shows how to install, use and configure tealdeer.</p>
 <h2><a class="header" href="#links" id="links">Links</a></h2>
 <ul>
-<li><a href="https://github.com/dbrgn/tealdeer">GitHub Project Page</a></li>
+<li><a href="https://github.com/tealdeer-rs/tealdeer">GitHub Project Page</a></li>
 <li><a href="https://tldr.sh/">TLDR Pages Project</a></li>
 </ul>
 <h1><a class="header" href="#installing" id="installing">Installing</a></h1>
-<p>There are a few different ways to install Tealdeer:</p>
+<p>There are a few different ways to install tealdeer:</p>
 <ul>
 <li>Through <a href="installing.html#package-managers">package managers</a></li>
 <li>Through <a href="installing.html#static-binaries-linux">static binaries</a></li>
@@ -189,41 +189,41 @@ autocompletions</a>.</p>
 <h2><a class="header" href="#package-managers" id="package-managers">Package Managers</a></h2>
 <p>Tealdeer has been added to a few package managers:</p>
 <ul>
-<li>Arch Linux: <a href="https://archlinux.org/packages/community/x86_64/tealdeer/"><code>tealdeer</code></a></li>
+<li>Arch Linux: <a href="https://archlinux.org/packages/extra/x86_64/tealdeer/"><code>tealdeer</code></a></li>
+<li>Debian: <a href="https://tracker.debian.org/tealdeer"><code>tealdeer</code></a></li>
 <li>Fedora: <a href="https://src.fedoraproject.org/rpms/rust-tealdeer"><code>tealdeer</code></a></li>
 <li>FreeBSD: <a href="https://www.freshports.org/sysutils/tealdeer/"><code>sysutils/tealdeer</code></a></li>
 <li>Funtoo: <a href="https://github.com/funtoo/core-kit/tree/1.4-release/app-misc/tealdeer"><code>app-misc/tealdeer</code></a></li>
 <li>Homebrew: <a href="https://formulae.brew.sh/formula/tealdeer"><code>tealdeer</code></a></li>
 <li>MacPorts: <a href="https://ports.macports.org/port/tealdeer/"><code>tealdeer</code></a></li>
 <li>NetBSD: <a href="https://pkgsrc.se/sysutils/tealdeer"><code>sysutils/tealdeer</code></a></li>
-<li>Nix: <a href="https://nixos.org/nixos/packages.html#tealdeer"><code>tealdeer</code></a></li>
+<li>Nix: <a href="https://search.nixos.org/packages?query=tealdeer"><code>tealdeer</code></a></li>
 <li>openSUSE: <a href="https://software.opensuse.org/package/tealdeer?search_term=tealdeer"><code>tealdeer</code></a></li>
+<li>Scoop: <a href="https://github.com/ScoopInstaller/Main/blob/master/bucket/tealdeer.json"><code>tealdeer</code></a></li>
 <li>Solus: <a href="https://packages.getsol.us/shannon/t/tealdeer/"><code>tealdeer</code></a></li>
 <li>Void Linux: <a href="https://github.com/void-linux/void-packages/tree/master/srcpkgs/tealdeer"><code>tealdeer</code></a></li>
 </ul>
 <h2><a class="header" href="#static-binaries-linux" id="static-binaries-linux">Static Binaries (Linux)</a></h2>
 <p>Static binary builds (currently for Linux only) are available on the
-<a href="https://github.com/dbrgn/tealdeer/releases">GitHub releases page</a>.
+<a href="https://github.com/tealdeer-rs/tealdeer/releases">GitHub releases page</a>.
 Simply download the binary for your platform and run it!</p>
 <h2><a class="header" href="#through-cargo-install" id="through-cargo-install">Through <code>cargo install</code></a></h2>
 <p>Build and install the tool via cargo...</p>
 <pre><code>$ cargo install tealdeer
 </code></pre>
-<p><em>(Note: You might need to install OpenSSL development headers, otherwise you get
-a &quot;failed to run custom build command for openssl-sys&quot; error message. The
-package is called <code>libssl-dev</code> on Ubuntu.)</em></p>
 <h2><a class="header" href="#build-from-source" id="build-from-source">Build From Source</a></h2>
-<p>Debug build with logging enabled:</p>
-<pre><code>$ cargo build --features logging
-</code></pre>
-<p>Release build without logging:</p>
+<p>Release build:</p>
 <pre><code>$ cargo build --release
 </code></pre>
-<p>To enable the log output, set the <code>RUST_LOG</code> env variable:</p>
-<pre><code>$ export RUST_LOG=tldr=debug
+<p>Release build with bundled CA roots:</p>
+<pre><code>$ cargo build --release --no-default-features --features webpki-roots
 </code></pre>
+<p>Debug build with logging support:</p>
+<pre><code>$ cargo build --features logging
+</code></pre>
+<p>(To enable logging at runtime, export the <code>RUST_LOG=tldr=debug</code> env variable.)</p>
 <h2><a class="header" href="#autocompletion" id="autocompletion">Autocompletion</a></h2>
-<p>Shell completion scripts are located in the folder <code>completion</code>. 
+<p>Shell completion scripts are located in the folder <code>completion</code>.
 Just copy them to their designated location:</p>
 <ul>
 <li><em>Bash</em>: <code>cp completion/bash_tealdeer /usr/share/bash-completion/completions/tldr</code></li>
@@ -234,37 +234,45 @@ Just copy them to their designated location:</p>
 <p>Tealdeer is straightforward to use, through the binary named <code>tldr</code>.</p>
 <p>You can view the available options using <code>tldr --help</code>:</p>
 <!-- Note: To update the file below, run `cargo run -- --help > docs/src/usage.txt`. -->
-<pre><code>tealdeer 1.6.2
+<pre><code>tealdeer 1.7.3: A fast TLDR client
 Danilo Bargen &lt;mail@dbrgn.ch&gt;, Niklas Mohrin &lt;dev@niklasmohrin.de&gt;
-A fast TLDR client
 
-USAGE:
-    tldr [OPTIONS] [COMMAND]...
+Usage: tldr [OPTIONS] [COMMAND]...
 
-ARGS:
-    &lt;COMMAND&gt;...    The command to show (e.g. `tar` or `git log`)
+Arguments:
+  [COMMAND]...  The command to show (e.g. `tar` or `git log`)
 
-OPTIONS:
-    -l, --list                   List all commands in the cache
-    -f, --render &lt;FILE&gt;          Render a specific markdown file
-    -p, --platform &lt;PLATFORM&gt;    Override the operating system [possible values: linux, macos,
-                                 windows, sunos, osx, android]
-    -L, --language &lt;LANGUAGE&gt;    Override the language
-    -u, --update                 Update the local cache
-        --no-auto-update         If auto update is configured, disable it for this run
-    -c, --clear-cache            Clear the local cache
-        --pager                  Use a pager to page output
-    -r, --raw                    Display the raw markdown instead of rendering it
-    -q, --quiet                  Suppress informational messages
-        --show-paths             Show file and directory paths used by tealdeer
-        --seed-config            Create a basic config
-        --color &lt;WHEN&gt;           Control whether to use color [possible values: always, auto, never]
-    -v, --version                Print the version
-    -h, --help                   Print help information
+Options:
+  -l, --list                 List all commands in the cache
+  -f, --render &lt;FILE&gt;        Render a specific markdown file
+  -p, --platform &lt;PLATFORM&gt;  Override the operating system, can be specified multiple times in order
+                             of preference [possible values: linux, macos, sunos, windows, android,
+                             freebsd, netbsd, openbsd]
+  -L, --language &lt;LANGUAGE&gt;  Override the language
+  -u, --update               Update the local cache
+      --no-auto-update       If auto update is configured, disable it for this run
+  -c, --clear-cache          Clear the local cache
+      --pager                Use a pager to page output
+  -r, --raw                  Display the raw markdown instead of rendering it
+  -q, --quiet                Suppress informational messages
+      --show-paths           Show file and directory paths used by tealdeer
+      --seed-config          Create a basic config
+      --color &lt;WHEN&gt;         Control whether to use color [possible values: always, auto, never]
+  -v, --version              Print the version
+  -h, --help                 Print help
 
-To view the user documentation, please visit https://dbrgn.github.io/tealdeer/.
+To view the user documentation, please visit https://tealdeer-rs.github.io/tealdeer/.
 </code></pre>
 <h1><a class="header" href="#custom-pages-and-patches" id="custom-pages-and-patches">Custom Pages and Patches</a></h1>
+<blockquote>
+<p>⚠️ <strong>Breaking change in version 1.7.0:</strong> The file name extension for custom
+pages and patches was changed:</p>
+<ul>
+<li><code>&lt;name&gt;.page</code> → <code>&lt;name&gt;.page.md</code></li>
+<li><code>&lt;name&gt;.patch</code> → <code>&lt;name&gt;.patch.md</code></li>
+</ul>
+<p>If you have custom pages or patches, you need to rename them.</p>
+</blockquote>
 <p>Tealdeer allows creating new custom pages, overriding existing pages as well as
 extending existing pages.</p>
 <p>The directory, where these custom pages and patches can be placed, follows OS
@@ -276,24 +284,24 @@ file</a>.</p>
 <h2><a class="header" href="#custom-pages" id="custom-pages">Custom Pages</a></h2>
 <p>To document internal command line tools, or if you want to replace an existing
 tldr page with one that's better suited for you, place a file with the name
-<code>&lt;command&gt;.page</code> in the custom pages directory. When calling <code>tldr &lt;command&gt;</code>,
+<code>&lt;command&gt;.page.md</code> in the custom pages directory. When calling <code>tldr &lt;command&gt;</code>,
 your custom page will be shown instead of the upstream version in the cache.</p>
 <p>Path:</p>
-<pre><code>$CUSTOM_PAGES_DIR/&lt;command&gt;.page
+<pre><code>$CUSTOM_PAGES_DIR/&lt;command&gt;.page.md
 </code></pre>
 <p>Example:</p>
-<pre><code>~/.local/share/tealdeer/pages/ufw.page
+<pre><code>~/.local/share/tealdeer/pages/ufw.page.md
 </code></pre>
 <h2><a class="header" href="#custom-patches" id="custom-patches">Custom Patches</a></h2>
 <p>Sometimes you don't want to fully replace an existing upstream page, but just
 want to extend it with your own examples that you frequently need. In this
-case, use a file called <code>&lt;command&gt;.patch</code>, it will be appended to existing
+case, use a file called <code>&lt;command&gt;.patch.md</code>, it will be appended to existing
 pages.</p>
 <p>Path:</p>
-<pre><code>$CUSTOM_PAGES_DIR/&lt;command&gt;.patch
+<pre><code>$CUSTOM_PAGES_DIR/&lt;command&gt;.patch.md
 </code></pre>
 <p>Example:</p>
-<pre><code>~/.local/share/tealdeer/pages/ufw.patch
+<pre><code>~/.local/share/tealdeer/pages/ufw.patch.md
 </code></pre>
 <h1><a class="header" href="#configuration" id="configuration">Configuration</a></h1>
 <p>Tealdeer can be customized with a config file in <a href="https://toml.io/">TOML
@@ -338,12 +346,6 @@ auto_update = true
 <p>The directory where the configuration file resides may be overwritten by the
 environment variable <code>TEALDEER_CONFIG_DIR</code>. Remember to use an absolute path.
 Variable expansion will not be performed on the path.</p>
-<h2><a class="header" href="#override-cache-directory" id="override-cache-directory">Override Cache Directory</a></h2>
-<p>Similarly, the cache directory where the pages are downloaded to, also follows
-OS conventions. On Linux, it will usually be at <code>~/.cache/tealdeer/</code>. The path
-can be overwritten using the environment variable <code>TEALDEER_CACHE_DIR</code>.
-Remember to use an absolute path. Variable expansion will not be performed on
-the path.</p>
 <h1><a class="header" href="#section-display" id="section-display">Section: [display]</a></h1>
 <p>In the <code>display</code> section you can configure the output format.</p>
 <h2><a class="header" href="#use_pager" id="use_pager"><code>use_pager</code></a></h2>
@@ -388,13 +390,13 @@ compact = true
 </code></pre>
 </li>
 <li>
-<p>256 color ANSI code (<em>Tealdeer v1.5.0+</em>)</p>
+<p>256 color ANSI code (<em>tealdeer v1.5.0+</em>)</p>
 <p>Example:</p>
 <pre><code>foreground = { ansi = 4 }
 </code></pre>
 </li>
 <li>
-<p>24-bit RGB color (<em>Tealdeer v1.5.0+</em>)</p>
+<p>24-bit RGB color (<em>tealdeer v1.5.0+</em>)</p>
 <p>Example:</p>
 <pre><code>background = { rgb = { r = 255, g = 255, b = 255 } }
 </code></pre>
@@ -402,7 +404,7 @@ compact = true
 </ul>
 <h1><a class="header" href="#section-updates" id="section-updates">Section: [updates]</a></h1>
 <h2><a class="header" href="#automatic-updates" id="automatic-updates">Automatic updates</a></h2>
-<p>tealdeer can refresh the cache automatically when it is outdated. This
+<p>Tealdeer can refresh the cache automatically when it is outdated. This
 behavior can be configured in the <code>updates</code> section and is disabled by
 default.</p>
 <h3><a class="header" href="#auto_update" id="auto_update"><code>auto_update</code></a></h3>
@@ -438,6 +440,45 @@ expansion will not be performed on the path.</p>
 <pre><code>[directories]
 custom_pages_dir = &quot;/home/myuser/custom-tldr-pages/&quot;
 </code></pre>
+<h1><a class="header" href="#tips-and-tricks" id="tips-and-tricks">Tips and Tricks</a></h1>
+<p>This page features some example use cases of Tealdeer.</p>
+<h2><a class="header" href="#showing-a-random-page-on-shell-start" id="showing-a-random-page-on-shell-start">Showing a random page on shell start</a></h2>
+<p>To display a randomly selected page, you can invoke <code>tldr</code> twice: One time to
+select a page and a second time to display this page. To randomly select a page,
+we use <code>shuf</code> from the GNU coreutils:</p>
+<pre><code class="language-bash">tldr --quiet $(tldr --quiet --list | shuf -n1)
+</code></pre>
+<p>You can also add the above command to your <code>.bashrc</code> (or similar shell
+configuration file) to display a random page every time you start a new shell
+session.</p>
+<h2><a class="header" href="#displaying-all-pages-with-their-summary" id="displaying-all-pages-with-their-summary">Displaying all pages with their summary</a></h2>
+<p>If you want to extend the output of <code>tldr --list</code> with the first line summary of
+each page, you can run the following Python script:</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+
+import subprocess
+
+commands = subprocess.run(
+    [&quot;tldr&quot;, &quot;--quiet&quot;, &quot;--list&quot;],
+    capture_output=True,
+    encoding=&quot;utf-8&quot;,
+).stdout.splitlines()
+
+for command in commands:
+    output = subprocess.run(
+        [&quot;tldr&quot;, &quot;--quiet&quot;, command],
+        capture_output=True,
+        encoding=&quot;utf-8&quot;,
+    ).stdout
+    description = output.lstrip().split(&quot;\n\n&quot;)[0]
+    description = &quot; &quot;.join(description.split())
+    print(f&quot;{command} =&gt; {description}&quot;)
+</code></pre>
+<p>Note that there are a lot of pages and the script will run Tealdeer once for
+every page, so the script may take a couple of seconds to finish.</p>
+<h2><a class="header" href="#extending-this-chapter" id="extending-this-chapter">Extending this chapter</a></h2>
+<p>If you have an interesting setup with Tealdeer, feel free to share your
+configuration on <a href="https://github.com/tealdeer-rs/tealdeer">our Github repository</a>.</p>
 
                     </main>
 
