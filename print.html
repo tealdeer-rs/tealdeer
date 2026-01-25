@@ -166,8 +166,9 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#tealdeer-introduction" id="tealdeer-introduction">Tealdeer: Introduction</a></h1>
-<p>Tealdeer very fast implementation of <a href="https://github.com/tldr-pages/tldr">tldr</a>
-in Rust: Simplified, example based and community-driven man pages.</p>
+<p>Tealdeer is a very fast implementation of
+<a href="https://github.com/tldr-pages/tldr">tldr</a> in Rust: Simplified, example based
+and community-driven man pages.</p>
 <p><img src="screenshot-default.png" alt="Screenshot" /></p>
 <p>This documentation shows how to install, use and configure Tealdeer.</p>
 <h2><a class="header" href="#links" id="links">Links</a></h2>
@@ -193,6 +194,7 @@ autocompletions</a>.</p>
 <li>FreeBSD: <a href="https://www.freshports.org/sysutils/tealdeer/"><code>sysutils/tealdeer</code></a></li>
 <li>Funtoo: <a href="https://github.com/funtoo/core-kit/tree/1.4-release/app-misc/tealdeer"><code>app-misc/tealdeer</code></a></li>
 <li>Homebrew: <a href="https://formulae.brew.sh/formula/tealdeer"><code>tealdeer</code></a></li>
+<li>MacPorts: <a href="https://ports.macports.org/port/tealdeer/"><code>tealdeer</code></a></li>
 <li>NetBSD: <a href="https://pkgsrc.se/sysutils/tealdeer"><code>sysutils/tealdeer</code></a></li>
 <li>Nix: <a href="https://nixos.org/nixos/packages.html#tealdeer"><code>tealdeer</code></a></li>
 <li>openSUSE: <a href="https://software.opensuse.org/package/tealdeer?search_term=tealdeer"><code>tealdeer</code></a></li>
@@ -221,16 +223,18 @@ package is called <code>libssl-dev</code> on Ubuntu.)</em></p>
 <pre><code>$ export RUST_LOG=tldr=debug
 </code></pre>
 <h2><a class="header" href="#autocompletion" id="autocompletion">Autocompletion</a></h2>
+<p>Shell completion scripts are located in the folder <code>completion</code>. 
+Just copy them to their designated location:</p>
 <ul>
-<li><em>Bash</em>: copy <code>bash_tealdeer</code> to <code>/usr/share/bash-completion/completions/tldr</code></li>
-<li><em>Fish</em>: copy <code>fish_tealdeer</code> to <code>~/.config/fish/completions/tldr.fish</code></li>
-<li><em>Zsh</em>: copy <code>zsh_tealdeer</code> to <code>/usr/share/zsh/site-functions/_tldr</code></li>
+<li><em>Bash</em>: <code>cp completion/bash_tealdeer /usr/share/bash-completion/completions/tldr</code></li>
+<li><em>Fish</em>: <code>cp completion/fish_tealdeer ~/.config/fish/completions/tldr.fish</code></li>
+<li><em>Zsh</em>: <code>cp completion/zsh_tealdeer /usr/share/zsh/site-functions/_tldr</code></li>
 </ul>
 <h1><a class="header" href="#usage" id="usage">Usage</a></h1>
 <p>Tealdeer is straightforward to use, through the binary named <code>tldr</code>.</p>
 <p>You can view the available options using <code>tldr --help</code>:</p>
 <!-- Note: To update the file below, run `cargo run -- --help > docs/src/usage.txt`. -->
-<pre><code>tealdeer 1.5.1
+<pre><code>tealdeer 1.6.2
 Danilo Bargen &lt;mail@dbrgn.ch&gt;, Niklas Mohrin &lt;dev@niklasmohrin.de&gt;
 A fast TLDR client
 
@@ -244,15 +248,15 @@ OPTIONS:
     -l, --list                   List all commands in the cache
     -f, --render &lt;FILE&gt;          Render a specific markdown file
     -p, --platform &lt;PLATFORM&gt;    Override the operating system [possible values: linux, macos,
-                                 windows, sunos, osx]
+                                 windows, sunos, osx, android]
     -L, --language &lt;LANGUAGE&gt;    Override the language
     -u, --update                 Update the local cache
+        --no-auto-update         If auto update is configured, disable it for this run
     -c, --clear-cache            Clear the local cache
         --pager                  Use a pager to page output
     -r, --raw                    Display the raw markdown instead of rendering it
     -q, --quiet                  Suppress informational messages
         --show-paths             Show file and directory paths used by tealdeer
-        --config-path            Show config file path
         --seed-config            Create a basic config
         --color &lt;WHEN&gt;           Control whether to use color [possible values: always, auto, never]
     -v, --version                Print the version
@@ -285,10 +289,6 @@ your custom page will be shown instead of the upstream version in the cache.</p>
 want to extend it with your own examples that you frequently need. In this
 case, use a file called <code>&lt;command&gt;.patch</code>, it will be appended to existing
 pages.</p>
-<blockquote>
-<p><strong>Note:</strong> Because the patch file will be concatenated directly to the page
-file, it needs to start with an empty line.</p>
-</blockquote>
 <p>Path:</p>
 <pre><code>$CUSTOM_PAGES_DIR/&lt;command&gt;.patch
 </code></pre>
@@ -382,7 +382,7 @@ compact = true
 <p>Colors can be specified in one of three ways:</p>
 <ul>
 <li>
-<p>Color string (<code>black</code>, <code>red</code>, <code>green</code>, <code>yellow</code>, <code>blue</code>, <code>purple</code>, <code>cyan</code>, <code>white</code>):</p>
+<p>Color string (<code>black</code>, <code>red</code>, <code>green</code>, <code>yellow</code>, <code>blue</code>, <code>magenta</code>, <code>cyan</code>, <code>white</code>):</p>
 <p>Example:</p>
 <pre><code>foreground = &quot;green&quot;
 </code></pre>
@@ -421,6 +421,16 @@ auto_update_interval_hours = 24
 </code></pre>
 <h1><a class="header" href="#section-directories" id="section-directories">Section: [directories]</a></h1>
 <p>This section allows overriding some directory paths.</p>
+<h2><a class="header" href="#cache_dir" id="cache_dir"><code>cache_dir</code></a></h2>
+<p>Override the cache directory. Remember to use an absolute path. Variable
+expansion will not be performed on the path. If the directory does not yet
+exist, it will be created.</p>
+<pre><code>[directories]
+cache_dir = &quot;/home/myuser/.tealdeer-cache/&quot;
+</code></pre>
+<p>If no <code>cache_dir</code> is specified, tealdeer will fall back to a location that
+follows OS conventions. On Linux, it will usually be at <code>~/.cache/tealdeer/</code>.
+Use <code>tldr --show-paths</code> to show the path that is being used.</p>
 <h2><a class="header" href="#custom_pages_dir" id="custom_pages_dir"><code>custom_pages_dir</code></a></h2>
 <p>Set the directory to be used to look up <a href="usage_custom_pages.html">custom
 pages</a>. Remember to use an absolute path. Variable

@@ -181,6 +181,7 @@ autocompletions</a>.</p>
 <li>FreeBSD: <a href="https://www.freshports.org/sysutils/tealdeer/"><code>sysutils/tealdeer</code></a></li>
 <li>Funtoo: <a href="https://github.com/funtoo/core-kit/tree/1.4-release/app-misc/tealdeer"><code>app-misc/tealdeer</code></a></li>
 <li>Homebrew: <a href="https://formulae.brew.sh/formula/tealdeer"><code>tealdeer</code></a></li>
+<li>MacPorts: <a href="https://ports.macports.org/port/tealdeer/"><code>tealdeer</code></a></li>
 <li>NetBSD: <a href="https://pkgsrc.se/sysutils/tealdeer"><code>sysutils/tealdeer</code></a></li>
 <li>Nix: <a href="https://nixos.org/nixos/packages.html#tealdeer"><code>tealdeer</code></a></li>
 <li>openSUSE: <a href="https://software.opensuse.org/package/tealdeer?search_term=tealdeer"><code>tealdeer</code></a></li>
@@ -209,10 +210,12 @@ package is called <code>libssl-dev</code> on Ubuntu.)</em></p>
 <pre><code>$ export RUST_LOG=tldr=debug
 </code></pre>
 <h2><a class="header" href="#autocompletion" id="autocompletion">Autocompletion</a></h2>
+<p>Shell completion scripts are located in the folder <code>completion</code>. 
+Just copy them to their designated location:</p>
 <ul>
-<li><em>Bash</em>: copy <code>bash_tealdeer</code> to <code>/usr/share/bash-completion/completions/tldr</code></li>
-<li><em>Fish</em>: copy <code>fish_tealdeer</code> to <code>~/.config/fish/completions/tldr.fish</code></li>
-<li><em>Zsh</em>: copy <code>zsh_tealdeer</code> to <code>/usr/share/zsh/site-functions/_tldr</code></li>
+<li><em>Bash</em>: <code>cp completion/bash_tealdeer /usr/share/bash-completion/completions/tldr</code></li>
+<li><em>Fish</em>: <code>cp completion/fish_tealdeer ~/.config/fish/completions/tldr.fish</code></li>
+<li><em>Zsh</em>: <code>cp completion/zsh_tealdeer /usr/share/zsh/site-functions/_tldr</code></li>
 </ul>
 
                     </main>

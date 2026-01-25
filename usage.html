@@ -167,7 +167,7 @@
 <p>Tealdeer is straightforward to use, through the binary named <code>tldr</code>.</p>
 <p>You can view the available options using <code>tldr --help</code>:</p>
 <!-- Note: To update the file below, run `cargo run -- --help > docs/src/usage.txt`. -->
-<pre><code>tealdeer 1.5.1
+<pre><code>tealdeer 1.6.2
 Danilo Bargen &lt;mail@dbrgn.ch&gt;, Niklas Mohrin &lt;dev@niklasmohrin.de&gt;
 A fast TLDR client
 
@@ -181,15 +181,15 @@ OPTIONS:
     -l, --list                   List all commands in the cache
     -f, --render &lt;FILE&gt;          Render a specific markdown file
     -p, --platform &lt;PLATFORM&gt;    Override the operating system [possible values: linux, macos,
-                                 windows, sunos, osx]
+                                 windows, sunos, osx, android]
     -L, --language &lt;LANGUAGE&gt;    Override the language
     -u, --update                 Update the local cache
+        --no-auto-update         If auto update is configured, disable it for this run
     -c, --clear-cache            Clear the local cache
         --pager                  Use a pager to page output
     -r, --raw                    Display the raw markdown instead of rendering it
     -q, --quiet                  Suppress informational messages
         --show-paths             Show file and directory paths used by tealdeer
-        --config-path            Show config file path
         --seed-config            Create a basic config
         --color &lt;WHEN&gt;           Control whether to use color [possible values: always, auto, never]
     -v, --version                Print the version
