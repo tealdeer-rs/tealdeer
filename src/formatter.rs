@@ -114,31 +114,6 @@ fn highlight_code<E>(
     mut text: String,
     process_snippet: &mut impl FnMut(PageSnippet<&str>) -> Result<(), E>,
 ) -> Result<(), E> {
-    fn find_marker(s: &str, marker: &str, forbidden_prefix: &str) -> Option<usize> {
-        assert_eq!(
-            marker.as_bytes()[0],
-            forbidden_prefix.as_bytes()[forbidden_prefix.len() - 1]
-        );
-
-        let mut search_start = 0;
-        loop {
-            let marker_index = s.find_from(marker, search_start)?;
-
-            // Avoid matching the "{{" at the end of "\{\{{" (where "{{" is the marker, and "\{\{{"
-            // is the forbidden prefix)
-            let overlaps_with_prefix = (forbidden_prefix.len() <= marker_index + 1) && {
-                let prefix_start = marker_index + 1 - forbidden_prefix.len();
-                &s[prefix_start..=marker_index] == forbidden_prefix
-            };
-            if !overlaps_with_prefix {
-                return Some(marker_index);
-            }
-
-            // The next valid marker cannot include the first character of the current match
-            search_start = marker_index + 1;
-        }
-    }
-
     // NOTE: This is not optimal, as it allocates one String for each `replace`
     let replace_escaped = |s: &str| s.replace(r"\{\{", "{{").replace(r"\}\}", "}}");
 
@@ -172,6 +147,31 @@ fn highlight_code<E>(
     }
 
     Ok(())
+}
+
+fn find_marker(s: &str, marker: &str, forbidden_prefix: &str) -> Option<usize> {
+    assert_eq!(
+        marker.as_bytes()[0],
+        forbidden_prefix.as_bytes()[forbidden_prefix.len() - 1]
+    );
+
+    let mut search_start = 0;
+    loop {
+        let marker_index = s.find_from(marker, search_start)?;
+
+        // Avoid matching the "{{" at the end of "\{\{{" (where "{{" is the marker, and "\{\{{"
+        // is the forbidden prefix)
+        let overlaps_with_prefix = (forbidden_prefix.len() <= marker_index + 1) && {
+            let prefix_start = marker_index + 1 - forbidden_prefix.len();
+            &s[prefix_start..=marker_index] == forbidden_prefix
+        };
+        if !overlaps_with_prefix {
+            return Some(marker_index);
+        }
+
+        // The next valid marker cannot include the first character of the current match
+        search_start = marker_index + 1;
+    }
 }
 
 /// Yields `NormalCode` and `CommandName` in alternating order according to the occurrences of
