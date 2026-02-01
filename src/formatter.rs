@@ -2,10 +2,7 @@
 
 use log::debug;
 
-use crate::{
-    extensions::{FindFrom, ReplaceInplace},
-    types::LineType,
-};
+use crate::{extensions::FindFrom, types::LineType};
 
 #[derive(Debug, Clone, Copy, Eq)]
 /// Represents a snippet from a page of a specific highlighting class.
@@ -98,9 +95,9 @@ where
             }
             LineType::Description(text) => process_snippet(PageSnippet::Description(&text))?,
             LineType::ExampleText(text) => process_snippet(PageSnippet::Text(&text))?,
-            LineType::ExampleCode(mut text) => {
+            LineType::ExampleCode(text) => {
                 process_snippet(PageSnippet::NormalCode("      "))?;
-                highlight_code(&command, &mut text, process_snippet)?;
+                highlight_code(&command, text, process_snippet)?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
 
@@ -114,7 +111,7 @@ where
 /// Highlight code examples including user variables in {{ curly braces }}.
 fn highlight_code<E>(
     command: &str,
-    mut text: &mut str,
+    mut text: String,
     process_snippet: &mut impl FnMut(PageSnippet<&str>) -> Result<(), E>,
 ) -> Result<(), E> {
     fn find_marker(s: &str, marker: &str, forbidden_prefix: &str) -> Option<usize> {
@@ -142,39 +139,36 @@ fn highlight_code<E>(
         }
     }
 
-    fn replace_escaped(s: &mut str) -> &str {
-        s.replace_inplace(r"\{\{", "{{")
-            .replace_inplace(r"\}\}", "}}")
-    }
+    // NOTE: This is not optimal, as it allocates one String for each `replace`
+    let replace_escaped = |s: &str| s.replace(r"\{\{", "{{").replace(r"\}\}", "}}");
 
     while !text.is_empty() {
         let Some(placeholder_start) = find_marker(&text, "{{", r"\{\{") else {
-            return highlight_code_segment(command, replace_escaped(text), process_snippet);
+            return highlight_code_segment(command, &replace_escaped(&text), process_snippet);
         };
-        let Some(mut placeholder_len) = find_marker(&text[placeholder_start..], "}}", r"\}\}")
+        let Some(mut placeholder_end) = find_marker(&text[placeholder_start + 2..], "}}", r"\}\}")
         else {
-            return highlight_code_segment(command, replace_escaped(text), process_snippet);
+            return highlight_code_segment(command, &replace_escaped(&text), process_snippet);
         };
-        placeholder_len += 2;
+        placeholder_end += placeholder_start + 2;
 
         // Greedily extend matched range
-        while text.as_bytes().get(placeholder_start + placeholder_len) == Some(&b'}') {
-            placeholder_len += 1;
+        while placeholder_end + 2 < text.len() && text.as_bytes()[placeholder_end + 2] == b'}' {
+            placeholder_end += 1;
         }
 
-        let (segment, placeholder_and_rest) = text.split_at_mut(placeholder_start);
-        let (placeholder, rest) = placeholder_and_rest.split_at_mut(placeholder_len);
-        let placeholder_without_markers = &mut placeholder[2..placeholder_len - 2];
+        let placeholder_content = &text[placeholder_start + 2..placeholder_end];
 
-        if !segment.is_empty() {
-            highlight_code_segment(command, replace_escaped(segment), process_snippet)?;
+        if placeholder_start > 0 {
+            highlight_code_segment(
+                command,
+                &replace_escaped(&text[..placeholder_start]),
+                process_snippet,
+            )?;
         }
+        process_snippet(PageSnippet::Variable(&replace_escaped(placeholder_content)))?;
 
-        process_snippet(PageSnippet::Variable(replace_escaped(
-            placeholder_without_markers,
-        )))?;
-
-        text = rest;
+        text.replace_range(..placeholder_end + 2, "");
     }
 
     Ok(())
@@ -264,7 +258,7 @@ mod tests {
             Ok::<(), ()>(())
         };
 
-        highlight_code(cmd, &mut segment.to_string(), &mut process_snippet)
+        highlight_code(cmd, segment.to_string(), &mut process_snippet)
             .expect("highlight code segment failed");
         yielded
     }
