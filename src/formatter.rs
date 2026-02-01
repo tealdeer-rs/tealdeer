@@ -400,5 +400,36 @@ mod tests {
             assert_eq!(run("", "{{{{}}}"), [Variable("{{}")]);
             assert_eq!(run("", "{{{}}}}"), [Variable("{}}")]);
         }
+
+        #[test]
+        fn escaped_inside_placeholder() {
+            assert_eq!(
+                run(
+                    "playerctl",
+                    r#"playerctl metadata {{[-f|--format]}} "{{Now playing: \{\{artist\}\} - \{\{album\}\} - \{\{title\}\}}}""#
+                ),
+                [
+                    CommandName("playerctl"),
+                    NormalCode(" metadata "),
+                    Variable("[-f|--format]"),
+                    NormalCode(" \""),
+                    Variable("Now playing: {{artist}} - {{album}} - {{title}}"),
+                    NormalCode("\""),
+                ],
+            );
+        }
+
+        #[test]
+        fn placeholder_inside_escaped() {
+            assert_eq!(
+                run("test", r#"test \{\{{{var}} normal\}\}"#),
+                [
+                    CommandName("test"),
+                    NormalCode(" {{"),
+                    Variable("var"),
+                    NormalCode(" normal}}"),
+                ],
+            );
+        }
     }
 }
