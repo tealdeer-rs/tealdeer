@@ -669,7 +669,7 @@ impl ConfigLoader {
 
             let ugly_intermediate_key = "ugly_intermediate";
             let value = format!("{ugly_intermediate_key} = {value}");
-            let mut value  = toml::Value::from_str(&value)?;
+            let mut value = toml::Value::from_str(&value)?;
             let value = value.as_table_mut().unwrap();
             let value = value.remove(ugly_intermediate_key).unwrap();
 
@@ -864,15 +864,11 @@ mod test {
             );
 
             assert_eq!(
-                new_config["some"]["other"]["value1"]
-                    .as_integer()
-                    .unwrap(),
+                new_config["some"]["other"]["value1"].as_integer().unwrap(),
                 3,
             );
 
-            let v2array = new_config["some"]["other"]["value2"]
-                .as_array()
-                .unwrap();
+            let v2array = new_config["some"]["other"]["value2"].as_array().unwrap();
             assert_eq!(v2array[0].as_integer().unwrap(), 1);
             assert_eq!(v2array[1].as_str().unwrap(), "text");
             assert_eq!(v2array[2].as_bool().unwrap(), true);
