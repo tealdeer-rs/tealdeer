@@ -587,23 +587,19 @@ impl ConfigLoader {
     fn read_internal(
         path: PathWithSource,
         allow_not_found: bool,
-        override_str: Option<String>,
+        overrides: Option<Vec<String>>,
     ) -> Result<Self> {
-        match (fs::read_to_string(&path.path), override_str) {
-            (Ok(content), Some(override_str)) => {
-                let mut config_table = toml::Table::from_str(&content).with_context(|| {
+        match (fs::read_to_string(&path.path), overrides) {
+            (Ok(content), Some(overrides)) => {
+                let config: RawConfig = toml::from_str(&content).with_context(|| {
                     format!(
                         "Could not parse config file contents as toml from {}.",
                         path.path.display()
                     )
                 })?;
 
-                let override_config_table =
-                    toml::Table::from_str(&override_str).with_context(|| {
-                        format!("Could not parse override-config string as toml: {override_str}")
-                    })?;
-
-                Self::override_config_with(&mut config_table, override_config_table);
+                let config_table = toml::Table::try_from(config)?;
+                let config_table = Self::override_config_with(config_table, overrides)?;
 
                 Ok(Self {
                     raw: config_table.try_into()?,
@@ -619,12 +615,15 @@ impl ConfigLoader {
                 })?,
                 path,
             }),
-            (Err(e), Some(override_str)) if allow_not_found && e.kind() == ErrorKind::NotFound => {
-                let default_override_config = toml::from_str(&override_str).with_context(|| {
-                    format!("Could not parse override-config string as toml: {override_str}")
-                })?;
+            (Err(e), Some(overrides)) if allow_not_found && e.kind() == ErrorKind::NotFound => {
+                // In order to override the default config we first need to generate the default
+                // RawConfig and then serialize it into the toml-Table variant
+                let default_config_table = RawConfig::default();
+                let default_config_table = toml::Table::try_from(default_config_table)?;
+                let config_table = Self::override_config_with(default_config_table, overrides)?;
+
                 Ok(Self {
-                    raw: default_override_config,
+                    raw: config_table.try_into()?,
                     path,
                 })
             }
@@ -639,43 +638,65 @@ impl ConfigLoader {
         }
     }
 
-    fn override_config_with(config_table: &mut toml::Table, override_config_table: toml::Table) {
-        for (key, override_value) in override_config_table {
-            let Some(entry) = config_table.get_mut(&key) else {
-                config_table.insert(key, override_value);
-                continue;
-            };
+    fn override_config_with(
+        mut config_table: toml::Table,
+        overrides: Vec<String>,
+    ) -> Result<toml::Table> {
+        for override_str in overrides {
+            let (name, value) = override_str
+                .split_once('=')
+                .ok_or(anyhow!("Invalid override-string: {override_str}"))?;
 
-            match (entry, override_value) {
-                (toml::Value::Table(entry_table), toml::Value::Table(override_table)) => {
-                    Self::override_config_with(entry_table, override_table);
-                }
-                (entry, override_value) => {
-                    *entry = override_value;
-                }
+            let name = name.trim();
+
+            let mut keypath = name.split('.');
+            let key_start = keypath
+                .next()
+                .expect("split returns always at least one element");
+            let mut entry = config_table.get_mut(key_start).ok_or(anyhow!(
+                "\"{name}\" is not a valid key starting at \"{key_start}\""
+            ))?;
+
+            for subkey in keypath {
+                let toml::Value::Table(ref mut entry_table) = entry else {
+                    bail!("\"{name}\" is not a valid identifier since \"{subkey}\" already refers to a value which is not a toml-Table.");
+                };
+
+                entry = entry_table.get_mut(subkey).ok_or(anyhow!(
+                    "\"{name}\" is not a valid key starting at \"{subkey}\""
+                ))?;
             }
+
+            let ugly_intermediate_key = "ugly_intermediate";
+            let value = format!("{ugly_intermediate_key} = {value}");
+            let mut value  = toml::Value::from_str(&value)?;
+            let value = value.as_table_mut().unwrap();
+            let value = value.remove(ugly_intermediate_key).unwrap();
+
+            *entry = value;
         }
+        Ok(config_table)
     }
 
     /// Create a loader that uses the config at `path`.
-    /// `override_str`: If set, overrides the default value of the config
-    pub fn read(path: PathBuf, override_str: Option<String>) -> Result<Self> {
+    /// `overrides`: If set, overrides the default values of the config
+    pub fn read(path: PathBuf, overrides: Option<Vec<String>>) -> Result<Self> {
         Self::read_internal(
             PathWithSource {
                 path,
                 source: PathSource::Cli,
             },
             false,
-            override_str,
+            overrides,
         )
     }
 
     /// Create a loader that uses the default config file location. If no file is present at the default location, the
     /// default configuration is used.
-    /// `override_str`: If set, overrides the default value of the config
-    pub fn read_default_path(override_str: Option<String>) -> Result<Self> {
+    /// `overrides`: If set, overrides the default values of the config
+    pub fn read_default_path(overrides: Option<Vec<String>>) -> Result<Self> {
         let path = get_default_config_path().context("Could not determine default config path.")?;
-        Self::read_internal(path, true, override_str)
+        Self::read_internal(path, true, overrides)
     }
 
     /// Parse the read [`RawConfig`] into a [`Config`].
@@ -823,83 +844,40 @@ mod test {
         }
 
         #[test]
-        fn add_value() {
-            let mut original_config = base_config();
-            let override_config = toml::Table::from_str("some.new.value = 'new text'").unwrap();
-
-            ConfigLoader::override_config_with(&mut original_config, override_config);
-
-            assert_eq!(
-                original_config["some"]["value"].as_integer().unwrap(),
-                0
-            );
-
-            assert_eq!(
-                original_config["some"]["inner"]["value1"].as_integer().unwrap(),
-                1
-            );
-
-            assert_eq!(
-                original_config["some"]["inner"]["value2"].as_str().unwrap(),
-                "a string"
-            );
-
-            assert_eq!(
-                original_config["some"]["other"]["value1"]
-                    .as_integer()
-                    .unwrap(),
-                3,
-            );
-
-            let v2array = original_config["some"]["other"]["value2"]
-                .as_array()
-                .unwrap();
-            assert_eq!(v2array[0].as_integer().unwrap(), 1);
-            assert_eq!(v2array[1].as_str().unwrap(), "text");
-            assert_eq!(v2array[2].as_bool().unwrap(), true);
-
-            assert_eq!(original_config["global_value"].as_bool().unwrap(), false);
-
-            assert_eq!(original_config["some"]["new"]["value"].as_str().unwrap(), "new text");
-        }
-
-        #[test]
         fn change_value() {
-            let mut original_config = base_config();
-            let override_config = toml::Table::from_str("some.inner.value1 = 'some text'").unwrap();
+            let original_config = base_config();
+            let overrides = vec!["some.inner.value1 = 'some text'".to_string()];
 
-            ConfigLoader::override_config_with(&mut original_config, override_config);
+            let new_config = ConfigLoader::override_config_with(original_config, overrides)
+                .expect("config should be successfully overwritten");
 
-            assert_eq!(
-                original_config["some"]["value"].as_integer().unwrap(),
-                0
-            );
+            assert_eq!(new_config["some"]["value"].as_integer().unwrap(), 0);
 
             assert_eq!(
-                original_config["some"]["inner"]["value1"].as_str().unwrap(),
+                new_config["some"]["inner"]["value1"].as_str().unwrap(),
                 "some text"
             );
 
             assert_eq!(
-                original_config["some"]["inner"]["value2"].as_str().unwrap(),
+                new_config["some"]["inner"]["value2"].as_str().unwrap(),
                 "a string"
             );
 
             assert_eq!(
-                original_config["some"]["other"]["value1"]
+                new_config["some"]["other"]["value1"]
                     .as_integer()
                     .unwrap(),
                 3,
             );
 
-            let v2array = original_config["some"]["other"]["value2"]
+            let v2array = new_config["some"]["other"]["value2"]
                 .as_array()
                 .unwrap();
             assert_eq!(v2array[0].as_integer().unwrap(), 1);
             assert_eq!(v2array[1].as_str().unwrap(), "text");
             assert_eq!(v2array[2].as_bool().unwrap(), true);
 
-            assert_eq!(original_config["global_value"].as_bool().unwrap(), false);
+            assert_eq!(new_config["global_value"].as_bool().unwrap(), false);
         }
     }
 
