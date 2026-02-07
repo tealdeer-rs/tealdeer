@@ -78,6 +78,13 @@ pub(crate) struct Cli {
     #[arg(long = "config-path", value_name = "FILE")]
     pub config_path: Option<PathBuf>,
 
+    /// Override config values, also overrides values set in the config file (e.g. `'updates.auto_update = true'`)
+    #[arg(
+        long = "override-config",
+        action = ArgAction::Append,
+    )]
+    pub override_config: Option<Vec<String>>,
+
     /// Use a pager to page output
     #[arg(long = "pager", requires = "command_or_file")]
     pub pager: bool,
