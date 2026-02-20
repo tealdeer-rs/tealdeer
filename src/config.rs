@@ -31,6 +31,14 @@ const SUPPORTED_TLS_BACKENDS: &[RawTlsBackend] = &[
     RawTlsBackend::RustlsWithNativeRoots,
 ];
 
+pub(crate) fn supported_tls_backends_string() -> String {
+    SUPPORTED_TLS_BACKENDS
+        .iter()
+        .map(std::string::ToString::to_string)
+        .collect::<Vec<String>>()
+        .join(", ")
+}
+
 fn default_underline() -> bool {
     false
 }
@@ -184,7 +192,7 @@ const fn default_auto_update_interval_hours() -> u64 {
 }
 
 fn default_archive_source() -> String {
-    "https://github.com/tldr-pages/tldr/releases/latest/download/".to_owned()
+    "https://github.com/tldr-pages/tldr/releases/latest/download".to_owned()
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -460,9 +468,28 @@ impl TryFrom<RawTlsBackend> for TlsBackend {
             _ => Err(anyhow!(
                 "Unsupported TLS backend: {}. This tealdeer build has support for the following options: {}",
                 raw,
-                SUPPORTED_TLS_BACKENDS.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", ")
+                supported_tls_backends_string(),
             ))
         }
+    }
+}
+
+impl TlsBackend {
+    const fn as_raw(self) -> RawTlsBackend {
+        match self {
+            #[cfg(feature = "native-tls")]
+            Self::NativeTls => RawTlsBackend::NativeTls,
+            #[cfg(feature = "rustls-with-webpki-roots")]
+            Self::RustlsWithWebpkiRoots => RawTlsBackend::RustlsWithWebpkiRoots,
+            #[cfg(feature = "rustls-with-native-roots")]
+            Self::RustlsWithNativeRoots => RawTlsBackend::RustlsWithNativeRoots,
+        }
+    }
+}
+
+impl fmt::Display for TlsBackend {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_raw().fmt(f)
     }
 }
 
