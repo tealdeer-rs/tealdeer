@@ -320,7 +320,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
                 eprintln!();
                 eprintln!("Note: Update errors are often caused by unexpected or missing TLS certificates.");
                 eprintln!(
-                    "You are currently using the following TLS backend: {:?}",
+                    "You are currently using the following TLS backend: {}",
                     config.updates.tls_backend,
                 );
                 eprintln!(

@@ -474,6 +474,25 @@ impl TryFrom<RawTlsBackend> for TlsBackend {
     }
 }
 
+impl TlsBackend {
+    const fn as_raw(self) -> RawTlsBackend {
+        match self {
+            #[cfg(feature = "native-tls")]
+            Self::NativeTls => RawTlsBackend::NativeTls,
+            #[cfg(feature = "rustls-with-webpki-roots")]
+            Self::RustlsWithWebpkiRoots => RawTlsBackend::RustlsWithWebpkiRoots,
+            #[cfg(feature = "rustls-with-native-roots")]
+            Self::RustlsWithNativeRoots => RawTlsBackend::RustlsWithNativeRoots,
+        }
+    }
+}
+
+impl fmt::Display for TlsBackend {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_raw().fmt(f)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Config<'a> {
     pub style: StyleConfig,
