@@ -31,6 +31,14 @@ const SUPPORTED_TLS_BACKENDS: &[RawTlsBackend] = &[
     RawTlsBackend::RustlsWithNativeRoots,
 ];
 
+pub(crate) fn supported_tls_backends_string() -> String {
+    SUPPORTED_TLS_BACKENDS
+        .iter()
+        .map(std::string::ToString::to_string)
+        .collect::<Vec<String>>()
+        .join(", ")
+}
+
 fn default_underline() -> bool {
     false
 }
@@ -460,7 +468,7 @@ impl TryFrom<RawTlsBackend> for TlsBackend {
             _ => Err(anyhow!(
                 "Unsupported TLS backend: {}. This tealdeer build has support for the following options: {}",
                 raw,
-                SUPPORTED_TLS_BACKENDS.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", ")
+                supported_tls_backends_string(),
             ))
         }
     }

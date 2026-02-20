@@ -55,7 +55,9 @@ mod utils;
 use crate::{
     cache::{Cache, PageLookupResult, TLDR_PAGES_DIR},
     cli::Cli,
-    config::{get_config_dir, make_default_config, Config, PathWithSource},
+    config::{
+        get_config_dir, make_default_config, supported_tls_backends_string, Config, PathWithSource,
+    },
     output::print_page,
     types::ColorOptions,
     utils::{print_error, print_warning},
@@ -305,12 +307,36 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     let cache = if args.update || config.updates.auto_update && !args.no_auto_update {
         let (mut cache, was_created) = Cache::open_or_create(cache_config)?;
         if was_created || args.update || cache.age()? >= config.updates.auto_update_interval {
-            update_cache(
+            let result = update_cache(
                 &mut cache,
                 config.updates.archive_source,
                 config.updates.tls_backend,
                 args.quiet,
-            )?;
+            );
+
+            if let Err(e) = result {
+                print_error(enable_styles, &e);
+
+                eprintln!();
+                eprintln!("Note: Update errors are often caused by unexpected or missing TLS certificates.");
+                eprintln!(
+                    "You are currently using the following TLS backend: {:?}",
+                    config.updates.tls_backend,
+                );
+                eprintln!(
+                    "Try changing the updates.tls_backend setting in the config file, for example:"
+                );
+                eprintln!();
+                eprintln!("  [updates]");
+                eprintln!("  tls_backend = \"rustls-with-native-roots\"");
+                eprintln!();
+                eprintln!(
+                    "This build of tealdeer has support for the following options: {}",
+                    supported_tls_backends_string(),
+                );
+
+                return Ok(ExitCode::FAILURE);
+            }
         }
 
         cache
