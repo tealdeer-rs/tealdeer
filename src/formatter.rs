@@ -97,7 +97,7 @@ where
             LineType::ExampleText(text) => process_snippet(PageSnippet::Text(&text))?,
             LineType::ExampleCode(text) => {
                 process_snippet(PageSnippet::NormalCode("      "))?;
-                highlight_code(&command, text, process_snippet)?;
+                highlight_code(&command, &text, process_snippet)?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
 
@@ -108,59 +108,62 @@ where
     Ok(())
 }
 
-/// Highlight code examples including user variables in {{ curly braces }}.
+/// Highlight code examples.
+/// - parse placeholders (`{{ curly braces }}`)
+/// - replace escaped placeholder markers (`\{\{` and `\}\}`)
 fn highlight_code<E>(
     command: &str,
-    mut text: String,
+    mut text: &str,
     process_snippet: &mut impl FnMut(PageSnippet<&str>) -> Result<(), E>,
 ) -> Result<(), E> {
+    // We replace escaped placeholder markers at the end so that our replacing does not interfere
+    // with finding the actual markers.
     // NOTE: This is not optimal, as it allocates one String for each `replace`
     let replace_escaped = |s: &str| s.replace(r"\{\{", "{{").replace(r"\}\}", "}}");
 
-    while !text.is_empty() {
-        let Some(placeholder_start) = find_marker(&text, "{{", r"\{\{") else {
-            return highlight_code_segment(command, &replace_escaped(&text), process_snippet);
+    loop {
+        // Find placeholder markers and split into code and placeholder accordingly
+
+        let Some(start_marker) = find_marker(text, "{{", r"\{\{") else {
+            break;
         };
-        let Some(mut placeholder_end) = find_marker(&text[placeholder_start + 2..], "}}", r"\}\}")
-        else {
-            return highlight_code_segment(command, &replace_escaped(&text), process_snippet);
+        let Some(mut end_marker) = find_marker(&text[start_marker + 2..], "}}", r"\}\}") else {
+            break;
         };
-        placeholder_end += placeholder_start + 2;
+        end_marker += start_marker + 2;
 
         // Greedily extend matched range
-        while placeholder_end + 2 < text.len() && text.as_bytes()[placeholder_end + 2] == b'}' {
-            placeholder_end += 1;
+        while end_marker + 2 < text.len() && text.as_bytes()[end_marker + 2] == b'}' {
+            end_marker += 1;
         }
 
-        let placeholder_content = &text[placeholder_start + 2..placeholder_end];
+        let placeholder_content = &text[start_marker + 2..end_marker];
 
-        if placeholder_start > 0 {
+        if start_marker > 0 {
             highlight_code_segment(
                 command,
-                &replace_escaped(&text[..placeholder_start]),
+                &replace_escaped(&text[..start_marker]),
                 process_snippet,
             )?;
         }
         process_snippet(PageSnippet::Variable(&replace_escaped(placeholder_content)))?;
 
-        text.replace_range(..placeholder_end + 2, "");
+        text = &text[end_marker + 2..];
+    }
+
+    if !text.is_empty() {
+        highlight_code_segment(command, &replace_escaped(text), process_snippet)?;
     }
 
     Ok(())
 }
 
+/// Find a "{{" (or "}}") substring that does not overlap with a preceding "\{\{" (or "\}\}").
 fn find_marker(s: &str, marker: &str, forbidden_prefix: &str) -> Option<usize> {
-    assert_eq!(
-        marker.as_bytes()[0],
-        forbidden_prefix.as_bytes()[forbidden_prefix.len() - 1]
-    );
-
     let mut search_start = 0;
     loop {
         let marker_index = s.find_from(marker, search_start)?;
 
-        // Avoid matching the "{{" at the end of "\{\{{" (where "{{" is the marker, and "\{\{{"
-        // is the forbidden prefix)
         let overlaps_with_prefix = (forbidden_prefix.len() <= marker_index + 1) && {
             let prefix_start = marker_index + 1 - forbidden_prefix.len();
             &s[prefix_start..=marker_index] == forbidden_prefix
@@ -258,8 +261,7 @@ mod tests {
             Ok::<(), ()>(())
         };
 
-        highlight_code(cmd, segment.to_string(), &mut process_snippet)
-            .expect("highlight code segment failed");
+        highlight_code(cmd, segment, &mut process_snippet).expect("highlight code segment failed");
         yielded
     }
 
