@@ -192,7 +192,7 @@ const fn default_auto_update_interval_hours() -> u64 {
 }
 
 fn default_archive_source() -> String {
-    "https://github.com/tldr-pages/tldr/releases/latest/download/".to_owned()
+    "https://github.com/tldr-pages/tldr/releases/latest/download".to_owned()
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
