@@ -36,10 +36,10 @@ use std::{
 };
 
 use anyhow::{anyhow, Context, Result};
-use app_dirs::AppInfo;
 use cache::{CacheConfig, TLDR_OLD_PAGES_DIR};
 use clap::Parser;
 use config::{ConfigLoader, Language, StyleConfig, TlsBackend};
+use etcetera::AppStrategyArgs;
 use log::debug;
 use types::PlatformType;
 
@@ -65,12 +65,16 @@ use crate::{
 };
 
 const NAME: &str = "tealdeer";
-const APP_INFO: AppInfo = AppInfo {
-    name: NAME,
-    author: NAME,
-};
 static TEALDEER_PAGE: &str =
     include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/pages/tealdeer.md"));
+
+pub(crate) fn get_app_info() -> AppStrategyArgs {
+    AppStrategyArgs {
+        top_level_domain: String::new(),
+        author: NAME.to_string(),
+        app_name: NAME.to_string(),
+    }
+}
 
 /// Clear the cache
 fn clear_cache(cache: Cache, quietly: bool) -> Result<()> {

@@ -8,9 +8,9 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{anyhow, bail, ensure, Context, Result};
-use app_dirs::{get_app_root, AppDataType};
+use anyhow::{anyhow, ensure, Context, Result};
 use clap::ValueEnum;
+use etcetera::{app_strategy::choose_native_strategy, choose_app_strategy, AppStrategy};
 use log::info;
 use serde::Serialize as _;
 use serde_derive::{Deserialize, Serialize};
@@ -18,6 +18,7 @@ use yansi::{Color, Style};
 
 use crate::{
     extensions::Dedup as _,
+    get_app_info,
     types::{PathSource, PlatformType},
 };
 
@@ -600,15 +601,18 @@ impl<'a> Config<'a> {
                 path: resolved_path,
                 source: PathSource::ConfigFile,
             }
-        } else if let Ok(default_dir) = get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
-            // Otherwise, fall back to the default user cache directory.
+        } else {
+            let app_dir = choose_app_strategy(get_app_info())?.cache_dir();
+            let native_dir = choose_native_strategy(get_app_info())?.cache_dir();
+            let path = if !app_dir.exists() && native_dir.exists() {
+                native_dir
+            } else {
+                app_dir
+            };
             PathWithSource {
-                path: default_dir,
+                path,
                 source: PathSource::OsConvention,
             }
-        } else {
-            // If everything fails, give up
-            bail!("Could not determine user cache directory");
         };
         let custom_pages_dir = raw_config
             .directories
@@ -627,15 +631,19 @@ impl<'a> Config<'a> {
             })
             .transpose()?
             .or_else(|| {
-                get_app_root(AppDataType::UserData, &crate::APP_INFO)
-                    .map(|path| {
-                        // Note: The `join("")` call ensures that there's a trailing slash
-                        PathWithSource {
-                            path: path.join("pages").join(""),
-                            source: PathSource::OsConvention,
-                        }
-                    })
-                    .ok()
+                let app_dir = choose_app_strategy(get_app_info()).ok()?.data_dir();
+                let native_dir = choose_native_strategy(get_app_info()).ok()?.data_dir();
+                let path = if !app_dir.exists() && native_dir.exists() {
+                    native_dir
+                } else {
+                    app_dir
+                };
+
+                // Note: The `join("")` call ensures that there's a trailing slash
+                Some(PathWithSource {
+                    path: path.join("pages").join(""),
+                    source: PathSource::OsConvention,
+                })
             });
         let directories = DirectoriesConfig {
             cache_dir,
@@ -749,10 +757,22 @@ pub fn get_config_dir() -> Result<(PathBuf, PathSource)> {
         return Ok((PathBuf::from(value), PathSource::EnvVar));
     }
 
-    // Otherwise, fall back to the user config directory.
-    let dirs = get_app_root(AppDataType::UserConfig, &crate::APP_INFO)
-        .context("Failed to determine the user config directory")?;
-    Ok((dirs, PathSource::OsConvention))
+    // Check XDG directories first
+    let app_dirs = choose_app_strategy(get_app_info())?;
+    let app_config_dir = app_dirs.config_dir();
+
+    // Fall back to native (different on MacOS)
+    if !app_config_dir.exists() {
+        let native_dirs = choose_native_strategy(get_app_info())?;
+        let native_config_dir = native_dirs.config_dir();
+        if native_config_dir.exists() {
+            return Ok((native_config_dir, PathSource::OsConvention));
+        }
+    }
+
+    // However, if the fallback did not work, we still return the XDG location so that it is used
+    // for seeding a config file.
+    Ok((app_config_dir, PathSource::OsConvention))
 }
 
 /// Return the path to the config file.
