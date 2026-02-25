@@ -21,9 +21,9 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1"
-app_dirs = { version = "2", package = "app_dirs2" }
 clap = { version = "4", features = ["std", "derive", "help", "usage", "cargo", "error-context", "color", "wrap_help"], default-features = false }
 env_logger = { version = "0.11", optional = true }
+etcetera = "0.11.0"
 log = "0.4"
 serde = "1.0.21"
 serde_derive = "1.0.21"
