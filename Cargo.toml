@@ -12,7 +12,7 @@ repository = "https://github.com/tealdeer-rs/tealdeer/"
 documentation = "https://tealdeer-rs.github.io/tealdeer/"
 version = "1.8.1"
 include = ["/src/**/*", "/tests/**/*", "/Cargo.toml", "/README.md", "/LICENSE-*", "/screenshot.png", "completion/*"]
-rust-version = "1.85"
+rust-version = "1.87"  # MSRV
 edition = "2021"
 
 [[bin]]
@@ -21,9 +21,9 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1"
-app_dirs = { version = "2", package = "app_dirs2" }
 clap = { version = "4", features = ["std", "derive", "help", "usage", "cargo", "error-context", "color", "wrap_help"], default-features = false }
 env_logger = { version = "0.11", optional = true }
+etcetera = "0.11.0"
 log = "0.4"
 serde = "1.0.21"
 serde_derive = "1.0.21"
