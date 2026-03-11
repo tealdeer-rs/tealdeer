@@ -811,6 +811,16 @@ fn test_rendering_color_never() {
     );
 }
 
+/// An end-to-end integration test for the `--compact` flag (no indentation on description/text lines).
+#[test]
+fn test_rendering_compact() {
+    _test_correct_rendering(
+        "inkscape-v2",
+        include_str!("rendered/inkscape-compact-no-color.expected"),
+        &["--color", "never", "--compact"],
+    );
+}
+
 #[test]
 fn test_rendering_i18n() {
     _test_correct_rendering(

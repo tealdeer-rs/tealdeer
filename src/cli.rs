@@ -86,6 +86,10 @@ pub(crate) struct Cli {
     #[arg(short = 'r', long = "raw", requires = "command_or_file")]
     pub raw: bool,
 
+    /// Display output without indentation
+    #[arg(short = 'C', long = "compact", requires = "command_or_file")]
+    pub compact: bool,
+
     /// Suppress informational messages
     #[arg(short = 'q', long = "quiet")]
     pub quiet: bool,
