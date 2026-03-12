@@ -37,3 +37,15 @@ show_title = true
 
 When enabled, the command name will be displayed at the top of the output,
 styled with the `command_name` style configuration.
+
+## `indent`
+
+Specifies the number of spaces used for command indentation in the output (default `6`).
+
+```toml
+[display]
+indent = 6
+```
+
+This value controls how much command output is indented when displayed.
+Increasing the value results in wider indentation, while decreasing it produces more compact alignment.
