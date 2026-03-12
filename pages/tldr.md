@@ -1,37 +1,56 @@
 # tldr
 
-> Display simple help pages for command-line tools from the tldr-pages project.
-> Note: The `--language` and `--list` options are not required by the client specification, but most clients implement them.
-> More information: <https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#command-line-interface>.
+> A fast tldr client written in Rust.
+> More information: <https://tealdeer-rs.github.io/tealdeer/>.
 
-- Print the tldr page for a specific command (hint: this is how you got here!):
+- Show the tldr page for a command:
 
 `tldr {{command}}`
 
-- Print the tldr page for a specific subcommand:
+- Show the tldr page for a subcommand:
 
 `tldr {{command}} {{subcommand}}`
 
-- Print the tldr page for a command in the given language (if available, otherwise fall back to English):
+- Show the tldr page for a specific platform:
 
-`tldr {{[-L|--language]}} {{language_code}} {{command}}`
+`tldr --platform {{android|common|freebsd|linux|netbsd|openbsd|osx|sunos|windows}} {{command}}`
 
-- Print the tldr page for a command from a specific platform:
+- Show the tldr page in a specific language:
 
-`tldr {{[-p|--platform]}} {{android|cisco-ios|common|dos|freebsd|linux|netbsd|openbsd|osx|sunos|windows}} {{command}}`
+`tldr --language {{language_code}} {{command}}`
 
-- Update the local cache of tldr pages:
+- Download or update the local page cache:
 
-`tldr {{[-u|--update]}}`
+`tldr --update`
 
-- List all pages for the current platform and `common`:
+- List all pages in the cache:
 
-`tldr {{[-l|--list]}}`
+`tldr --list`
 
-- Browse tldr pages in a terminal window (`fzf` must be available):
+- Render a local markdown file as a tldr page:
 
-`tldr {{[-l|--list]}} | fzf --preview "tldr {1} --color=always" --preview-window=right,70% | xargs tldr`
+`tldr --render {{path/to/file.md}}`
 
-- Print the tldr page for a random command:
+- Show the raw markdown source of a page instead of rendering it:
 
-`tldr {{[-l|--list]}} | shuf {{[-n|--head-count]}} 1 | xargs tldr`
+`tldr --raw {{command}}`
+
+- Show file and directory paths used by tealdeer:
+
+`tldr --show-paths`
+
+- Create an initial config file:
+
+`tldr --seed-config`
+
+- Open a custom page for a command in `$EDITOR` (creates it if it doesn't exist):
+
+`tldr --edit-page {{command}}`
+
+- Open a custom patch for a command in `$EDITOR` (appended to the existing page):
+
+`tldr --edit-patch {{command}}`
+
+- Clear the local cache:
+
+`tldr --clear-cache`
