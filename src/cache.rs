@@ -40,6 +40,7 @@ pub struct Cache<'a> {
 pub struct PageLookupResult {
     pub page_path: PathBuf,
     pub patch_path: Option<PathBuf>,
+    pub embedded: Option<&'static str>,
 }
 
 impl<'a> Cache<'a> {
@@ -265,10 +266,18 @@ impl<'a> Cache<'a> {
 }
 
 impl PageLookupResult {
+    pub fn with_embedded(content: &'static str) -> Self {
+        Self {
+            page_path: PathBuf::new(),
+            patch_path: None,
+            embedded: Some(content),
+        }
+    }
     pub fn with_page(page_path: PathBuf) -> Self {
         Self {
             page_path,
             patch_path: None,
+            embedded: None,
         }
     }
 
@@ -283,6 +292,11 @@ impl PageLookupResult {
     /// This will return an error if either the page file or the patch file
     /// cannot be opened.
     pub fn reader(&self) -> Result<BufReader<Box<dyn Read>>> {
+        // Open embedded file
+        if let Some(content) = self.embedded {
+            return Ok(BufReader::new(Box::new(Cursor::new(content.as_bytes()))));
+        }
+
         // Open page file
         let page_file = File::open(&self.page_path)
             .with_context(|| format!("Could not open page file at {}", self.page_path.display()))?;
