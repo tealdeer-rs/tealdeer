@@ -259,14 +259,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
         let path = PageLookupResult::with_page(file);
-        print_page(
-            &path,
-            args.raw,
-            enable_styles,
-            args.pager,
-            args.compact,
-            &config,
-        )?;
+        print_page(&path, args.raw, enable_styles, args.pager, &config)?;
         return Ok(ExitCode::SUCCESS);
     }
 
@@ -430,14 +423,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
             return Ok(ExitCode::FAILURE);
         };
 
-        print_page(
-            &lookup_result,
-            args.raw,
-            enable_styles,
-            args.pager,
-            args.compact,
-            &config,
-        )?;
+        print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)?;
     }
 
     Ok(ExitCode::SUCCESS)

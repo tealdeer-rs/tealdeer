@@ -34,7 +34,6 @@ pub fn print_page(
     enable_markdown: bool,
     enable_styles: bool,
     use_pager: bool,
-    compact: bool,
     config: &Config,
 ) -> Result<()> {
     // Create reader from file(s)
@@ -61,8 +60,7 @@ pub fn print_page(
             if snip.is_empty() {
                 Ok(())
             } else {
-                print_snippet(&mut handle, snip, &config.style, compact)
-                    .context("Failed to print snippet")
+                print_snippet(&mut handle, snip, &config.style).context("Failed to print snippet")
             }
         };
 
@@ -72,7 +70,7 @@ pub fn print_page(
             &mut process_snippet,
             !config.display.compact,
             config.display.show_title,
-            compact,
+            config.display.indent,
         )
         .context("Could not write to stdout")?;
     }
@@ -87,18 +85,15 @@ fn print_snippet(
     writer: &mut impl Write,
     snip: PageSnippet<&str>,
     style: &StyleConfig,
-    compact: bool,
 ) -> io::Result<()> {
     use PageSnippet::*;
-
-    let indent = if compact { "" } else { "  " };
 
     match snip {
         CommandName(s) => write!(writer, "{}", s.paint(style.command_name)),
         Variable(s) => write!(writer, "{}", s.paint(style.example_variable)),
         NormalCode(s) => write!(writer, "{}", s.paint(style.example_code)),
-        Description(s) => writeln!(writer, "{}{}", indent, s.paint(style.description)),
-        Text(s) => writeln!(writer, "{}{}", indent, s.paint(style.example_text)),
+        Description(s) => writeln!(writer, "  {}", s.paint(style.description)),
+        Text(s) => writeln!(writer, "  {}", s.paint(style.example_text)),
         Title(s) => writeln!(writer, "  {}", s.paint(style.command_name)),
         Linebreak => writeln!(writer),
     }
