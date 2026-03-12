@@ -70,6 +70,7 @@ pub fn print_page(
             &mut process_snippet,
             !config.display.compact,
             config.display.show_title,
+            config.display.indent,
         )
         .context("Could not write to stdout")?;
     }

@@ -811,6 +811,23 @@ fn test_rendering_color_never() {
     );
 }
 
+/// An end-to-end integration test for the indent config option
+#[test]
+fn test_rendering_with_indentation() {
+    let testenv = TestEnv::new().install_default_cache();
+    let expected_custom_indentation = include_str!("rendered/inkscape-compact-no-color.expected");
+
+    // Configure to set indent to 2 spaces
+    testenv.append_to_config("display.indent = 2\n");
+
+    testenv
+        .command()
+        .args(["--color", "never", "inkscape-v2"])
+        .assert()
+        .success()
+        .stdout(diff(expected_custom_indentation));
+}
+
 #[test]
 fn test_rendering_i18n() {
     _test_correct_rendering(
@@ -842,6 +859,7 @@ fn test_correct_rendering_with_config() {
 fn test_show_title_config() {
     // Test that default behavior without show_title shows no title
     let testenv = TestEnv::new().install_default_cache();
+    testenv.append_to_config("display.indent = 6\n");
     let expected_no_title = include_str!("rendered/inkscape-default.expected");
 
     testenv

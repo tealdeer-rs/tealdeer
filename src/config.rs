@@ -171,6 +171,8 @@ struct RawDisplayConfig {
     pub use_pager: bool,
     #[serde(default)]
     pub show_title: bool,
+    #[serde(default)]
+    pub indent: usize,
 }
 
 impl From<&RawDisplayConfig> for DisplayConfig {
@@ -179,6 +181,7 @@ impl From<&RawDisplayConfig> for DisplayConfig {
             compact: raw_display_config.compact,
             use_pager: raw_display_config.use_pager,
             show_title: raw_display_config.show_title,
+            indent: raw_display_config.indent,
         }
     }
 }
@@ -312,6 +315,7 @@ impl Default for RawConfig {
         raw_config.style.example_code.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.underline = true;
+        raw_config.display.indent = 6;
 
         raw_config
     }
@@ -331,6 +335,7 @@ pub struct DisplayConfig {
     pub compact: bool,
     pub use_pager: bool,
     pub show_title: bool,
+    pub indent: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
