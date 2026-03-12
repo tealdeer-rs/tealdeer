@@ -6,21 +6,6 @@ use clap::{builder::ArgAction, ArgGroup, Parser};
 
 use crate::types::{ColorOptions, PlatformType};
 
-const AFTER_HELP: &str = r#"To view the user documentation, please visit https://tealdeer-rs.github.io/tealdeer/.
-
-EXAMPLES:
-# View the TLDR page for ip:
-tldr ip
-
-# View a multi-word TLDR page:
-tldr git rebase
-
-# Update TLDR with pages for a specific language:
-tldr --update --language es
-
-# Specify the language for the page:
-tldr tar --language es"#;
-
 // Note: flag names are specified explicitly in clap attributes
 // to improve readability and allow contributors to grep names like "clear-cache"
 #[derive(Parser, Debug)]
@@ -33,7 +18,9 @@ tldr tar --language es"#;
 {usage-heading} {usage}
 
 {all-args}{after-help}",
-    after_help = AFTER_HELP,
+    after_help = "To view the user documentation, please visit https://tealdeer-rs.github.io/tealdeer/.
+
+To view usage examples, run tldr tldr or tldr tealdeer.",
     arg_required_else_help = true,
     help_expected = true,
     group = ArgGroup::new("command_or_file").args(&["command", "render"]),

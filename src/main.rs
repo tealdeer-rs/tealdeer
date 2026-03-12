@@ -68,6 +68,7 @@ const APP_INFO: AppInfo = AppInfo {
     name: NAME,
     author: NAME,
 };
+const SELF_PAGE: &str = include_str!("../pages/tldr.md");
 
 /// Clear the cache
 fn clear_cache(cache: Cache, quietly: bool) -> Result<()> {
@@ -407,20 +408,24 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
             );
         }
 
-        let Some(lookup_result) = cache.find_page(&command) else {
-            if !args.quiet {
-                print_warning(
-                    enable_styles,
-                    &format!(
-                        "Page `{}` not found in cache.\n\
-                         Try updating with `tldr --update`, or submit a pull request to:\n\
-                         https://github.com/tldr-pages/tldr",
-                        &command
-                    ),
-                );
-            }
-
-            return Ok(ExitCode::FAILURE);
+        let lookup_result = if command == "tldr" || command == "tealdeer" {
+            PageLookupResult::with_embedded(SELF_PAGE)
+        } else {
+            let Some(result) = cache.find_page(&command) else {
+                if !args.quiet {
+                    print_warning(
+                        enable_styles,
+                        &format!(
+                            "Page `{}` not found in cache.\n\
+                       Try updating with `tldr --update`, or submit a pull request to:\n\
+                       https://github.com/tldr-pages/tldr",
+                            &command
+                        ),
+                    );
+                }
+                return Ok(ExitCode::FAILURE);
+            };
+            result
         };
 
         print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)?;
