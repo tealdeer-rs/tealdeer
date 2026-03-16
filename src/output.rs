@@ -1,12 +1,11 @@
 //! Functions for printing pages to the terminal
 
-use std::io::{self, BufRead, Write};
+use std::io::{self, BufRead, BufReader, Read, Write};
 
 use anyhow::{Context, Result};
 use yansi::Paint;
 
 use crate::{
-    cache::PageLookupResult,
     config::{Config, StyleConfig},
     formatter::{highlight_lines, PageSnippet},
     line_iterator::LineIterator,
@@ -30,14 +29,13 @@ fn configure_pager(enable_styles: bool) {
 
 /// Print page by path
 pub fn print_page(
-    lookup_result: &PageLookupResult,
+    reader: impl Read,
     enable_markdown: bool,
     enable_styles: bool,
     use_pager: bool,
     config: &Config,
 ) -> Result<()> {
-    // Create reader from file(s)
-    let reader = lookup_result.reader()?;
+    let reader = BufReader::new(reader);
 
     // Configure pager if applicable
     if use_pager || config.display.use_pager {

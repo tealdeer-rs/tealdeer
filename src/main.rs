@@ -29,7 +29,7 @@ compile_error!(
 use std::{
     env,
     fs::create_dir_all,
-    io::{self, IsTerminal},
+    io::{self, Cursor, IsTerminal},
     path::Path,
     process::{Command, ExitCode},
 };
@@ -68,7 +68,8 @@ const APP_INFO: AppInfo = AppInfo {
     name: NAME,
     author: NAME,
 };
-const SELF_PAGE: &str = include_str!("../pages/tldr.md");
+static TEALDEER_PAGE: &str =
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/pages/tealdeer.md"));
 
 /// Clear the cache
 fn clear_cache(cache: Cache, quietly: bool) -> Result<()> {
@@ -259,8 +260,8 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
 
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
-        let path = PageLookupResult::with_page(file);
-        print_page(&path, args.raw, enable_styles, args.pager, &config)?;
+        let reader = PageLookupResult::with_page(file).reader()?;
+        print_page(reader, args.raw, enable_styles, args.pager, &config)?;
         return Ok(ExitCode::SUCCESS);
     }
 
@@ -408,8 +409,8 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
             );
         }
 
-        let lookup_result = if command == "tldr" || command == "tealdeer" {
-            PageLookupResult::with_embedded(SELF_PAGE)
+        let reader: Box<dyn io::Read> = if command == "tealdeer" {
+            Box::new(Cursor::new(TEALDEER_PAGE.as_bytes()))
         } else {
             let Some(result) = cache.find_page(&command) else {
                 if !args.quiet {
@@ -425,10 +426,10 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
                 }
                 return Ok(ExitCode::FAILURE);
             };
-            result
+            Box::new(result.reader()?)
         };
 
-        print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)?;
+        print_page(reader, args.raw, enable_styles, args.pager, &config)?;
     }
 
     Ok(ExitCode::SUCCESS)

@@ -1,25 +1,9 @@
 # tldr
 
-> A fast tldr client written in Rust.
+> This is a builtin page that shows information for your installed tealdeer version.
 > More information: <https://tealdeer-rs.github.io/tealdeer/>.
 
-- Show the tldr page for a command:
-
-`tldr {{command}}`
-
-- Show the tldr page for a subcommand:
-
-`tldr {{command}} {{subcommand}}`
-
-- Show the tldr page for a specific platform:
-
-`tldr --platform {{android|common|freebsd|linux|netbsd|openbsd|osx|sunos|windows}} {{command}}`
-
-- Show the tldr page in a specific language:
-
-`tldr --language {{language_code}} {{command}}`
-
-- Download or update the local page cache:
+> This page shows tealdeer specific functionality. See tldr tldr for more examples.
 
 `tldr --update`
 
