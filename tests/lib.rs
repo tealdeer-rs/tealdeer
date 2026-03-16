@@ -817,8 +817,9 @@ fn test_rendering_with_indentation() {
     let testenv = TestEnv::new().install_default_cache();
     let expected_custom_indentation = include_str!("rendered/inkscape-compact-no-color.expected");
 
-    // Configure to set indent to 2 spaces
-    testenv.append_to_config("display.indent = 2\n");
+    // Configure to set base and command indents
+    testenv.append_to_config("display.indent.base = 2\n");
+    testenv.append_to_config("display.indent.command = 2\n");
 
     testenv
         .command()
@@ -859,7 +860,6 @@ fn test_correct_rendering_with_config() {
 fn test_show_title_config() {
     // Test that default behavior without show_title shows no title
     let testenv = TestEnv::new().install_default_cache();
-    testenv.append_to_config("display.indent = 6\n");
     let expected_no_title = include_str!("rendered/inkscape-default.expected");
 
     testenv

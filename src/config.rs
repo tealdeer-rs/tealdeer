@@ -43,6 +43,14 @@ fn default_underline() -> bool {
     false
 }
 
+const fn default_base_indent() -> usize {
+    2
+}
+
+const fn default_command_indent() -> usize {
+    6
+}
+
 fn default_bold() -> bool {
     false
 }
@@ -172,7 +180,25 @@ struct RawDisplayConfig {
     #[serde(default)]
     pub show_title: bool,
     #[serde(default)]
-    pub indent: usize,
+    pub indent: RawIndent,
+}
+
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+struct RawIndent {
+    #[serde(default = "default_base_indent")]
+    base: usize,
+    #[serde(default = "default_command_indent")]
+    command: usize,
+}
+
+#[allow(clippy::derivable_impls)] // Explicitly control defaults
+impl Default for RawIndent {
+    fn default() -> Self {
+        Self {
+            base: 2,
+            command: 6,
+        }
+    }
 }
 
 impl From<&RawDisplayConfig> for DisplayConfig {
@@ -181,7 +207,10 @@ impl From<&RawDisplayConfig> for DisplayConfig {
             compact: raw_display_config.compact,
             use_pager: raw_display_config.use_pager,
             show_title: raw_display_config.show_title,
-            indent: raw_display_config.indent,
+            indent: Indent {
+                base: raw_display_config.indent.base,
+                command: raw_display_config.indent.command,
+            },
         }
     }
 }
@@ -315,7 +344,8 @@ impl Default for RawConfig {
         raw_config.style.example_code.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.underline = true;
-        raw_config.display.indent = 6;
+        raw_config.display.indent.base = 2;
+        raw_config.display.indent.command = 6;
 
         raw_config
     }
@@ -335,7 +365,13 @@ pub struct DisplayConfig {
     pub compact: bool,
     pub use_pager: bool,
     pub show_title: bool,
-    pub indent: usize,
+    pub indent: Indent,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Indent {
+    pub base: usize,
+    pub command: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

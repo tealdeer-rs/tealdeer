@@ -68,7 +68,7 @@ pub fn highlight_lines<L, F, E>(
     process_snippet: &mut F,
     keep_empty_lines: bool,
     show_title: bool,
-    indent: usize,
+    command_indent: usize,
 ) -> Result<(), E>
 where
     L: Iterator<Item = LineType>,
@@ -97,7 +97,7 @@ where
             LineType::Description(text) => process_snippet(PageSnippet::Description(&text))?,
             LineType::ExampleText(text) => process_snippet(PageSnippet::Text(&text))?,
             LineType::ExampleCode(text) => {
-                let spaces = " ".repeat(indent);
+                let spaces = " ".repeat(command_indent);
                 process_snippet(PageSnippet::NormalCode(&spaces))?;
                 highlight_code(&command, &text, process_snippet)?;
                 process_snippet(PageSnippet::Linebreak)?;

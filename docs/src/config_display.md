@@ -40,12 +40,22 @@ styled with the `command_name` style configuration.
 
 ## `indent`
 
-Specifies the number of spaces used for command indentation in the output (default `6`).
+Controls the indentation of the output via two sub-keys.
+
+### `indent.base`
+
+Specifies the number of spaces used to indent descriptions, example text, and titles (default `2`).
 
 ```toml
-[display]
-indent = 6
+[display.indent]
+base = 2
 ```
 
-This value controls how much command output is indented when displayed.
-Increasing the value results in wider indentation, while decreasing it produces more compact alignment.
+### `indent.command`
+
+Specifies the number of spaces used to indent example code lines (default `6`).
+
+```toml
+[display.indent]
+command = 6
+```
