@@ -166,7 +166,11 @@ fn find_marker(s: &str, marker: &str, forbidden_prefix: &str) -> Option<usize> {
 
         let overlaps_with_prefix = (forbidden_prefix.len() <= marker_index + 1) && {
             let prefix_start = marker_index + 1 - forbidden_prefix.len();
-            &s[prefix_start..=marker_index] == forbidden_prefix
+            // NOTE: The indices might not be valid character offsets, so we should do this
+            // comparison on raw bytes. If prefix_start is indeed not a character offset than the
+            // comparison is guaranteed to return false because forbidden_prefix[0] definitely _is_
+            // the start of a (single byte, ASCII) character.
+            &s.as_bytes()[prefix_start..=marker_index] == forbidden_prefix.as_bytes()
         };
         if !overlaps_with_prefix {
             return Some(marker_index);
