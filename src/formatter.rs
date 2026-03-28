@@ -433,5 +433,12 @@ mod tests {
                 ],
             );
         }
+
+        #[test]
+        /// Regression test for https://github.com/tealdeer-rs/tealdeer/issues/473
+        fn prefix_check_character_boundary() {
+            assert_eq!("Ä".len(), 2);
+            assert_eq!(run("", r#"Äxx{{x}}"#), [NormalCode("Äxx"), Variable("x")],);
+        }
     }
 }
