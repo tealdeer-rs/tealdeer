@@ -10,6 +10,7 @@ use std::{
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use app_dirs::{get_app_root, AppDataType};
 use clap::ValueEnum;
+use log::info;
 use serde::Serialize as _;
 use serde_derive::{Deserialize, Serialize};
 use yansi::{Color, Style};
@@ -391,6 +392,11 @@ fn get_languages<'a>(
 
     let mut lang_list = Vec::new();
     for locale in locales {
+        if !locale.is_ascii() {
+            info!("Skipping non-ASCII locale string: {}", locale);
+            continue;
+        }
+
         // Language plus country code (e.g. `en_US`)
         if locale.len() >= 5 && locale.chars().nth(2) == Some('_') {
             lang_list.push(Language(&locale[..5]));
