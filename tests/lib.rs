@@ -818,8 +818,8 @@ fn test_rendering_with_indentation() {
     let expected_custom_indentation = include_str!("rendered/inkscape-compact-no-color.expected");
 
     // Configure to set base and command indents
-    testenv.append_to_config("display.indent.base = 2\n");
-    testenv.append_to_config("display.indent.command = 2\n");
+    testenv.append_to_config("display.indent.base = 3\n");
+    testenv.append_to_config("display.indent.command = 1\n");
 
     testenv
         .command()

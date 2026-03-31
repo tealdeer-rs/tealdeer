@@ -104,7 +104,6 @@ struct RawStyle {
     pub italic: bool,
 }
 
-#[allow(clippy::derivable_impls)] // Explicitly control defaults
 impl Default for RawStyle {
     fn default() -> Self {
         Self {
@@ -344,8 +343,6 @@ impl Default for RawConfig {
         raw_config.style.example_code.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.foreground = Some(RawColor::Cyan);
         raw_config.style.example_variable.underline = true;
-        raw_config.display.indent.base = 2;
-        raw_config.display.indent.command = 6;
 
         raw_config
     }

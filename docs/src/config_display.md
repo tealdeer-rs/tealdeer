@@ -59,3 +59,13 @@ Specifies the number of spaces used to indent example code lines (default `6`).
 [display.indent]
 command = 6
 ```
+
+You can also configure both subkeys in a single line like this:
+
+```toml
+[display]
+indent = {
+  base = 2,
+  command = 6,
+}
+```
