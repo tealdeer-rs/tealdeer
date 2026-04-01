@@ -1,6 +1,6 @@
 use std::{
     fs::{self, File},
-    io::{BufReader, Cursor, ErrorKind, Read},
+    io::{Cursor, ErrorKind, Read},
     path::{Path, PathBuf},
     time::{Duration, SystemTime},
 };
@@ -277,12 +277,12 @@ impl PageLookupResult {
         self
     }
 
-    /// Create a buffered reader that sequentially reads from the page and the
+    /// Create a reader that sequentially reads from the page and the
     /// patch, as if they were concatenated.
     ///
     /// This will return an error if either the page file or the patch file
     /// cannot be opened.
-    pub fn reader(&self) -> Result<BufReader<Box<dyn Read>>> {
+    pub fn reader(&self) -> Result<Box<dyn Read>> {
         // Open page file
         let page_file = File::open(&self.page_path)
             .with_context(|| format!("Could not open page file at {}", self.page_path.display()))?;
@@ -302,11 +302,11 @@ impl PageLookupResult {
         // the page and patch files and that will read them sequentially,
         // because it avoids the boxing below. However, the performance impact
         // would first need to be shown to be significant using a benchmark.
-        Ok(BufReader::new(if let Some(patch_file) = patch_file_opt {
+        Ok(if let Some(patch_file) = patch_file_opt {
             Box::new(page_file.chain(&b"\n"[..]).chain(patch_file)) as Box<dyn Read>
         } else {
             Box::new(page_file) as Box<dyn Read>
-        }))
+        })
     }
 }
 

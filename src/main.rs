@@ -265,6 +265,18 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         return Ok(ExitCode::SUCCESS);
     }
 
+    // The tealdeer page is embedded in the binary, no cache needed
+    if command == "tealdeer" {
+        print_page(
+            Cursor::new(TEALDEER_PAGE.as_bytes()),
+            args.raw,
+            enable_styles,
+            args.pager,
+            &config,
+        )?;
+        return Ok(ExitCode::SUCCESS);
+    }
+
     if let Some(platforms) = args.platforms {
         config.search.platforms = platforms;
         if !config.search.platforms.contains(&PlatformType::Common) {
@@ -409,27 +421,28 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
             );
         }
 
-        let reader: Box<dyn io::Read> = if command == "tealdeer" {
-            Box::new(Cursor::new(TEALDEER_PAGE.as_bytes()))
-        } else {
-            let Some(result) = cache.find_page(&command) else {
-                if !args.quiet {
-                    print_warning(
-                        enable_styles,
-                        &format!(
-                            "Page `{}` not found in cache.\n\
-                       Try updating with `tldr --update`, or submit a pull request to:\n\
-                       https://github.com/tldr-pages/tldr",
-                            &command
-                        ),
-                    );
-                }
-                return Ok(ExitCode::FAILURE);
-            };
-            Box::new(result.reader()?)
+        let Some(result) = cache.find_page(&command) else {
+            if !args.quiet {
+                print_warning(
+                    enable_styles,
+                    &format!(
+                        "Page `{}` not found in cache.\n\
+                         Try updating with `tldr --update`, or submit a pull request to:\n\
+                         https://github.com/tldr-pages/tldr",
+                        &command
+                    ),
+                );
+            }
+            return Ok(ExitCode::FAILURE);
         };
 
-        print_page(reader, args.raw, enable_styles, args.pager, &config)?;
+        print_page(
+            result.reader()?,
+            args.raw,
+            enable_styles,
+            args.pager,
+            &config,
+        )?;
     }
 
     Ok(ExitCode::SUCCESS)

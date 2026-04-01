@@ -301,6 +301,16 @@ fn test_missing_cache() {
         .stderr(contains("Page cache not found. Please run `tldr --update`"));
 }
 
+#[test]
+fn test_tealdeer_page_works_without_cache() {
+    TestEnv::new()
+        .command()
+        .args(["tealdeer"])
+        .assert()
+        .success()
+        .stdout(contains("for your installed tealdeer version"));
+}
+
 #[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_update_cache_default_features() {

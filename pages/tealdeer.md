@@ -5,12 +5,6 @@
 
 > This page shows tealdeer specific functionality. See tldr tldr for more examples.
 
-`tldr --update`
-
-- List all pages in the cache:
-
-`tldr --list`
-
 - Render a local markdown file as a tldr page:
 
 `tldr --render {{path/to/file.md}}`
@@ -27,6 +21,10 @@
 
 `tldr --seed-config`
 
+- Override config file location:
+
+`tldr --config-path <FILE>`
+
 - Open a custom page for a command in `$EDITOR` (creates it if it doesn't exist):
 
 `tldr --edit-page {{command}}`
@@ -38,3 +36,7 @@
 - Clear the local cache:
 
 `tldr --clear-cache`
+
+- If auto update is configured, disable it for this run:
+
+`tldr --no-auto-update`
