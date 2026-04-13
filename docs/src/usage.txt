@@ -29,3 +29,5 @@ Options:
   -h, --help                 Print help
 
 To view the user documentation, please visit https://tealdeer-rs.github.io/tealdeer/.
+
+To view usage examples, run tldr tldr or tldr tealdeer.

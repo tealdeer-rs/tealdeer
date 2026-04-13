@@ -29,7 +29,7 @@ compile_error!(
 use std::{
     env,
     fs::create_dir_all,
-    io::{self, Cursor, IsTerminal},
+    io::{self, IsTerminal},
     path::Path,
     process::{Command, ExitCode},
 };
@@ -268,7 +268,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     // The tealdeer page is embedded in the binary, no cache needed
     if command == "tealdeer" {
         print_page(
-            Cursor::new(TEALDEER_PAGE.as_bytes()),
+            TEALDEER_PAGE.as_bytes(),
             args.raw,
             enable_styles,
             args.pager,
