@@ -60,8 +60,7 @@ pub fn print_page(
             if snip.is_empty() {
                 Ok(())
             } else {
-                print_snippet(&mut handle, snip, &config.style)
-                    .context("Failed to print snippet")
+                print_snippet(&mut handle, snip, &config.style).context("Failed to print snippet")
             }
         };
 
