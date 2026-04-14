@@ -104,6 +104,7 @@ struct RawStyle {
     pub italic: bool,
 }
 
+#[allow(clippy::derivable_impls)] // Explicitly control defaults
 impl Default for RawStyle {
     fn default() -> Self {
         Self {
@@ -190,7 +191,6 @@ struct RawIndent {
     command: usize,
 }
 
-#[allow(clippy::derivable_impls)] // Explicitly control defaults
 impl Default for RawIndent {
     fn default() -> Self {
         Self {
