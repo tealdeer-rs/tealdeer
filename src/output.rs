@@ -56,12 +56,11 @@ pub fn print_page(
         }
     } else {
         // Closure that processes a page snippet and writes it to stdout
-        let base_indent = config.display.indent.base;
         let mut process_snippet = |snip: PageSnippet<&str>| {
             if snip.is_empty() {
                 Ok(())
             } else {
-                print_snippet(&mut handle, snip, &config.style, base_indent)
+                print_snippet(&mut handle, snip, &config.style)
                     .context("Failed to print snippet")
             }
         };
@@ -72,7 +71,7 @@ pub fn print_page(
             &mut process_snippet,
             !config.display.compact,
             config.display.show_title,
-            config.display.indent.command,
+            config.display.indent,
         )
         .context("Could not write to stdout")?;
     }
@@ -87,18 +86,16 @@ fn print_snippet(
     writer: &mut impl Write,
     snip: PageSnippet<&str>,
     style: &StyleConfig,
-    base_indent: usize,
 ) -> io::Result<()> {
     use PageSnippet::*;
 
-    let spaces = " ".repeat(base_indent);
     match snip {
         CommandName(s) => write!(writer, "{}", s.paint(style.command_name)),
         Variable(s) => write!(writer, "{}", s.paint(style.example_variable)),
         NormalCode(s) => write!(writer, "{}", s.paint(style.example_code)),
-        Description(s) => writeln!(writer, "{spaces}{}", s.paint(style.description)),
-        Text(s) => writeln!(writer, "{spaces}{}", s.paint(style.example_text)),
-        Title(s) => writeln!(writer, "{spaces}{}", s.paint(style.command_name)),
+        Description(s) => write!(writer, "{}", s.paint(style.description)),
+        Text(s) => write!(writer, "{}", s.paint(style.example_text)),
+        Title(s) => write!(writer, "{}", s.paint(style.command_name)),
         Linebreak => writeln!(writer),
     }
 }

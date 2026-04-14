@@ -2,7 +2,7 @@
 
 use log::debug;
 
-use crate::{extensions::FindFrom, types::LineType};
+use crate::{config::Indent, extensions::FindFrom, types::LineType};
 
 #[derive(Debug, Clone, Copy, Eq)]
 /// Represents a snippet from a page of a specific highlighting class.
@@ -68,12 +68,14 @@ pub fn highlight_lines<L, F, E>(
     process_snippet: &mut F,
     keep_empty_lines: bool,
     show_title: bool,
-    command_indent: usize,
+    indent: Indent,
 ) -> Result<(), E>
 where
     L: Iterator<Item = LineType>,
     F: for<'snip> FnMut(PageSnippet<&'snip str>) -> Result<(), E>,
 {
+    let base_indent = " ".repeat(indent.base);
+    let command_indent = " ".repeat(indent.command);
     let mut command = String::new();
     for line in lines {
         match line {
@@ -85,7 +87,9 @@ where
             LineType::Title(title) => {
                 if show_title {
                     process_snippet(PageSnippet::Linebreak)?;
+                    process_snippet(PageSnippet::Title(&base_indent))?;
                     process_snippet(PageSnippet::Title(&title))?;
+                    process_snippet(PageSnippet::Linebreak)?;
                 } else {
                     debug!("Ignoring title");
                 }
@@ -94,11 +98,18 @@ where
                 command = title;
                 debug!("Detected command name: {}", &command);
             }
-            LineType::Description(text) => process_snippet(PageSnippet::Description(&text))?,
-            LineType::ExampleText(text) => process_snippet(PageSnippet::Text(&text))?,
+            LineType::Description(text) => {
+                process_snippet(PageSnippet::Description(&base_indent))?;
+                process_snippet(PageSnippet::Description(&text))?;
+                process_snippet(PageSnippet::Linebreak)?;
+            }
+            LineType::ExampleText(text) => {
+                process_snippet(PageSnippet::Text(&base_indent))?;
+                process_snippet(PageSnippet::Text(&text))?;
+                process_snippet(PageSnippet::Linebreak)?;
+            }
             LineType::ExampleCode(text) => {
-                let spaces = " ".repeat(command_indent);
-                process_snippet(PageSnippet::NormalCode(&spaces))?;
+                process_snippet(PageSnippet::NormalCode(&command_indent))?;
                 highlight_code(&command, &text, process_snippet)?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
