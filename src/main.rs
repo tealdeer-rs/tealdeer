@@ -358,20 +358,22 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     } else if args.list || !command.is_empty() {
         // Cache is needed for these commands to work
         let Some(cache) = Cache::open(cache_config)? else {
-            print_error(
-                enable_styles,
-                &anyhow::anyhow!(
-                    "Page cache not found. Please run `tldr --update` to download the cache."
-                ),
-            );
-            println!("\nNote: You can optionally enable automatic cache updates by adding the");
-            println!("following config to your config file:\n");
-            println!("  [updates]");
-            println!("  auto_update = true\n");
-            println!("The path to your config file can be looked up with `tldr --show-paths`.");
-            println!("To create an initial config file, use `tldr --seed-config`.\n");
-            println!("You can find more tips and tricks in our docs:\n");
-            println!("  https://tealdeer-rs.github.io/tealdeer/config_updates.html");
+            if !args.quiet {
+                print_error(
+                    enable_styles,
+                    &anyhow::anyhow!(
+                        "Page cache not found. Please run `tldr --update` to download the cache."
+                    ),
+                );
+                println!("\nNote: You can optionally enable automatic cache updates by adding the");
+                println!("following config to your config file:\n");
+                println!("  [updates]");
+                println!("  auto_update = true\n");
+                println!("The path to your config file can be looked up with `tldr --show-paths`.");
+                println!("To create an initial config file, use `tldr --seed-config`.\n");
+                println!("You can find more tips and tricks in our docs:\n");
+                println!("  https://tealdeer-rs.github.io/tealdeer/config_updates.html");
+            }
 
             return Ok(ExitCode::FAILURE);
         };

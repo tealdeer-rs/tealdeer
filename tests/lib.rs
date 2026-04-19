@@ -302,6 +302,25 @@ fn test_missing_cache() {
 }
 
 #[test]
+fn test_quiet_missing_cache() {
+    TestEnv::new()
+        .command()
+        .args(["sl", "--quiet"])
+        .assert()
+        .failure()
+        .stdout(is_empty())
+        .stderr(is_empty());
+
+    TestEnv::new()
+        .command()
+        .args(["--list", "--quiet"])
+        .assert()
+        .failure()
+        .stdout(is_empty())
+        .stderr(is_empty());
+}
+
+#[test]
 fn test_tealdeer_page_works_without_cache() {
     TestEnv::new()
         .command()
