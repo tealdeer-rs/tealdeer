@@ -364,14 +364,14 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
                     "Page cache not found. Please run `tldr --update` to download the cache."
                 ),
             );
-            println!("\nNote: You can optionally enable automatic cache updates by adding the");
-            println!("following config to your config file:\n");
-            println!("  [updates]");
-            println!("  auto_update = true\n");
-            println!("The path to your config file can be looked up with `tldr --show-paths`.");
-            println!("To create an initial config file, use `tldr --seed-config`.\n");
-            println!("You can find more tips and tricks in our docs:\n");
-            println!("  https://tealdeer-rs.github.io/tealdeer/config_updates.html");
+            eprintln!("\nNote: You can optionally enable automatic cache updates by adding the");
+            eprintln!("following config to your config file:\n");
+            eprintln!("  [updates]");
+            eprintln!("  auto_update = true\n");
+            eprintln!("The path to your config file can be looked up with `tldr --show-paths`.");
+            eprintln!("To create an initial config file, use `tldr --seed-config`.\n");
+            eprintln!("You can find more tips and tricks in our docs:\n");
+            eprintln!("  https://tealdeer-rs.github.io/tealdeer/config_updates.html");
 
             return Ok(ExitCode::FAILURE);
         };
@@ -405,7 +405,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     // Show command from cache
     if !command.is_empty() {
         // TODO: Remove this check 1 year after version 1.7.0 was released
-        if cache.old_custom_pages_exist()? {
+        if !args.quiet && cache.old_custom_pages_exist()? {
             print_warning(
                 enable_styles,
                 &format!(
