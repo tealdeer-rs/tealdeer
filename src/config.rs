@@ -654,7 +654,7 @@ impl<'a> Config<'a> {
 }
 
 /// Expands tilde (~) prefixed directories into its absolute version
-fn expand_home<'a>(input_path: &'a PathBuf, home_path: Option<&PathBuf>) -> Result<Cow<'a, Path>> {
+fn expand_home<'a>(input_path: &'a Path, home_path: Option<&PathBuf>) -> Result<Cow<'a, Path>> {
     if input_path.is_absolute() {
         return Ok(Cow::Borrowed(input_path));
     }
