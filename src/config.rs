@@ -575,6 +575,7 @@ impl<'a> Config<'a> {
             .path()
             .parent()
             .context("Failed to get config directory")?;
+        let home_path = env::home_dir();
 
         // Determine directories config. For this, we need to take some
         // additional factory into account, like env variables, or the
@@ -591,7 +592,7 @@ impl<'a> Config<'a> {
             }
         } else if let Some(config_value) = &raw_config.directories.cache_dir {
             // Resolve possible ~ prefixed path
-            let expanded_path = expand_path(config_value, env::home_dir().as_ref())?.into_owned();
+            let expanded_path = expand_path(config_value, home_path.as_ref())?;
             // Resolve possible relative path.
             let resolved_path = relative_path_root.join(expanded_path);
 
@@ -615,7 +616,7 @@ impl<'a> Config<'a> {
             .as_ref()
             .map(|path| -> Result<PathWithSource> {
                 // Resolve possible ~ prefixed path
-                let expanded_path = expand_path(path, env::home_dir().as_ref())?.into_owned();
+                let expanded_path = expand_path(path, home_path.as_ref())?;
                 // Resolve possible relative path.
                 let resolved_path = relative_path_root.join(expanded_path);
 
