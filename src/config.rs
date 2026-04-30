@@ -659,7 +659,6 @@ fn expand_path<'a>(input_path: &'a PathBuf, home_path: Option<&PathBuf>) -> Resu
         return Ok(Cow::Borrowed(input_path));
     }
 
-    let home_path = home_path.ok_or(anyhow!("Unable to find user home directory"))?;
     let mut components = input_path.components();
 
     if let Some(Component::Normal(first_component_raw)) = components.next() {
@@ -667,16 +666,14 @@ fn expand_path<'a>(input_path: &'a PathBuf, home_path: Option<&PathBuf>) -> Resu
             .to_str()
             .ok_or(anyhow!("Path contains invalid UTF-8"))?;
 
-        if first_component.starts_with("~") {
-            match first_component.len() {
-                1 => {
-                    let rest: PathBuf = components.collect();
-                    let expanded = home_path.join(rest);
+        if first_component == "~" {
+            let home_path = home_path.ok_or(anyhow!("Unable to find user home directory"))?;
+            let rest: PathBuf = components.collect();
+            let expanded = home_path.join(rest);
 
-                    return Ok(Cow::Owned(expanded));
-                }
-                _ => return Err(anyhow!("Tilde expansion with a login name not supported")),
-            }
+            return Ok(Cow::Owned(expanded));
+        } else if first_component.starts_with('~') {
+            return Err(anyhow!("Tilde expansion with a login name not supported"));
         }
     }
 
