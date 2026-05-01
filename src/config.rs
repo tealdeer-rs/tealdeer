@@ -655,10 +655,6 @@ impl<'a> Config<'a> {
 
 /// Expands tilde (~) prefixed directories into its absolute version
 fn expand_home<'a>(input_path: &'a Path, home_path: Option<&PathBuf>) -> Result<Cow<'a, Path>> {
-    if input_path.is_absolute() {
-        return Ok(Cow::Borrowed(input_path));
-    }
-
     let mut components = input_path.components();
 
     if let Some(Component::Normal(first_component_raw)) = components.next() {
