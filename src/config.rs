@@ -592,7 +592,7 @@ impl<'a> Config<'a> {
             }
         } else if let Some(config_value) = &raw_config.directories.cache_dir {
             // Resolve possible ~ prefixed path
-            let expanded_path = expand_home(config_value, home_path.as_ref())?;
+            let expanded_path = expand_home(config_value, home_path.as_deref())?;
             // Resolve possible relative path.
             let resolved_path = relative_path_root.join(expanded_path);
 
@@ -616,7 +616,7 @@ impl<'a> Config<'a> {
             .as_ref()
             .map(|path| -> Result<PathWithSource> {
                 // Resolve possible ~ prefixed path
-                let expanded_path = expand_home(path, home_path.as_ref())?;
+                let expanded_path = expand_home(path, home_path.as_deref())?;
                 // Resolve possible relative path.
                 let resolved_path = relative_path_root.join(expanded_path);
 
@@ -654,7 +654,7 @@ impl<'a> Config<'a> {
 }
 
 /// Expands tilde (~) prefixed directories into its absolute version
-fn expand_home<'a>(input_path: &'a Path, home_path: Option<&PathBuf>) -> Result<Cow<'a, Path>> {
+fn expand_home<'a>(input_path: &'a Path, home_path: Option<&Path>) -> Result<Cow<'a, Path>> {
     let mut components = input_path.components();
 
     if let Some(Component::Normal(first_component_raw)) = components.next() {
@@ -830,7 +830,7 @@ mod test {
         let path_to_expand = PathBuf::from("~/baz");
 
         assert_eq!(
-            *expand_home(&path_to_expand, home.as_ref()).unwrap(),
+            *expand_home(&path_to_expand, home.as_deref()).unwrap(),
             PathBuf::from("/foo/bar/baz")
         );
     }
@@ -841,7 +841,7 @@ mod test {
         let dir_to_expand = PathBuf::from("/one/two");
 
         assert_eq!(
-            *expand_home(&dir_to_expand, home.as_ref()).unwrap(),
+            *expand_home(&dir_to_expand, home.as_deref()).unwrap(),
             dir_to_expand
         );
     }
@@ -851,7 +851,7 @@ mod test {
         let home = Some(PathBuf::from("/foo/bar"));
         let dir_to_expand = PathBuf::from("~baz/foo");
 
-        assert!(expand_home(&dir_to_expand, home.as_ref()).is_err());
+        assert!(expand_home(&dir_to_expand, home.as_deref()).is_err());
     }
 
     #[test]
