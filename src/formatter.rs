@@ -439,7 +439,7 @@ mod tests {
         #[test]
         fn placeholder_inside_escaped() {
             assert_eq!(
-                run("test", r#"test \{\{{{var}} normal\}\}"#),
+                run("test", r"test \{\{{{var}} normal\}\}"),
                 [
                     CommandName("test"),
                     NormalCode(" {{"),
@@ -450,10 +450,10 @@ mod tests {
         }
 
         #[test]
-        /// Regression test for https://github.com/tealdeer-rs/tealdeer/issues/473
+        /// Regression test for <https://github.com/tealdeer-rs/tealdeer/issues/473>
         fn prefix_check_character_boundary() {
             assert_eq!("Ä".len(), 2);
-            assert_eq!(run("", r#"Äxx{{x}}"#), [NormalCode("Äxx"), Variable("x")],);
+            assert_eq!(run("", r"Äxx{{x}}"), [NormalCode("Äxx"), Variable("x")],);
         }
     }
 }

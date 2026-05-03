@@ -555,7 +555,7 @@ fn test_cache_location_permission_denied() {
     // Make cache directory unreadable
     let cache_dir = testenv.cache_dir();
     let mut permissions = cache_dir.metadata().unwrap().permissions();
-    permissions.set_mode(0);
+    permissions.set_mode(0o0);
     fs::set_permissions(cache_dir, permissions).unwrap();
 
     testenv
@@ -1047,6 +1047,7 @@ fn test_search_language_precedence() {
         testenv.add_lang_entry(lang, lang, "");
     }
 
+    #[expect(clippy::type_complexity)]
     let run = |cases: &[(Vec<(&str, &str)>, Vec<&str>, &str)]| {
         for (extra_env, extra_args, expected) in cases {
             let mut cmd = testenv.command();
