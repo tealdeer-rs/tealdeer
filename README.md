@@ -52,7 +52,6 @@ Docker container using sharkdp's [`hyperfine`][hyperfine-gh]
 | [`fast-tldr`][fast-tldr-gh]       | Haskell              | 17.0       | 0.6             | no example highlighting |
 | [`tldr-hs`][hs-gh]                | Haskell              | 25.1       | 0.5             | no example highlighting |
 | [`tldr-bash`][bash-gh]            | Bash                 | 30.0       | 0.8             |                         |
-| [`tldr-c`][c-gh]                  | C                    | 38.4       | 1.0             |                         |
 | [`tldr-python-client`][python-gh] | Python               | 87.0       | 2.4             |                         |
 | [`tldr-node-client`][node-gh]     | JavaScript / NodeJS  | 407.1      | 12.9            |                         |
 
@@ -113,7 +112,6 @@ Thanks to @severen for coming up with the name "tealdeer"!
 
 
 [node-gh]: https://github.com/tldr-pages/tldr-node-client
-[c-gh]: https://github.com/tldr-pages/tldr-c-client
 [hs-gh]: https://github.com/psibi/tldr-hs
 [fast-tldr-gh]: https://github.com/gutjuri/fast-tldr
 [bash-gh]: https://4e4.win/tldr
