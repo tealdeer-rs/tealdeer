@@ -56,7 +56,7 @@ jobs:
            toolchain: stable
            components: clippy
        - name: run clippy lints
-         run: cargo clippy --features logging
+         run: cargo clippy --all-targets --features logging
 
   fmt:
     name: run rustfmt
