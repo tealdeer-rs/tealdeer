@@ -351,6 +351,11 @@ impl Cache<'_> {
         let config = Agent::config_builder()
             .http_status_as_error(false) // because we want to handle them
             .tls_config(tls_builder.build())
+            .user_agent(concat!(
+                env!("CARGO_PKG_NAME"),
+                "/",
+                env!("CARGO_PKG_VERSION")
+            ))
             .build();
 
         config.into()
