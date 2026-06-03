@@ -93,5 +93,6 @@ fn print_snippet(
         Description(s) => write!(writer, "{}", s.paint(style.description)),
         Text(s) => write!(writer, "{}", s.paint(style.example_text)),
         Linebreak => writeln!(writer),
+        Indent(s) => write!(writer, "{s}"),
     }
 }

@@ -14,6 +14,7 @@ pub enum PageSnippet<T> {
     Text(T),
     Title(T),
     Linebreak,
+    Indent(T),
 }
 
 #[cfg_attr(not(test), allow(dead_code))]
@@ -30,6 +31,7 @@ impl<T> PageSnippet<T> {
             PageSnippet::Text(s) => PageSnippet::Text(f(s)),
             PageSnippet::Title(s) => PageSnippet::Title(f(s)),
             PageSnippet::Linebreak => PageSnippet::Linebreak,
+            PageSnippet::Indent(s) => PageSnippet::Indent(f(s)),
         }
     }
 }
@@ -44,6 +46,7 @@ impl<T: PartialEq<U>, U> PartialEq<PageSnippet<U>> for PageSnippet<T> {
             | (PageSnippet::Text(s), PageSnippet::Text(t))
             | (PageSnippet::Title(s), PageSnippet::Title(t)) => s == t,
             (PageSnippet::Linebreak, PageSnippet::Linebreak) => true,
+            (PageSnippet::Indent(s), PageSnippet::Indent(t)) => s == t,
             _ => false,
         }
     }
@@ -58,6 +61,7 @@ impl PageSnippet<&str> {
                 s.is_empty()
             }
             Linebreak => false,
+            Indent(s) => s.is_empty(),
         }
     }
 }
@@ -109,7 +113,7 @@ where
                 process_snippet(PageSnippet::Linebreak)?;
             }
             LineType::ExampleCode(text) => {
-                process_snippet(PageSnippet::NormalCode(&command_indent))?;
+                process_snippet(PageSnippet::Indent(&command_indent))?;
                 highlight_code(&command, &text, process_snippet)?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
