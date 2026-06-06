@@ -92,6 +92,7 @@ fn print_snippet(
         NormalCode(s) => write!(writer, "{}", s.paint(style.example_code)),
         Description(s) => write!(writer, "{}", s.paint(style.description)),
         Text(s) => write!(writer, "{}", s.paint(style.example_text)),
+        Indent(s) => write!(writer, "{s}"),
         Linebreak => writeln!(writer),
     }
 }
