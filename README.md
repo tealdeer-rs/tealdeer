@@ -86,6 +86,17 @@ To run lints:
     $ cargo clean && cargo clippy
 
 
+### AI Policy
+
+Using AI is generally discouraged. However, if it is used as part of a contribution, the contributor must:
+
+1. Clearly mark what parts (if any) of a contribution were created with the help of AI tools. This includes issue and pull request comments.
+2. Check all output of AI tools before sharing it with others in the Tealdeer project.
+3. Not post slop, spam, or low quality contributions.
+4. Leave small or easy tasks to new contributors who want to learn without the use of AI. This is to maintain the presence of the `good-first-issue` tag.
+5. Be respectful of everyone's time: maintainers and other contributors will be reviewing your PRs.
+
+
 ## MSRV (Minimally Supported Rust Version)
 
 When publishing a tealdeer release, the Rust version required to build it
