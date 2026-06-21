@@ -87,11 +87,30 @@ fn print_snippet(
     use PageSnippet::*;
 
     match snip {
+        Indent(s) => write!(writer, "{s}"),
         CommandName(s) | Title(s) => write!(writer, "{}", s.paint(style.command_name)),
         Variable(s) => write!(writer, "{}", s.paint(style.example_variable)),
         NormalCode(s) => write!(writer, "{}", s.paint(style.example_code)),
         Description(s) => write!(writer, "{}", s.paint(style.description)),
         Text(s) => write!(writer, "{}", s.paint(style.example_text)),
         Linebreak => writeln!(writer),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn indent_output_is_unstyled() {
+        let mut output = Vec::new();
+        let style = StyleConfig {
+            example_code: yansi::Style::new().underline(),
+            ..StyleConfig::default()
+        };
+
+        print_snippet(&mut output, PageSnippet::Indent("  "), &style).unwrap();
+
+        assert_eq!(output, b"  ");
     }
 }

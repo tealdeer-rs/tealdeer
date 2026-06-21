@@ -7,6 +7,7 @@ use crate::{config::Indent, extensions::FindFrom, types::LineType};
 #[derive(Debug, Clone, Copy, Eq)]
 /// Represents a snippet from a page of a specific highlighting class.
 pub enum PageSnippet<T> {
+    Indent(T),
     CommandName(T),
     Variable(T),
     NormalCode(T),
@@ -23,6 +24,7 @@ impl<T> PageSnippet<T> {
         F: FnOnce(T) -> U,
     {
         match self {
+            PageSnippet::Indent(s) => PageSnippet::Indent(f(s)),
             PageSnippet::CommandName(s) => PageSnippet::CommandName(f(s)),
             PageSnippet::Variable(s) => PageSnippet::Variable(f(s)),
             PageSnippet::NormalCode(s) => PageSnippet::NormalCode(f(s)),
@@ -37,7 +39,8 @@ impl<T> PageSnippet<T> {
 impl<T: PartialEq<U>, U> PartialEq<PageSnippet<U>> for PageSnippet<T> {
     fn eq(&self, other: &PageSnippet<U>) -> bool {
         match (self, other) {
-            (PageSnippet::CommandName(s), PageSnippet::CommandName(t))
+            (PageSnippet::Indent(s), PageSnippet::Indent(t))
+            | (PageSnippet::CommandName(s), PageSnippet::CommandName(t))
             | (PageSnippet::Variable(s), PageSnippet::Variable(t))
             | (PageSnippet::NormalCode(s), PageSnippet::NormalCode(t))
             | (PageSnippet::Description(s), PageSnippet::Description(t))
@@ -54,9 +57,8 @@ impl PageSnippet<&str> {
         use PageSnippet::*;
 
         match self {
-            CommandName(s) | Variable(s) | NormalCode(s) | Description(s) | Text(s) | Title(s) => {
-                s.is_empty()
-            }
+            Indent(s) | CommandName(s) | Variable(s) | NormalCode(s) | Description(s) | Text(s)
+            | Title(s) => s.is_empty(),
             Linebreak => false,
         }
     }
@@ -87,7 +89,7 @@ where
             LineType::Title(title) => {
                 if show_title {
                     process_snippet(PageSnippet::Linebreak)?;
-                    process_snippet(PageSnippet::Title(&base_indent))?;
+                    process_snippet(PageSnippet::Indent(&base_indent))?;
                     process_snippet(PageSnippet::Title(&title))?;
                     process_snippet(PageSnippet::Linebreak)?;
                 } else {
@@ -99,17 +101,17 @@ where
                 debug!("Detected command name: {}", &command);
             }
             LineType::Description(text) => {
-                process_snippet(PageSnippet::Description(&base_indent))?;
+                process_snippet(PageSnippet::Indent(&base_indent))?;
                 process_snippet(PageSnippet::Description(&text))?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
             LineType::ExampleText(text) => {
-                process_snippet(PageSnippet::Text(&base_indent))?;
+                process_snippet(PageSnippet::Indent(&base_indent))?;
                 process_snippet(PageSnippet::Text(&text))?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
             LineType::ExampleCode(text) => {
-                process_snippet(PageSnippet::NormalCode(&command_indent))?;
+                process_snippet(PageSnippet::Indent(&command_indent))?;
                 highlight_code(&command, &text, process_snippet)?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
@@ -241,6 +243,45 @@ fn is_freestanding_substring(surrounding: &str, substring: (usize, usize)) -> bo
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn indentation_uses_dedicated_snippets() {
+        let lines = [
+            LineType::Title("tldr".to_owned()),
+            LineType::Description("description".to_owned()),
+            LineType::ExampleText("example".to_owned()),
+            LineType::ExampleCode("tldr --help".to_owned()),
+        ];
+        let mut snippets = Vec::new();
+
+        highlight_lines(
+            lines.into_iter(),
+            &mut |snippet| {
+                snippets.push(snippet.map(str::to_owned));
+                Ok::<(), ()>(())
+            },
+            true,
+            true,
+            Indent {
+                base: 2,
+                command: 4,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            snippets
+                .iter()
+                .filter(|snippet| matches!(snippet, PageSnippet::Indent(_)))
+                .collect::<Vec<_>>(),
+            [
+                &PageSnippet::Indent("  ".to_owned()),
+                &PageSnippet::Indent("  ".to_owned()),
+                &PageSnippet::Indent("  ".to_owned()),
+                &PageSnippet::Indent("    ".to_owned())
+            ]
+        );
+    }
 
     #[test]
     fn test_is_freestanding_substring() {
