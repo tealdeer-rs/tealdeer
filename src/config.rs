@@ -10,7 +10,6 @@ use std::{
 
 use anyhow::{anyhow, ensure, Context, Result};
 use clap::ValueEnum;
-use etcetera::{app_strategy::choose_native_strategy, choose_app_strategy, AppStrategy};
 use log::info;
 use serde::Serialize as _;
 use serde_derive::{Deserialize, Serialize};
@@ -18,7 +17,6 @@ use yansi::{Color, Style};
 
 use crate::{
     extensions::Dedup as _,
-    get_app_info,
     types::{PathSource, PlatformType},
 };
 
@@ -33,6 +31,50 @@ const SUPPORTED_TLS_BACKENDS: &[RawTlsBackend] = &[
     #[cfg(feature = "rustls-with-native-roots")]
     RawTlsBackend::RustlsWithNativeRoots,
 ];
+
+struct SystemDirectories {
+    config: PathBuf,
+    cache: PathBuf,
+    data: PathBuf,
+}
+
+impl SystemDirectories {
+    fn discover() -> Result<Self> {
+        use etcetera::{
+            app_strategy::choose_native_strategy, choose_app_strategy, AppStrategy, AppStrategyArgs,
+        };
+
+        let args = AppStrategyArgs {
+            top_level_domain: String::new(),
+            author: crate::NAME.to_string(),
+            app_name: crate::NAME.to_string(),
+        };
+
+        // The app strategy prefers XDG on MacOs, whereas the native strategy returns paths which
+        // are used by installed applications. On Linux and Windows, the strategies are the same.
+        let app_dirs = choose_app_strategy(args.clone())?;
+        let native_dirs = choose_native_strategy(args)?;
+
+        // We prefer the XDG paths, but before tealdeer 1.9, we used only the native paths on MacOs.
+        // So if we find files in these locations, we keep using them.
+        let fallback = |app_dir: PathBuf, native_dir: PathBuf| {
+            if !app_dir.exists() && native_dir.exists() {
+                native_dir
+            } else {
+                app_dir
+            }
+        };
+
+        Ok(Self {
+            config: fallback(app_dirs.config_dir(), native_dirs.config_dir()),
+            cache: fallback(app_dirs.cache_dir(), native_dirs.cache_dir()),
+            data: fallback(app_dirs.data_dir(), native_dirs.data_dir()),
+        })
+    }
+}
+static SYSTEM_DIRECTORIES: LazyLock<SystemDirectories> = LazyLock::new(|| {
+    SystemDirectories::discover().expect("Failed to initialize system directories.")
+});
 
 pub(crate) fn supported_tls_backends_string() -> String {
     SUPPORTED_TLS_BACKENDS
@@ -602,15 +644,8 @@ impl<'a> Config<'a> {
                 source: PathSource::ConfigFile,
             }
         } else {
-            let app_dir = choose_app_strategy(get_app_info())?.cache_dir();
-            let native_dir = choose_native_strategy(get_app_info())?.cache_dir();
-            let path = if !app_dir.exists() && native_dir.exists() {
-                native_dir
-            } else {
-                app_dir
-            };
             PathWithSource {
-                path,
+                path: SYSTEM_DIRECTORIES.cache.clone(),
                 source: PathSource::OsConvention,
             }
         };
@@ -631,17 +666,9 @@ impl<'a> Config<'a> {
             })
             .transpose()?
             .or_else(|| {
-                let app_dir = choose_app_strategy(get_app_info()).ok()?.data_dir();
-                let native_dir = choose_native_strategy(get_app_info()).ok()?.data_dir();
-                let path = if !app_dir.exists() && native_dir.exists() {
-                    native_dir
-                } else {
-                    app_dir
-                };
-
                 // Note: The `join("")` call ensures that there's a trailing slash
                 Some(PathWithSource {
-                    path: path.join("pages").join(""),
+                    path: SYSTEM_DIRECTORIES.data.join("pages").join(""),
                     source: PathSource::OsConvention,
                 })
             });
@@ -757,22 +784,7 @@ pub fn get_config_dir() -> Result<(PathBuf, PathSource)> {
         return Ok((PathBuf::from(value), PathSource::EnvVar));
     }
 
-    // Check XDG directories first
-    let app_dirs = choose_app_strategy(get_app_info())?;
-    let app_config_dir = app_dirs.config_dir();
-
-    // Fall back to native (different on MacOS)
-    if !app_config_dir.exists() {
-        let native_dirs = choose_native_strategy(get_app_info())?;
-        let native_config_dir = native_dirs.config_dir();
-        if native_config_dir.exists() {
-            return Ok((native_config_dir, PathSource::OsConvention));
-        }
-    }
-
-    // However, if the fallback did not work, we still return the XDG location so that it is used
-    // for seeding a config file.
-    Ok((app_config_dir, PathSource::OsConvention))
+    Ok((SYSTEM_DIRECTORIES.config.clone(), PathSource::OsConvention))
 }
 
 /// Return the path to the config file.
@@ -780,12 +792,9 @@ pub fn get_config_dir() -> Result<(PathBuf, PathSource)> {
 /// Note that this function does not verify whether the file at that location
 /// exists, or is a file.
 pub fn get_default_config_path() -> Result<PathWithSource> {
-    let (config_dir, source) = get_config_dir()?;
-    let config_file_path = config_dir.join(CONFIG_FILE_NAME);
-    Ok(PathWithSource {
-        path: config_file_path,
-        source,
-    })
+    let (mut path, source) = get_config_dir()?;
+    path.push(CONFIG_FILE_NAME);
+    Ok(PathWithSource { path, source })
 }
 
 /// Create default config file.
