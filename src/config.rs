@@ -759,7 +759,7 @@ impl ConfigLoader {
     /// Create a loader that uses the default config file location. If no file is present at the default location, the
     /// default configuration is used.
     pub fn read_default_path() -> Result<Self> {
-        let path = get_default_config_path().context("Could not determine default config path.")?;
+        let path = get_default_config_path();
         Self::read_internal(path, true)
     }
 
@@ -777,24 +777,24 @@ impl ConfigLoader {
 ///
 /// Note that this function does not verify whether the directory at that
 /// location exists, or is a directory.
-pub fn get_config_dir() -> Result<(PathBuf, PathSource)> {
+pub fn get_config_dir() -> (PathBuf, PathSource) {
     // Allow overriding the config directory by setting the
     // $TEALDEER_CONFIG_DIR env variable.
     if let Ok(value) = env::var("TEALDEER_CONFIG_DIR") {
-        return Ok((PathBuf::from(value), PathSource::EnvVar));
+        return (PathBuf::from(value), PathSource::EnvVar);
     }
 
-    Ok((SYSTEM_DIRECTORIES.config.clone(), PathSource::OsConvention))
+    (SYSTEM_DIRECTORIES.config.clone(), PathSource::OsConvention)
 }
 
 /// Return the path to the config file.
 ///
 /// Note that this function does not verify whether the file at that location
 /// exists, or is a file.
-pub fn get_default_config_path() -> Result<PathWithSource> {
-    let (mut path, source) = get_config_dir()?;
+pub fn get_default_config_path() -> PathWithSource {
+    let (mut path, source) = get_config_dir();
     path.push(CONFIG_FILE_NAME);
-    Ok(PathWithSource { path, source })
+    PathWithSource { path, source }
 }
 
 /// Create default config file.
@@ -804,7 +804,7 @@ pub fn make_default_config(path: Option<&Path>) -> Result<PathBuf> {
     let config_file_path = if let Some(p) = path {
         p.into()
     } else {
-        let (config_dir, _) = get_config_dir()?;
+        let (config_dir, _) = get_config_dir();
 
         // Ensure that config directory exists
         if config_dir.exists() {

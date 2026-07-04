@@ -105,16 +105,14 @@ fn update_cache(
 
 /// Show file paths
 fn show_paths(config: &Config) {
-    let config_dir = get_config_dir().map_or_else(
-        |e| format!("[Error: {e}]"),
-        |(mut path, source)| {
-            path.push(""); // Trailing path separator
-            match path.to_str() {
-                Some(path) => format!("{path} ({source})"),
-                None => "[Invalid]".to_string(),
-            }
-        },
-    );
+    let config_dir = {
+        let (mut path, source) = get_config_dir();
+        path.push(""); // Trailing path separator
+        match path.to_str() {
+            Some(path) => format!("{path} ({source})"),
+            None => "[Invalid]".to_string(),
+        }
+    };
     let config_path = config.file_path.to_string();
     let cache_dir = config.directories.cache_dir.to_string();
     let pages_dir = {
