@@ -376,16 +376,18 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
             return Ok(ExitCode::FAILURE);
         };
 
-        let age = cache.age()?;
-        if age > config::MAX_CACHE_AGE && !args.quiet {
-            print_warning(
-                enable_styles,
-                &format!(
-                    "The cache hasn't been updated for {} days.\n\
-                     You should probably run `tldr --update` soon.",
-                    age.as_secs() / 24 / 3600
-                ),
-            );
+        if let Some(max_cache_age) = config.updates.warn_cache_age {
+            let age = cache.age()?;
+            if age > max_cache_age && !args.quiet {
+                print_warning(
+                    enable_styles,
+                    &format!(
+                        "The cache hasn't been updated for {} days.\n\
+                         You should probably run `tldr --update` soon.",
+                        age.as_secs() / 24 / 3600
+                    ),
+                );
+            }
         }
 
         cache

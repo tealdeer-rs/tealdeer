@@ -493,6 +493,26 @@ fn test_quiet_old_cache() {
         .stderr(contains("The cache hasn't been updated for ").not());
 }
 
+#[test]
+fn test_warn_cache_age_never() {
+    let testenv = TestEnv::new().install_default_cache();
+
+    filetime::set_file_mtime(
+        testenv.cache_dir().join(TLDR_PAGES_DIR),
+        filetime::FileTime::from_unix_time(1, 0),
+    )
+    .unwrap();
+
+    testenv.append_to_config("[updates]\nwarn_cache_age = \"never\"\n");
+
+    testenv
+        .command()
+        .args(["which"])
+        .assert()
+        .success()
+        .stderr(contains("The cache hasn't been updated for ").not());
+}
+
 #[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_create_cache_directory_path() {

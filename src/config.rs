@@ -228,6 +228,17 @@ fn default_archive_source() -> String {
     "https://github.com/tldr-pages/tldr/releases/latest/download".to_owned()
 }
 
+/// Controls when a warning about an outdated cache is printed.
+///
+/// Currently, the only nameable option is `"never"`. In the future, this may
+/// be extended to also accept a duration (e.g. `"60d"`), after which the
+/// warning should be shown.
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+enum RawWarnCacheAge {
+    Never,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 struct RawUpdatesConfig {
     #[serde(default)]
@@ -240,6 +251,8 @@ struct RawUpdatesConfig {
     pub tls_backend: RawTlsBackend,
     #[serde(default)]
     pub download_languages: Option<Vec<String>>,
+    #[serde(default)]
+    pub warn_cache_age: Option<RawWarnCacheAge>,
 }
 
 impl Default for RawUpdatesConfig {
@@ -250,6 +263,7 @@ impl Default for RawUpdatesConfig {
             archive_source: default_archive_source(),
             tls_backend: RawTlsBackend::default(),
             download_languages: None,
+            warn_cache_age: None,
         }
     }
 }
@@ -380,6 +394,7 @@ pub struct UpdatesConfig<'a> {
     pub archive_source: &'a str,
     pub tls_backend: TlsBackend,
     pub download_languages: Vec<Language<'a>>,
+    pub warn_cache_age: Option<Duration>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -569,6 +584,10 @@ impl<'a> Config<'a> {
                 || search.languages.clone(),
                 |languages| languages.iter().map(|lang| Language(lang)).collect(),
             ),
+            warn_cache_age: match raw_config.updates.warn_cache_age {
+                None => Some(MAX_CACHE_AGE),
+                Some(RawWarnCacheAge::Never) => None,
+            },
         };
 
         let relative_path_root = config_file_path
