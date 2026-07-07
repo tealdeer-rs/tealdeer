@@ -8,8 +8,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{anyhow, bail, ensure, Context, Result};
-use app_dirs::{get_app_root, AppDataType};
+use anyhow::{anyhow, ensure, Context, Result};
 use clap::ValueEnum;
 use log::info;
 use serde::Serialize as _;
@@ -32,6 +31,50 @@ const SUPPORTED_TLS_BACKENDS: &[RawTlsBackend] = &[
     #[cfg(feature = "rustls-with-native-roots")]
     RawTlsBackend::RustlsWithNativeRoots,
 ];
+
+struct SystemDirectories {
+    config: PathBuf,
+    cache: PathBuf,
+    data: PathBuf,
+}
+
+impl SystemDirectories {
+    fn discover() -> Result<Self> {
+        use etcetera::{
+            app_strategy::choose_native_strategy, choose_app_strategy, AppStrategy, AppStrategyArgs,
+        };
+
+        let args = AppStrategyArgs {
+            top_level_domain: String::new(),
+            author: crate::NAME.to_string(),
+            app_name: crate::NAME.to_string(),
+        };
+
+        // The app strategy prefers XDG on MacOs, whereas the native strategy returns paths which
+        // are used by installed applications. On Linux and Windows, the strategies are the same.
+        let app_dirs = choose_app_strategy(args.clone())?;
+        let native_dirs = choose_native_strategy(args)?;
+
+        // We prefer the XDG paths, but before tealdeer 1.9, we used only the native paths on MacOs.
+        // So if we find files in these locations, we keep using them.
+        let fallback = |app_dir: PathBuf, native_dir: PathBuf| {
+            if !app_dir.exists() && native_dir.exists() {
+                native_dir
+            } else {
+                app_dir
+            }
+        };
+
+        Ok(Self {
+            config: fallback(app_dirs.config_dir(), native_dirs.config_dir()),
+            cache: fallback(app_dirs.cache_dir(), native_dirs.cache_dir()),
+            data: fallback(app_dirs.data_dir(), native_dirs.data_dir()),
+        })
+    }
+}
+static SYSTEM_DIRECTORIES: LazyLock<SystemDirectories> = LazyLock::new(|| {
+    SystemDirectories::discover().expect("Failed to initialize system directories.")
+});
 
 pub(crate) fn supported_tls_backends_string() -> String {
     SUPPORTED_TLS_BACKENDS
@@ -619,15 +662,11 @@ impl<'a> Config<'a> {
                 path: resolved_path,
                 source: PathSource::ConfigFile,
             }
-        } else if let Ok(default_dir) = get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
-            // Otherwise, fall back to the default user cache directory.
+        } else {
             PathWithSource {
-                path: default_dir,
+                path: SYSTEM_DIRECTORIES.cache.clone(),
                 source: PathSource::OsConvention,
             }
-        } else {
-            // If everything fails, give up
-            bail!("Could not determine user cache directory");
         };
         let custom_pages_dir = raw_config
             .directories
@@ -646,15 +685,11 @@ impl<'a> Config<'a> {
             })
             .transpose()?
             .or_else(|| {
-                get_app_root(AppDataType::UserData, &crate::APP_INFO)
-                    .map(|path| {
-                        // Note: The `join("")` call ensures that there's a trailing slash
-                        PathWithSource {
-                            path: path.join("pages").join(""),
-                            source: PathSource::OsConvention,
-                        }
-                    })
-                    .ok()
+                // Note: The `join("")` call ensures that there's a trailing slash
+                Some(PathWithSource {
+                    path: SYSTEM_DIRECTORIES.data.join("pages").join(""),
+                    source: PathSource::OsConvention,
+                })
             });
         let directories = DirectoriesConfig {
             cache_dir,
@@ -743,7 +778,7 @@ impl ConfigLoader {
     /// Create a loader that uses the default config file location. If no file is present at the default location, the
     /// default configuration is used.
     pub fn read_default_path() -> Result<Self> {
-        let path = get_default_config_path().context("Could not determine default config path.")?;
+        let path = get_default_config_path();
         Self::read_internal(path, true)
     }
 
@@ -761,30 +796,24 @@ impl ConfigLoader {
 ///
 /// Note that this function does not verify whether the directory at that
 /// location exists, or is a directory.
-pub fn get_config_dir() -> Result<(PathBuf, PathSource)> {
+pub fn get_config_dir() -> (PathBuf, PathSource) {
     // Allow overriding the config directory by setting the
     // $TEALDEER_CONFIG_DIR env variable.
     if let Ok(value) = env::var("TEALDEER_CONFIG_DIR") {
-        return Ok((PathBuf::from(value), PathSource::EnvVar));
+        return (PathBuf::from(value), PathSource::EnvVar);
     }
 
-    // Otherwise, fall back to the user config directory.
-    let dirs = get_app_root(AppDataType::UserConfig, &crate::APP_INFO)
-        .context("Failed to determine the user config directory")?;
-    Ok((dirs, PathSource::OsConvention))
+    (SYSTEM_DIRECTORIES.config.clone(), PathSource::OsConvention)
 }
 
 /// Return the path to the config file.
 ///
 /// Note that this function does not verify whether the file at that location
 /// exists, or is a file.
-pub fn get_default_config_path() -> Result<PathWithSource> {
-    let (config_dir, source) = get_config_dir()?;
-    let config_file_path = config_dir.join(CONFIG_FILE_NAME);
-    Ok(PathWithSource {
-        path: config_file_path,
-        source,
-    })
+pub fn get_default_config_path() -> PathWithSource {
+    let (mut path, source) = get_config_dir();
+    path.push(CONFIG_FILE_NAME);
+    PathWithSource { path, source }
 }
 
 /// Create default config file.
@@ -794,7 +823,7 @@ pub fn make_default_config(path: Option<&Path>) -> Result<PathBuf> {
     let config_file_path = if let Some(p) = path {
         p.into()
     } else {
-        let (config_dir, _) = get_config_dir()?;
+        let (config_dir, _) = get_config_dir();
 
         // Ensure that config directory exists
         if config_dir.exists() {
