@@ -30,6 +30,18 @@ auto_update = true
 auto_update_interval_hours = 24
 ```
 
+### `warn_cache_age`
+
+Controls when a warning is printed if the cache has not been updated in a while.
+By default, the warning is shown once the cache is older than 30 days. Set this
+to `"never"` to silence the warning. This is useful if, for some reason, the
+modification time does not reflect its actual age.
+
+```toml
+[updates]
+warn_cache_age = "never"
+```
+
 ## Download configuration
 
 ### `download_languages`
