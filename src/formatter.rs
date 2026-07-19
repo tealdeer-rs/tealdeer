@@ -13,6 +13,10 @@ pub enum PageSnippet<T> {
     Description(T),
     Text(T),
     Title(T),
+    /// Leading indentation before a line. Unlike the other snippets, indents
+    /// are always printed without any styling, even when a custom style is
+    /// configured for the surrounding snippet type (see issue #485).
+    Indent(T),
     Linebreak,
 }
 
@@ -29,6 +33,7 @@ impl<T> PageSnippet<T> {
             PageSnippet::Description(s) => PageSnippet::Description(f(s)),
             PageSnippet::Text(s) => PageSnippet::Text(f(s)),
             PageSnippet::Title(s) => PageSnippet::Title(f(s)),
+            PageSnippet::Indent(s) => PageSnippet::Indent(f(s)),
             PageSnippet::Linebreak => PageSnippet::Linebreak,
         }
     }
@@ -42,7 +47,8 @@ impl<T: PartialEq<U>, U> PartialEq<PageSnippet<U>> for PageSnippet<T> {
             | (PageSnippet::NormalCode(s), PageSnippet::NormalCode(t))
             | (PageSnippet::Description(s), PageSnippet::Description(t))
             | (PageSnippet::Text(s), PageSnippet::Text(t))
-            | (PageSnippet::Title(s), PageSnippet::Title(t)) => s == t,
+            | (PageSnippet::Title(s), PageSnippet::Title(t))
+            | (PageSnippet::Indent(s), PageSnippet::Indent(t)) => s == t,
             (PageSnippet::Linebreak, PageSnippet::Linebreak) => true,
             _ => false,
         }
@@ -54,7 +60,8 @@ impl PageSnippet<&str> {
         use PageSnippet::*;
 
         match self {
-            CommandName(s) | Variable(s) | NormalCode(s) | Description(s) | Text(s) | Title(s) => {
+            CommandName(s) | Variable(s) | NormalCode(s) | Description(s) | Text(s) | Title(s)
+            | Indent(s) => {
                 s.is_empty()
             }
             Linebreak => false,
@@ -87,7 +94,7 @@ where
             LineType::Title(title) => {
                 if show_title {
                     process_snippet(PageSnippet::Linebreak)?;
-                    process_snippet(PageSnippet::Title(&base_indent))?;
+                    process_snippet(PageSnippet::Indent(&base_indent))?;
                     process_snippet(PageSnippet::Title(&title))?;
                     process_snippet(PageSnippet::Linebreak)?;
                 } else {
@@ -99,17 +106,17 @@ where
                 debug!("Detected command name: {}", &command);
             }
             LineType::Description(text) => {
-                process_snippet(PageSnippet::Description(&base_indent))?;
+                process_snippet(PageSnippet::Indent(&base_indent))?;
                 process_snippet(PageSnippet::Description(&text))?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
             LineType::ExampleText(text) => {
-                process_snippet(PageSnippet::Text(&base_indent))?;
+                process_snippet(PageSnippet::Indent(&base_indent))?;
                 process_snippet(PageSnippet::Text(&text))?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
             LineType::ExampleCode(text) => {
-                process_snippet(PageSnippet::NormalCode(&command_indent))?;
+                process_snippet(PageSnippet::Indent(&command_indent))?;
                 highlight_code(&command, &text, process_snippet)?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
@@ -278,6 +285,122 @@ mod tests {
 
         highlight_code(cmd, segment, &mut process_snippet).expect("highlight code segment failed");
         yielded
+    }
+
+    mod highlight_lines {
+        use super::*;
+        use crate::config::Indent as IndentConfig;
+        use PageSnippet::*;
+
+        /// Collect every snippet yielded by `highlight_lines` for the given lines,
+        /// mirroring the production closure which skips empty snippets.
+        fn collect(
+            lines: Vec<LineType>,
+            show_title: bool,
+            indent: IndentConfig,
+        ) -> Vec<PageSnippet<String>> {
+            let mut yielded = Vec::new();
+            let mut process_snippet = |snip: PageSnippet<&str>| {
+                if !snip.is_empty() {
+                    yielded.push(snip.map(str::to_string));
+                }
+                Ok::<(), ()>(())
+            };
+            highlight_lines(
+                lines.into_iter(),
+                &mut process_snippet,
+                true,
+                show_title,
+                indent,
+            )
+            .expect("highlight_lines failed");
+            yielded
+        }
+
+        #[test]
+        fn indents_are_emitted_as_unstyled_indent_snippets() {
+            // Regression test for <https://github.com/tealdeer-rs/tealdeer/issues/485>:
+            // the leading indentation must be yielded as `PageSnippet::Indent`,
+            // not as a styled snippet of the surrounding line type.
+            let indent = IndentConfig {
+                base: 2,
+                command: 4,
+            };
+            let snippets = collect(
+                vec![
+                    LineType::Description("A description".into()),
+                    LineType::ExampleText("An example".into()),
+                    LineType::ExampleCode("echo hi".into()),
+                ],
+                false,
+                indent,
+            );
+
+            assert_eq!(
+                snippets,
+                vec![
+                    // Description line: unstyled indent, then the description text
+                    Indent("  ".to_string()),
+                    Description("A description".to_string()),
+                    Linebreak,
+                    // Example text line: unstyled indent, then the text
+                    Indent("  ".to_string()),
+                    Text("An example".to_string()),
+                    Linebreak,
+                    // Example code line: unstyled indent, then the highlighted code
+                    Indent("    ".to_string()),
+                    NormalCode("echo hi".to_string()),
+                    Linebreak,
+                    // Final trailing linebreak
+                    Linebreak,
+                ]
+            );
+        }
+
+        #[test]
+        fn title_indent_is_unstyled() {
+            let indent = IndentConfig {
+                base: 3,
+                command: 6,
+            };
+            let snippets = collect(
+                vec![LineType::Title("mycmd".into())],
+                true,
+                indent,
+            );
+
+            assert_eq!(
+                snippets,
+                vec![
+                    Linebreak,
+                    Indent("   ".to_string()),
+                    Title("mycmd".to_string()),
+                    Linebreak,
+                    Linebreak,
+                ]
+            );
+        }
+
+        #[test]
+        fn empty_indent_is_skipped() {
+            // When the configured indent is zero, no (empty) indent snippet
+            // should be emitted, matching the previous behaviour where empty
+            // snippets were filtered out by `PageSnippet::is_empty`.
+            let indent = IndentConfig {
+                base: 0,
+                command: 0,
+            };
+            let snippets = collect(
+                vec![LineType::Description("No indent".into())],
+                false,
+                indent,
+            );
+
+            assert_eq!(
+                snippets,
+                vec![Description("No indent".to_string()), Linebreak, Linebreak]
+            );
+        }
     }
 
     mod highlight_code_segment {

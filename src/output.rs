@@ -92,6 +92,8 @@ fn print_snippet(
         NormalCode(s) => write!(writer, "{}", s.paint(style.example_code)),
         Description(s) => write!(writer, "{}", s.paint(style.description)),
         Text(s) => write!(writer, "{}", s.paint(style.example_text)),
+        // Indentation is always printed without any styling (#485).
+        Indent(s) => write!(writer, "{s}"),
         Linebreak => writeln!(writer),
     }
 }
