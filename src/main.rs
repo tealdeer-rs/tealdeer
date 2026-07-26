@@ -429,10 +429,9 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
                 print_warning(
                     enable_styles,
                     &format!(
-                        "Page `{}` not found in cache.\n\
+                        "Page `{command}` not found in cache.\n\
                          Try updating with `tldr --update`, or submit a pull request to:\n\
-                         https://github.com/tldr-pages/tldr",
-                        &command
+                         https://github.com/tldr-pages/tldr"
                     ),
                 );
             }

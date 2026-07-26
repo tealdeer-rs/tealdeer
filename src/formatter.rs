@@ -96,7 +96,7 @@ where
                 // This is safe as long as the parsed title is only the command,
                 // and the iterator yields values in order of appearance.
                 command = title;
-                debug!("Detected command name: {}", &command);
+                debug!("Detected command name: {command}");
             }
             LineType::Description(text) => {
                 process_snippet(PageSnippet::Description(&base_indent))?;
