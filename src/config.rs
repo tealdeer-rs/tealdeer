@@ -46,7 +46,7 @@ impl SystemDirectories {
 
         let args = AppStrategyArgs {
             top_level_domain: String::new(),
-            author: crate::NAME.to_string(),
+            author: String::new(),
             app_name: crate::NAME.to_string(),
         };
 
