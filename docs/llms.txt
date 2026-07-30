@@ -1,0 +1,23 @@
+# Tealdeer
+
+> Tealdeer is a very fast implementation of [tldr](https://github.com/tldr-pages/tldr) in Rust: simplified, example-based, community-driven man pages, accessed through the `tldr` binary.
+
+## Getting Started
+
+- [Introduction](https://tealdeer-rs.github.io/tealdeer/intro.html): What tealdeer is and how it relates to the tldr-pages project.
+- [Installing](https://tealdeer-rs.github.io/tealdeer/installing.html): Installation methods, including package managers.
+- [Usage](https://tealdeer-rs.github.io/tealdeer/usage.html): Basic command-line usage of the `tldr` binary.
+
+## Configuration
+
+- [Configuration](https://tealdeer-rs.github.io/tealdeer/config.html): Overview of the TOML config file.
+- [Section: display](https://tealdeer-rs.github.io/tealdeer/config_display.html): Output format settings, including pager usage.
+- [Section: style](https://tealdeer-rs.github.io/tealdeer/config_style.html): Customizing colors and text styling.
+- [Section: search](https://tealdeer-rs.github.io/tealdeer/config_search.html): Page search and cache lookup settings.
+- [Section: updates](https://tealdeer-rs.github.io/tealdeer/config_updates.html): Automatic and manual cache update behavior.
+- [Section: directories](https://tealdeer-rs.github.io/tealdeer/config_directories.html): Overriding cache and config directory paths.
+
+## Advanced
+
+- [Custom Pages and Patches](https://tealdeer-rs.github.io/tealdeer/usage_custom_pages.html): Writing custom pages and patching existing ones.
+- [Tips and Tricks](https://tealdeer-rs.github.io/tealdeer/tips_and_tricks.html): Example use cases, such as showing a random page on shell start.
