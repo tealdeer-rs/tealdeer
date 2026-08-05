@@ -807,6 +807,7 @@ impl ConfigLoader {
                 .ok_or(anyhow!("Invalid override-string: {override_str}"))?;
 
             let name = name.trim();
+            let value = toml::Value::from_str(value.trim())?;
 
             let mut keypath = name.split('.');
             let key_start = keypath
@@ -825,12 +826,6 @@ impl ConfigLoader {
                     "\"{name}\" is not a valid key starting at \"{subkey}\""
                 ))?;
             }
-
-            let ugly_intermediate_key = "ugly_intermediate";
-            let value = format!("{ugly_intermediate_key} = {value}");
-            let mut value = toml::Value::from_str(&value)?;
-            let value = value.as_table_mut().unwrap();
-            let value = value.remove(ugly_intermediate_key).unwrap();
 
             *entry = value;
         }
