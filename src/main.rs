@@ -16,6 +16,7 @@
 #![allow(clippy::struct_excessive_bools)]
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::unnecessary_debug_formatting)]
+#![allow(clippy::while_let_loop)]
 
 #[cfg(not(any(
     feature = "native-tls",
@@ -35,7 +36,6 @@ use std::{
 };
 
 use anyhow::{anyhow, Context, Result};
-use app_dirs::AppInfo;
 use cache::{CacheConfig, TLDR_OLD_PAGES_DIR};
 use clap::Parser;
 use config::{ConfigLoader, Language, StyleConfig, TlsBackend};
@@ -55,17 +55,17 @@ mod utils;
 use crate::{
     cache::{Cache, PageLookupResult, TLDR_PAGES_DIR},
     cli::Cli,
-    config::{get_config_dir, make_default_config, Config, PathWithSource},
+    config::{
+        get_config_dir, make_default_config, supported_tls_backends_string, Config, PathWithSource,
+    },
     output::print_page,
     types::ColorOptions,
     utils::{print_error, print_warning},
 };
 
 const NAME: &str = "tealdeer";
-const APP_INFO: AppInfo = AppInfo {
-    name: NAME,
-    author: NAME,
-};
+static TEALDEER_PAGE: &str =
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/pages/tealdeer.md"));
 
 /// Clear the cache
 fn clear_cache(cache: Cache, quietly: bool) -> Result<()> {
@@ -105,16 +105,14 @@ fn update_cache(
 
 /// Show file paths
 fn show_paths(config: &Config) {
-    let config_dir = get_config_dir().map_or_else(
-        |e| format!("[Error: {e}]"),
-        |(mut path, source)| {
-            path.push(""); // Trailing path separator
-            match path.to_str() {
-                Some(path) => format!("{path} ({source})"),
-                None => "[Invalid]".to_string(),
-            }
-        },
-    );
+    let config_dir = {
+        let (mut path, source) = get_config_dir();
+        path.push(""); // Trailing path separator
+        match path.to_str() {
+            Some(path) => format!("{path} ({source})"),
+            None => "[Invalid]".to_string(),
+        }
+    };
     let config_path = config.file_path.to_string();
     let cache_dir = config.directories.cache_dir.to_string();
     let pages_dir = {
@@ -254,8 +252,20 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
 
     // If a local file was passed in, render it and exit
     if let Some(file) = args.render {
-        let path = PageLookupResult::with_page(file);
-        print_page(&path, args.raw, enable_styles, args.pager, &config)?;
+        let reader = PageLookupResult::with_page(file).reader()?;
+        print_page(reader, args.raw, enable_styles, args.pager, &config)?;
+        return Ok(ExitCode::SUCCESS);
+    }
+
+    // The tealdeer page is embedded in the binary, no cache needed
+    if command == "tealdeer" {
+        print_page(
+            TEALDEER_PAGE.as_bytes(),
+            args.raw,
+            enable_styles,
+            args.pager,
+            &config,
+        )?;
         return Ok(ExitCode::SUCCESS);
     }
 
@@ -303,12 +313,36 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     let cache = if args.update || config.updates.auto_update && !args.no_auto_update {
         let (mut cache, was_created) = Cache::open_or_create(cache_config)?;
         if was_created || args.update || cache.age()? >= config.updates.auto_update_interval {
-            update_cache(
+            let result = update_cache(
                 &mut cache,
                 config.updates.archive_source,
                 config.updates.tls_backend,
                 args.quiet,
-            )?;
+            );
+
+            if let Err(e) = result {
+                print_error(enable_styles, &e);
+
+                eprintln!();
+                eprintln!("Note: Update errors are often caused by unexpected or missing TLS certificates.");
+                eprintln!(
+                    "You are currently using the following TLS backend: {}",
+                    config.updates.tls_backend,
+                );
+                eprintln!(
+                    "Try changing the updates.tls_backend setting in the config file, for example:"
+                );
+                eprintln!();
+                eprintln!("  [updates]");
+                eprintln!("  tls_backend = \"rustls-with-native-roots\"");
+                eprintln!();
+                eprintln!(
+                    "This build of tealdeer has support for the following options: {}",
+                    supported_tls_backends_string(),
+                );
+
+                return Ok(ExitCode::FAILURE);
+            }
         }
 
         cache
@@ -333,16 +367,18 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
             return Ok(ExitCode::FAILURE);
         };
 
-        let age = cache.age()?;
-        if age > config::MAX_CACHE_AGE && !args.quiet {
-            print_warning(
-                enable_styles,
-                &format!(
-                    "The cache hasn't been updated for {} days.\n\
-                     You should probably run `tldr --update` soon.",
-                    age.as_secs() / 24 / 3600
-                ),
-            );
+        if let Some(max_cache_age) = config.updates.warn_cache_age {
+            let age = cache.age()?;
+            if age > max_cache_age && !args.quiet {
+                print_warning(
+                    enable_styles,
+                    &format!(
+                        "The cache hasn't been updated for {} days.\n\
+                         You should probably run `tldr --update` soon.",
+                        age.as_secs() / 24 / 3600
+                    ),
+                );
+            }
         }
 
         cache
@@ -379,23 +415,27 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
             );
         }
 
-        let Some(lookup_result) = cache.find_page(&command) else {
+        let Some(result) = cache.find_page(&command) else {
             if !args.quiet {
                 print_warning(
                     enable_styles,
                     &format!(
-                        "Page `{}` not found in cache.\n\
+                        "Page `{command}` not found in cache.\n\
                          Try updating with `tldr --update`, or submit a pull request to:\n\
-                         https://github.com/tldr-pages/tldr",
-                        &command
+                         https://github.com/tldr-pages/tldr"
                     ),
                 );
             }
-
             return Ok(ExitCode::FAILURE);
         };
 
-        print_page(&lookup_result, args.raw, enable_styles, args.pager, &config)?;
+        print_page(
+            result.reader()?,
+            args.raw,
+            enable_styles,
+            args.pager,
+            &config,
+        )?;
     }
 
     Ok(ExitCode::SUCCESS)

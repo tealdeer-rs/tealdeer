@@ -37,3 +37,35 @@ show_title = true
 
 When enabled, the command name will be displayed at the top of the output,
 styled with the `command_name` style configuration.
+
+## `indent`
+
+Controls the indentation of the output via two sub-keys.
+
+### `indent.base`
+
+Specifies the number of spaces used to indent descriptions, example text, and titles (default `2`).
+
+```toml
+[display.indent]
+base = 2
+```
+
+### `indent.command`
+
+Specifies the number of spaces used to indent example code lines (default `6`).
+
+```toml
+[display.indent]
+command = 6
+```
+
+You can also configure both subkeys in a single line like this:
+
+```toml
+[display]
+indent = {
+  base = 2,
+  command = 6,
+}
+```

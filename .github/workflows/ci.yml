@@ -15,13 +15,13 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
-        toolchain: [stable, 1.85.0]
+        toolchain: [stable, 1.87.0] # MSRV
         include:
           - platform: windows-latest
             exe_suffix: .exe
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
@@ -39,7 +39,7 @@ jobs:
           # expects runners have the proper Native SSL library
           cargo build --features native-tls --no-default-features
           cp target/debug/tldr${{ matrix.exe_suffix}} artifacts/tldr-native-tls${{ matrix.exe_suffix}}
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: tldr-debug-build-${{ matrix.platform }}-rust-${{ matrix.toolchain }}
           path: artifacts/
@@ -50,19 +50,19 @@ jobs:
     name: run clippy lints
     runs-on: ubuntu-latest
     steps:
-       - uses: actions/checkout@v6
+       - uses: actions/checkout@v7
        - uses: dtolnay/rust-toolchain@master
          with:
            toolchain: stable
            components: clippy
        - name: run clippy lints
-         run: cargo clippy --features logging
+         run: cargo clippy --all-targets --features logging
 
   fmt:
     name: run rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
@@ -74,7 +74,7 @@ jobs:
     name: build docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v2
         with:

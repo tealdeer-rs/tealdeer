@@ -1,12 +1,11 @@
 //! Functions for printing pages to the terminal
 
-use std::io::{self, BufRead, Write};
+use std::io::{self, BufRead, BufReader, Read, Write};
 
 use anyhow::{Context, Result};
 use yansi::Paint;
 
 use crate::{
-    cache::PageLookupResult,
     config::{Config, StyleConfig},
     formatter::{highlight_lines, PageSnippet},
     line_iterator::LineIterator,
@@ -30,14 +29,13 @@ fn configure_pager(enable_styles: bool) {
 
 /// Print page by path
 pub fn print_page(
-    lookup_result: &PageLookupResult,
+    reader: impl Read,
     enable_markdown: bool,
     enable_styles: bool,
     use_pager: bool,
     config: &Config,
 ) -> Result<()> {
-    // Create reader from file(s)
-    let reader = lookup_result.reader()?;
+    let reader = BufReader::new(reader);
 
     // Configure pager if applicable
     if use_pager || config.display.use_pager {
@@ -56,7 +54,7 @@ pub fn print_page(
         }
     } else {
         // Closure that processes a page snippet and writes it to stdout
-        let mut process_snippet = |snip: PageSnippet<'_>| {
+        let mut process_snippet = |snip: PageSnippet<&str>| {
             if snip.is_empty() {
                 Ok(())
             } else {
@@ -70,6 +68,7 @@ pub fn print_page(
             &mut process_snippet,
             !config.display.compact,
             config.display.show_title,
+            config.display.indent,
         )
         .context("Could not write to stdout")?;
     }
@@ -82,18 +81,17 @@ pub fn print_page(
 
 fn print_snippet(
     writer: &mut impl Write,
-    snip: PageSnippet<'_>,
+    snip: PageSnippet<&str>,
     style: &StyleConfig,
 ) -> io::Result<()> {
     use PageSnippet::*;
 
     match snip {
-        CommandName(s) => write!(writer, "{}", s.paint(style.command_name)),
+        CommandName(s) | Title(s) => write!(writer, "{}", s.paint(style.command_name)),
         Variable(s) => write!(writer, "{}", s.paint(style.example_variable)),
         NormalCode(s) => write!(writer, "{}", s.paint(style.example_code)),
-        Description(s) => writeln!(writer, "  {}", s.paint(style.description)),
-        Text(s) => writeln!(writer, "  {}", s.paint(style.example_text)),
-        Title(s) => writeln!(writer, "  {}", s.paint(style.command_name)),
+        Description(s) => write!(writer, "{}", s.paint(style.description)),
+        Text(s) => write!(writer, "{}", s.paint(style.example_text)),
         Linebreak => writeln!(writer),
     }
 }

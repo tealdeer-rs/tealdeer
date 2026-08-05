@@ -1,16 +1,17 @@
 use std::{
+    borrow::Cow,
     env, fmt,
     fs::{self, File},
     io::{ErrorKind, Write},
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     str::FromStr,
     sync::LazyLock,
     time::Duration,
 };
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
-use app_dirs::{get_app_root, AppDataType};
 use clap::ValueEnum;
+use log::info;
 use serde::Serialize as _;
 use serde_derive::{Deserialize, Serialize};
 use yansi::{Color, Style};
@@ -32,8 +33,68 @@ const SUPPORTED_TLS_BACKENDS: &[RawTlsBackend] = &[
     RawTlsBackend::RustlsWithNativeRoots,
 ];
 
+struct SystemDirectories {
+    config: PathBuf,
+    cache: PathBuf,
+    data: PathBuf,
+}
+
+impl SystemDirectories {
+    fn discover() -> Result<Self> {
+        use etcetera::{
+            app_strategy::choose_native_strategy, choose_app_strategy, AppStrategy, AppStrategyArgs,
+        };
+
+        let args = AppStrategyArgs {
+            top_level_domain: String::new(),
+            author: String::new(),
+            app_name: crate::NAME.to_string(),
+        };
+
+        // The app strategy prefers XDG on MacOs, whereas the native strategy returns paths which
+        // are used by installed applications. On Linux and Windows, the strategies are the same.
+        let app_dirs = choose_app_strategy(args.clone())?;
+        let native_dirs = choose_native_strategy(args)?;
+
+        // We prefer the XDG paths, but before tealdeer 1.9, we used only the native paths on MacOs.
+        // So if we find files in these locations, we keep using them.
+        let fallback = |app_dir: PathBuf, native_dir: PathBuf| {
+            if !app_dir.exists() && native_dir.exists() {
+                native_dir
+            } else {
+                app_dir
+            }
+        };
+
+        Ok(Self {
+            config: fallback(app_dirs.config_dir(), native_dirs.config_dir()),
+            cache: fallback(app_dirs.cache_dir(), native_dirs.cache_dir()),
+            data: fallback(app_dirs.data_dir(), native_dirs.data_dir()),
+        })
+    }
+}
+static SYSTEM_DIRECTORIES: LazyLock<SystemDirectories> = LazyLock::new(|| {
+    SystemDirectories::discover().expect("Failed to initialize system directories.")
+});
+
+pub(crate) fn supported_tls_backends_string() -> String {
+    SUPPORTED_TLS_BACKENDS
+        .iter()
+        .map(std::string::ToString::to_string)
+        .collect::<Vec<String>>()
+        .join(", ")
+}
+
 fn default_underline() -> bool {
     false
+}
+
+const fn default_base_indent() -> usize {
+    2
+}
+
+const fn default_command_indent() -> usize {
+    6
 }
 
 fn default_bold() -> bool {
@@ -164,6 +225,25 @@ struct RawDisplayConfig {
     pub use_pager: bool,
     #[serde(default)]
     pub show_title: bool,
+    #[serde(default)]
+    pub indent: RawIndent,
+}
+
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+struct RawIndent {
+    #[serde(default = "default_base_indent")]
+    base: usize,
+    #[serde(default = "default_command_indent")]
+    command: usize,
+}
+
+impl Default for RawIndent {
+    fn default() -> Self {
+        Self {
+            base: 2,
+            command: 6,
+        }
+    }
 }
 
 impl From<&RawDisplayConfig> for DisplayConfig {
@@ -172,6 +252,10 @@ impl From<&RawDisplayConfig> for DisplayConfig {
             compact: raw_display_config.compact,
             use_pager: raw_display_config.use_pager,
             show_title: raw_display_config.show_title,
+            indent: Indent {
+                base: raw_display_config.indent.base,
+                command: raw_display_config.indent.command,
+            },
         }
     }
 }
@@ -185,7 +269,18 @@ const fn default_auto_update_interval_hours() -> u64 {
 }
 
 fn default_archive_source() -> String {
-    "https://github.com/tldr-pages/tldr/releases/latest/download/".to_owned()
+    "https://github.com/tldr-pages/tldr/releases/latest/download".to_owned()
+}
+
+/// Controls when a warning about an outdated cache is printed.
+///
+/// Currently, the only nameable option is `"never"`. In the future, this may
+/// be extended to also accept a duration (e.g. `"60d"`), after which the
+/// warning should be shown.
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+enum RawWarnCacheAge {
+    Never,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -200,6 +295,8 @@ struct RawUpdatesConfig {
     pub tls_backend: RawTlsBackend,
     #[serde(default)]
     pub download_languages: Option<Vec<String>>,
+    #[serde(default)]
+    pub warn_cache_age: Option<RawWarnCacheAge>,
 }
 
 impl Default for RawUpdatesConfig {
@@ -210,6 +307,7 @@ impl Default for RawUpdatesConfig {
             archive_source: default_archive_source(),
             tls_backend: RawTlsBackend::default(),
             download_languages: None,
+            warn_cache_age: None,
         }
     }
 }
@@ -324,6 +422,13 @@ pub struct DisplayConfig {
     pub compact: bool,
     pub use_pager: bool,
     pub show_title: bool,
+    pub indent: Indent,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Indent {
+    pub base: usize,
+    pub command: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -333,6 +438,7 @@ pub struct UpdatesConfig<'a> {
     pub archive_source: &'a str,
     pub tls_backend: TlsBackend,
     pub download_languages: Vec<Language<'a>>,
+    pub warn_cache_age: Option<Duration>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -384,6 +490,11 @@ fn get_languages<'a>(
 
     let mut lang_list = Vec::new();
     for locale in locales {
+        if !locale.is_ascii() {
+            info!("Skipping non-ASCII locale string: {locale}");
+            continue;
+        }
+
         // Language plus country code (e.g. `en_US`)
         if locale.len() >= 5 && locale.chars().nth(2) == Some('_') {
             lang_list.push(Language(&locale[..5]));
@@ -461,9 +572,28 @@ impl TryFrom<RawTlsBackend> for TlsBackend {
             _ => Err(anyhow!(
                 "Unsupported TLS backend: {}. This tealdeer build has support for the following options: {}",
                 raw,
-                SUPPORTED_TLS_BACKENDS.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", ")
+                supported_tls_backends_string(),
             ))
         }
+    }
+}
+
+impl TlsBackend {
+    const fn as_raw(self) -> RawTlsBackend {
+        match self {
+            #[cfg(feature = "native-tls")]
+            Self::NativeTls => RawTlsBackend::NativeTls,
+            #[cfg(feature = "rustls-with-webpki-roots")]
+            Self::RustlsWithWebpkiRoots => RawTlsBackend::RustlsWithWebpkiRoots,
+            #[cfg(feature = "rustls-with-native-roots")]
+            Self::RustlsWithNativeRoots => RawTlsBackend::RustlsWithNativeRoots,
+        }
+    }
+}
+
+impl fmt::Display for TlsBackend {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_raw().fmt(f)
     }
 }
 
@@ -498,12 +628,17 @@ impl<'a> Config<'a> {
                 || search.languages.clone(),
                 |languages| languages.iter().map(|lang| Language(lang)).collect(),
             ),
+            warn_cache_age: match raw_config.updates.warn_cache_age {
+                None => Some(MAX_CACHE_AGE),
+                Some(RawWarnCacheAge::Never) => None,
+            },
         };
 
         let relative_path_root = config_file_path
             .path()
             .parent()
             .context("Failed to get config directory")?;
+        let home_path = env::home_dir();
 
         // Determine directories config. For this, we need to take some
         // additional factory into account, like env variables, or the
@@ -519,42 +654,43 @@ impl<'a> Config<'a> {
                 source: PathSource::EnvVar,
             }
         } else if let Some(config_value) = &raw_config.directories.cache_dir {
-            // If the user explicitly configured a cache directory, use that.
+            // Resolve possible ~ prefixed path
+            let expanded_path = expand_home(config_value, home_path.as_deref())?;
+            // Resolve possible relative path.
+            let resolved_path = relative_path_root.join(expanded_path);
+
             PathWithSource {
-                // Resolve possible relative path. It would be nicer to clean up the path, but Rust stdlib
-                // does not give any method for that that does not need the paths to exist.
-                path: relative_path_root.join(config_value),
+                path: resolved_path,
                 source: PathSource::ConfigFile,
             }
-        } else if let Ok(default_dir) = get_app_root(AppDataType::UserCache, &crate::APP_INFO) {
-            // Otherwise, fall back to the default user cache directory.
+        } else {
             PathWithSource {
-                path: default_dir,
+                path: SYSTEM_DIRECTORIES.cache.clone(),
                 source: PathSource::OsConvention,
             }
-        } else {
-            // If everything fails, give up
-            bail!("Could not determine user cache directory");
         };
         let custom_pages_dir = raw_config
             .directories
             .custom_pages_dir
             .as_ref()
-            .map(|path| PathWithSource {
+            .map(|path| -> Result<PathWithSource> {
+                // Resolve possible ~ prefixed path
+                let expanded_path = expand_home(path, home_path.as_deref())?;
                 // Resolve possible relative path.
-                path: relative_path_root.join(path),
-                source: PathSource::ConfigFile,
+                let resolved_path = relative_path_root.join(expanded_path);
+
+                Ok(PathWithSource {
+                    path: resolved_path,
+                    source: PathSource::ConfigFile,
+                })
             })
+            .transpose()?
             .or_else(|| {
-                get_app_root(AppDataType::UserData, &crate::APP_INFO)
-                    .map(|path| {
-                        // Note: The `join("")` call ensures that there's a trailing slash
-                        PathWithSource {
-                            path: path.join("pages").join(""),
-                            source: PathSource::OsConvention,
-                        }
-                    })
-                    .ok()
+                // Note: The `join("")` call ensures that there's a trailing slash
+                Some(PathWithSource {
+                    path: SYSTEM_DIRECTORIES.data.join("pages").join(""),
+                    source: PathSource::OsConvention,
+                })
             });
         let directories = DirectoriesConfig {
             cache_dir,
@@ -570,6 +706,29 @@ impl<'a> Config<'a> {
             file_path: config_file_path,
         })
     }
+}
+
+/// Expands tilde (~) prefixed directories into its absolute version
+fn expand_home<'a>(input_path: &'a Path, home_path: Option<&Path>) -> Result<Cow<'a, Path>> {
+    let mut components = input_path.components();
+
+    if let Some(Component::Normal(first_component_raw)) = components.next() {
+        let first_component = first_component_raw
+            .to_str()
+            .ok_or(anyhow!("Path contains invalid UTF-8"))?;
+
+        if first_component == "~" {
+            let home_path = home_path.ok_or(anyhow!("Unable to find user home directory"))?;
+            let rest: PathBuf = components.collect();
+            let expanded = home_path.join(rest);
+
+            return Ok(Cow::Owned(expanded));
+        } else if first_component.starts_with('~') {
+            return Err(anyhow!("Tilde expansion with a login name not supported"));
+        }
+    }
+
+    Ok(Cow::Borrowed(input_path))
 }
 
 /// The [`ConfigLoader`] is used to load a [`Config`] from a file.
@@ -695,7 +854,7 @@ impl ConfigLoader {
     /// default configuration is used.
     /// `overrides`: If set, overrides the default values of the config
     pub fn read_default_path(overrides: Option<Vec<String>>) -> Result<Self> {
-        let path = get_default_config_path().context("Could not determine default config path.")?;
+        let path = get_default_config_path();
         Self::read_internal(path, true, overrides)
     }
 
@@ -713,30 +872,24 @@ impl ConfigLoader {
 ///
 /// Note that this function does not verify whether the directory at that
 /// location exists, or is a directory.
-pub fn get_config_dir() -> Result<(PathBuf, PathSource)> {
+pub fn get_config_dir() -> (PathBuf, PathSource) {
     // Allow overriding the config directory by setting the
     // $TEALDEER_CONFIG_DIR env variable.
     if let Ok(value) = env::var("TEALDEER_CONFIG_DIR") {
-        return Ok((PathBuf::from(value), PathSource::EnvVar));
+        return (PathBuf::from(value), PathSource::EnvVar);
     }
 
-    // Otherwise, fall back to the user config directory.
-    let dirs = get_app_root(AppDataType::UserConfig, &crate::APP_INFO)
-        .context("Failed to determine the user config directory")?;
-    Ok((dirs, PathSource::OsConvention))
+    (SYSTEM_DIRECTORIES.config.clone(), PathSource::OsConvention)
 }
 
 /// Return the path to the config file.
 ///
 /// Note that this function does not verify whether the file at that location
 /// exists, or is a file.
-pub fn get_default_config_path() -> Result<PathWithSource> {
-    let (config_dir, source) = get_config_dir()?;
-    let config_file_path = config_dir.join(CONFIG_FILE_NAME);
-    Ok(PathWithSource {
-        path: config_file_path,
-        source,
-    })
+pub fn get_default_config_path() -> PathWithSource {
+    let (mut path, source) = get_config_dir();
+    path.push(CONFIG_FILE_NAME);
+    PathWithSource { path, source }
 }
 
 /// Create default config file.
@@ -746,7 +899,7 @@ pub fn make_default_config(path: Option<&Path>) -> Result<PathBuf> {
     let config_file_path = if let Some(p) = path {
         p.into()
     } else {
-        let (config_dir, _) = get_config_dir()?;
+        let (config_dir, _) = get_config_dir();
 
         // Ensure that config directory exists
         if config_dir.exists() {
@@ -793,6 +946,63 @@ mod test {
         let serialized = toml::to_string(&raw_config).unwrap();
         let deserialized: RawConfig = toml::from_str(&serialized).unwrap();
         assert_eq!(raw_config, deserialized);
+    }
+
+    #[test]
+    fn expand_path_with_valid_home() {
+        let home = Some(PathBuf::from("/foo/bar"));
+        let path_to_expand = PathBuf::from("~/baz");
+
+        assert_eq!(
+            *expand_home(&path_to_expand, home.as_deref()).unwrap(),
+            PathBuf::from("/foo/bar/baz")
+        );
+    }
+
+    #[test]
+    fn expand_path_with_absolute_path() {
+        let home = Some(PathBuf::from("/foo/bar"));
+        let dir_to_expand = PathBuf::from("/one/two");
+
+        assert_eq!(
+            *expand_home(&dir_to_expand, home.as_deref()).unwrap(),
+            dir_to_expand
+        );
+    }
+
+    #[test]
+    fn error_with_tilde_username() {
+        let home = Some(PathBuf::from("/foo/bar"));
+        let dir_to_expand = PathBuf::from("~baz/foo");
+
+        assert!(expand_home(&dir_to_expand, home.as_deref()).is_err());
+    }
+
+    #[test]
+    fn expand_tilde_in_config_file() {
+        let mut raw_config = RawConfig::default();
+        raw_config.directories.cache_dir = Some("~/my/custom_cache".into());
+        raw_config.directories.custom_pages_dir = Some("~/custom_pages".into());
+
+        let config = Config::from_raw(
+            &raw_config,
+            PathWithSource {
+                path: PathBuf::from("/path/to/config/config.toml"),
+                source: PathSource::OsConvention,
+            },
+        )
+        .unwrap();
+
+        let home_dir = env::home_dir().unwrap();
+
+        assert_eq!(
+            config.directories.cache_dir.path(),
+            home_dir.join("my/custom_cache")
+        );
+        assert_eq!(
+            config.directories.custom_pages_dir.unwrap().path(),
+            home_dir.join("custom_pages")
+        );
     }
 
     #[test]

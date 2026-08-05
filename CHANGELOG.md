@@ -13,6 +13,46 @@ Possible log types:
 - `[docs]` for documentation changes.
 - `[chore]` for maintenance work.
 
+### [v1.5.1][v1.5.1], [v1.6.2][v1.6.2], [v1.7.3][v1.7.3] (2026-01-25)
+
+Today I am releasing three patch updates for outdated versions of tealdeer.
+They are minimal patches for Linux distributions that ship old versions of
+tealdeer which recently broke due to an upstream change. If you can choose
+freely which version of tealdeer to use, I recommend using the latest version of
+tealdeer, 1.8.1. For more details, see the "Notes to package maintainers"
+section below.
+
+All three updates contain only a single change compared to their respective
+previous versions which changes the `ARCHIVE_URL` constant used for updating the
+page cache. The reason for this change is that the upstream tldr-pages
+repository shut down the domain that clients were previously required to use.
+
+Note that this issue is already fixed in tealdeer 1.8.0 where we introduced a
+config file option for changing the URL used at runtime. The versions 1.8.0 and
+1.8.1 also use the new domain of the tldr-pages archive by default, so no action
+is needed for users of those versions.
+
+#### Changes
+
+- [fixed] Update `ARCHIVE_URL`
+
+#### Notes to package maintainers
+
+I have _not_ updated the lockfile for any of these releases, so the locked
+dependency versions are still the same as they were for the previous release in
+the respective v1.x series. Updating the lockfile for tealdeer 1.5.0 to remove
+any `cargo audit` warnings while also maintaining compatibility with Rust 1.54
+also brings larger changes through transitive dependencies, which contradicts my
+plan to make this update easy to plug into existing build pipelines.
+
+If you want to build / distribute tealdeer v1.5.1, v1.6.2, or v1.7.3, please use
+an up to date Rust toolchain to permit updates to newer versions of (transitive)
+dependencies. Do not use the lockfile, instead update to the newest available
+dependency versions.
+
+For the same reason, there are no artifacts attached to the GitHub releases of
+these versions.
+
 ### [v1.8.1][v1.8.1] (2025-11-11)
 
 This patch release tweaks the enabled features for ureq, the library we use to
@@ -566,11 +606,14 @@ Thanks!
 [v1.4.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.3.0...v1.4.0
 [v1.4.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.4.0...v1.4.1
 [v1.5.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.4.1...v1.5.0
+[v1.5.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.5.0...v1.5.1
 [v1.6.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.5.0...v1.6.0
 [v1.6.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.6.0...v1.6.1
+[v1.6.2]: https://github.com/tealdeer-rs/tealdeer/compare/v1.6.1...v1.6.2
 [v1.7.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.6.1...v1.7.0
 [v1.7.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.7.0...v1.7.1
 [v1.7.2]: https://github.com/tealdeer-rs/tealdeer/compare/v1.7.1...v1.7.2
+[v1.7.3]: https://github.com/tealdeer-rs/tealdeer/compare/v1.7.2...v1.7.3
 [v1.8.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.7.2...v1.8.0
 [v1.8.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.8.0...v1.8.1
 

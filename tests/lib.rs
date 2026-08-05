@@ -301,6 +301,16 @@ fn test_missing_cache() {
         .stderr(contains("Page cache not found. Please run `tldr --update`"));
 }
 
+#[test]
+fn test_tealdeer_page_works_without_cache() {
+    TestEnv::new()
+        .command()
+        .args(["tealdeer"])
+        .assert()
+        .success()
+        .stdout(contains("for your installed tealdeer version"));
+}
+
 #[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_update_cache_default_features() {
@@ -483,6 +493,26 @@ fn test_quiet_old_cache() {
         .stderr(contains("The cache hasn't been updated for ").not());
 }
 
+#[test]
+fn test_warn_cache_age_never() {
+    let testenv = TestEnv::new().install_default_cache();
+
+    filetime::set_file_mtime(
+        testenv.cache_dir().join(TLDR_PAGES_DIR),
+        filetime::FileTime::from_unix_time(1, 0),
+    )
+    .unwrap();
+
+    testenv.append_to_config("[updates]\nwarn_cache_age = \"never\"\n");
+
+    testenv
+        .command()
+        .args(["which"])
+        .assert()
+        .success()
+        .stderr(contains("The cache hasn't been updated for ").not());
+}
+
 #[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_create_cache_directory_path() {
@@ -545,7 +575,7 @@ fn test_cache_location_permission_denied() {
     // Make cache directory unreadable
     let cache_dir = testenv.cache_dir();
     let mut permissions = cache_dir.metadata().unwrap().permissions();
-    permissions.set_mode(0);
+    permissions.set_mode(0o0);
     fs::set_permissions(cache_dir, permissions).unwrap();
 
     testenv
@@ -811,6 +841,24 @@ fn test_rendering_color_never() {
     );
 }
 
+/// An end-to-end integration test for the indent config option
+#[test]
+fn test_rendering_with_indentation() {
+    let testenv = TestEnv::new().install_default_cache();
+    let expected_custom_indentation = include_str!("rendered/inkscape-compact-no-color.expected");
+
+    // Configure to set base and command indents
+    testenv.append_to_config("display.indent.base = 3\n");
+    testenv.append_to_config("display.indent.command = 1\n");
+
+    testenv
+        .command()
+        .args(["--color", "never", "inkscape-v2"])
+        .assert()
+        .success()
+        .stdout(diff(expected_custom_indentation));
+}
+
 #[test]
 fn test_rendering_i18n() {
     _test_correct_rendering(
@@ -1019,6 +1067,7 @@ fn test_search_language_precedence() {
         testenv.add_lang_entry(lang, lang, "");
     }
 
+    #[expect(clippy::type_complexity)]
     let run = |cases: &[(Vec<(&str, &str)>, Vec<&str>, &str)]| {
         for (extra_env, extra_args, expected) in cases {
             let mut cmd = testenv.command();

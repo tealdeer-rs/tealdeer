@@ -52,7 +52,6 @@ Docker container using sharkdp's [`hyperfine`][hyperfine-gh]
 | [`fast-tldr`][fast-tldr-gh]       | Haskell              | 17.0       | 0.6             | no example highlighting |
 | [`tldr-hs`][hs-gh]                | Haskell              | 25.1       | 0.5             | no example highlighting |
 | [`tldr-bash`][bash-gh]            | Bash                 | 30.0       | 0.8             |                         |
-| [`tldr-c`][c-gh]                  | C                    | 38.4       | 1.0             |                         |
 | [`tldr-python-client`][python-gh] | Python               | 87.0       | 2.4             |                         |
 | [`tldr-node-client`][node-gh]     | JavaScript / NodeJS  | 407.1      | 12.9            |                         |
 
@@ -87,6 +86,17 @@ To run lints:
     $ cargo clean && cargo clippy
 
 
+### AI Policy
+
+Using AI is generally discouraged. However, if it is used as part of a contribution, the contributor MUST:
+
+1. Clearly mark what parts (if any) of a contribution were created with the help of AI tools. This includes issue and pull request comments.
+2. Check all output of AI tools before sharing it with others in the tealdeer project.
+3. Not post slop, spam, or low quality contributions. This includes pull request descriptions and comments with excessive text and markdown flair.
+4. Leave small or easy tasks to new contributors who want to learn without the use of AI. This is to maintain the presence of the `good-first-issue` tag.
+5. Be respectful of everyone's time: *maintainers and other contributors will be reviewing your PRs.* 
+
+
 ## MSRV (Minimally Supported Rust Version)
 
 When publishing a tealdeer release, the Rust version required to build it
@@ -113,7 +123,6 @@ Thanks to @severen for coming up with the name "tealdeer"!
 
 
 [node-gh]: https://github.com/tldr-pages/tldr-node-client
-[c-gh]: https://github.com/tldr-pages/tldr-c-client
 [hs-gh]: https://github.com/psibi/tldr-hs
 [fast-tldr-gh]: https://github.com/gutjuri/fast-tldr
 [bash-gh]: https://4e4.win/tldr
