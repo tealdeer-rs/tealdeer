@@ -85,7 +85,7 @@ pub(crate) struct Cli {
         long = "override-config",
         action = ArgAction::Append,
     )]
-    pub override_config: Option<Vec<String>>,
+    pub override_config: Vec<String>,
 
     /// Use a pager to page output
     #[arg(long = "pager", requires = "command_or_file")]

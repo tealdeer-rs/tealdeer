@@ -746,10 +746,10 @@ impl ConfigLoader {
     fn read_internal(
         path: PathWithSource,
         allow_not_found: bool,
-        overrides: Option<Vec<String>>,
+        overrides: Vec<String>,
     ) -> Result<Self> {
-        match (fs::read_to_string(&path.path), overrides) {
-            (Ok(content), Some(overrides)) => {
+        match fs::read_to_string(&path.path) {
+            Ok(content) => {
                 let config: RawConfig = toml::from_str(&content).with_context(|| {
                     format!(
                         "Could not parse config file contents as toml from {}.",
@@ -765,16 +765,7 @@ impl ConfigLoader {
                     path,
                 })
             }
-            (Ok(content), None) => Ok(Self {
-                raw: toml::from_str(&content).with_context(|| {
-                    format!(
-                        "Could not parse config file contents as toml from {}.",
-                        path.path.display()
-                    )
-                })?,
-                path,
-            }),
-            (Err(e), Some(overrides)) if allow_not_found && e.kind() == ErrorKind::NotFound => {
+            Err(e) if allow_not_found && e.kind() == ErrorKind::NotFound => {
                 // In order to override the default config we first need to generate the default
                 // RawConfig and then serialize it into the toml-Table variant
                 let default_config_table = RawConfig::default();
@@ -786,11 +777,7 @@ impl ConfigLoader {
                     path,
                 })
             }
-            (Err(e), None) if allow_not_found && e.kind() == ErrorKind::NotFound => Ok(Self {
-                raw: RawConfig::default(),
-                path,
-            }),
-            (Err(e), _) => Err(e).context(format!(
+            Err(e) => Err(e).context(format!(
                 "Could not read config file contents from {}.",
                 path.path().display()
             )),
@@ -834,7 +821,7 @@ impl ConfigLoader {
 
     /// Create a loader that uses the config at `path`.
     /// `overrides`: If set, overrides the default values of the config
-    pub fn read(path: PathBuf, overrides: Option<Vec<String>>) -> Result<Self> {
+    pub fn read(path: PathBuf, overrides: Vec<String>) -> Result<Self> {
         Self::read_internal(
             PathWithSource {
                 path,
@@ -848,7 +835,7 @@ impl ConfigLoader {
     /// Create a loader that uses the default config file location. If no file is present at the default location, the
     /// default configuration is used.
     /// `overrides`: If set, overrides the default values of the config
-    pub fn read_default_path(overrides: Option<Vec<String>>) -> Result<Self> {
+    pub fn read_default_path(overrides: Vec<String>) -> Result<Self> {
         let path = get_default_config_path();
         Self::read_internal(path, true, overrides)
     }
