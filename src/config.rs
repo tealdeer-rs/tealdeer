@@ -748,40 +748,28 @@ impl ConfigLoader {
         allow_not_found: bool,
         overrides: Vec<String>,
     ) -> Result<Self> {
-        match fs::read_to_string(&path.path) {
-            Ok(content) => {
-                let config: RawConfig = toml::from_str(&content).with_context(|| {
-                    format!(
-                        "Could not parse config file contents as toml from {}.",
-                        path.path.display()
-                    )
-                })?;
-
-                let config_table = toml::Table::try_from(config)?;
-                let config_table = Self::override_config_with(config_table, overrides)?;
-
-                Ok(Self {
-                    raw: config_table.try_into()?,
-                    path,
-                })
-            }
+        let read_config_table = match fs::read_to_string(&path.path) {
+            Ok(content) => toml::from_str(&content).with_context(|| {
+                format!(
+                    "Could not parse config file contents as toml from {}.",
+                    path.path.display()
+                )
+            })?,
             Err(e) if allow_not_found && e.kind() == ErrorKind::NotFound => {
-                // In order to override the default config we first need to generate the default
-                // RawConfig and then serialize it into the toml-Table variant
-                let default_config_table = RawConfig::default();
-                let default_config_table = toml::Table::try_from(default_config_table)?;
-                let config_table = Self::override_config_with(default_config_table, overrides)?;
-
-                Ok(Self {
-                    raw: config_table.try_into()?,
-                    path,
-                })
+                toml::Table::try_from(RawConfig::default())?
             }
-            Err(e) => Err(e).context(format!(
-                "Could not read config file contents from {}.",
-                path.path().display()
-            )),
-        }
+            Err(e) => {
+                return Err(e).context(format!(
+                    "Could not read config file contents from {}.",
+                    path.path().display()
+                ))
+            }
+        };
+
+        let used_config_table = Self::override_config_with(read_config_table, overrides)?;
+        let raw = used_config_table.try_into()?;
+
+        Ok(Self { raw, path })
     }
 
     fn override_config_with(
