@@ -748,16 +748,14 @@ impl ConfigLoader {
         allow_not_found: bool,
         overrides: Vec<String>,
     ) -> Result<Self> {
-        let read_config_table = match fs::read_to_string(&path.path) {
+        let read_raw_config = match fs::read_to_string(&path.path) {
             Ok(content) => toml::from_str(&content).with_context(|| {
                 format!(
                     "Could not parse config file contents as toml from {}.",
                     path.path.display()
                 )
             })?,
-            Err(e) if allow_not_found && e.kind() == ErrorKind::NotFound => {
-                toml::Table::try_from(RawConfig::default())?
-            }
+            Err(e) if allow_not_found && e.kind() == ErrorKind::NotFound => RawConfig::default(),
             Err(e) => {
                 return Err(e).context(format!(
                     "Could not read config file contents from {}.",
@@ -766,34 +764,30 @@ impl ConfigLoader {
             }
         };
 
-        let used_config_table = Self::override_config_with(read_config_table, overrides)?;
+        let read_config_table = toml::Table::try_from(read_raw_config)?;
+        let used_config_table = Self::override_config_with(read_config_table, overrides)
+            .context("Failed to apply config overrides")?;
         let raw = used_config_table.try_into()?;
 
         Ok(Self { raw, path })
     }
 
     fn override_config_with(
-        mut config_table: toml::Table,
+        config_table: toml::Table,
         overrides: Vec<String>,
     ) -> Result<toml::Table> {
+        let mut config_table = toml::Value::Table(config_table);
         for override_str in overrides {
             let (name, value) = override_str
                 .split_once('=')
-                .ok_or(anyhow!("Invalid override-string: {override_str}"))?;
+                .ok_or(anyhow!("Invalid override-string: {override_str} (correct example: \"display.compact = true\")"))?;
 
             let name = name.trim();
             let value = toml::Value::from_str(value.trim())?;
 
-            let mut keypath = name.split('.');
-            let key_start = keypath
-                .next()
-                .expect("split returns always at least one element");
-            let mut entry = config_table.get_mut(key_start).ok_or(anyhow!(
-                "\"{name}\" is not a valid key starting at \"{key_start}\""
-            ))?;
-
-            for subkey in keypath {
-                let toml::Value::Table(ref mut entry_table) = entry else {
+            let mut entry = &mut config_table;
+            for subkey in name.split('.') {
+                let toml::Value::Table(entry_table) = entry else {
                     bail!("\"{name}\" is not a valid identifier since \"{subkey}\" already refers to a value which is not a toml-Table.");
                 };
 
@@ -804,7 +798,11 @@ impl ConfigLoader {
 
             *entry = value;
         }
-        Ok(config_table)
+
+        match config_table {
+            toml::Value::Table(config_table) => Ok(config_table),
+            _ => unreachable!("root table is never modified"),
+        }
     }
 
     /// Create a loader that uses the config at `path`.
