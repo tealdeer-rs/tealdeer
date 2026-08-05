@@ -746,7 +746,7 @@ impl ConfigLoader {
     fn read_internal(
         path: PathWithSource,
         allow_not_found: bool,
-        overrides: Vec<String>,
+        overrides: &[String],
     ) -> Result<Self> {
         let read_raw_config = match fs::read_to_string(&path.path) {
             Ok(content) => toml::from_str(&content).with_context(|| {
@@ -774,7 +774,7 @@ impl ConfigLoader {
 
     fn override_config_with(
         config_table: toml::Table,
-        overrides: Vec<String>,
+        overrides: &[String],
     ) -> Result<toml::Table> {
         let mut config_table = toml::Value::Table(config_table);
         for override_str in overrides {
@@ -807,7 +807,7 @@ impl ConfigLoader {
 
     /// Create a loader that uses the config at `path`.
     /// `overrides`: If set, overrides the default values of the config
-    pub fn read(path: PathBuf, overrides: Vec<String>) -> Result<Self> {
+    pub fn read(path: PathBuf, overrides: &[String]) -> Result<Self> {
         Self::read_internal(
             PathWithSource {
                 path,
@@ -821,7 +821,7 @@ impl ConfigLoader {
     /// Create a loader that uses the default config file location. If no file is present at the default location, the
     /// default configuration is used.
     /// `overrides`: If set, overrides the default values of the config
-    pub fn read_default_path(overrides: Vec<String>) -> Result<Self> {
+    pub fn read_default_path(overrides: &[String]) -> Result<Self> {
         let path = get_default_config_path();
         Self::read_internal(path, true, overrides)
     }
@@ -1024,7 +1024,7 @@ mod test {
         #[test]
         fn change_value() {
             let original_config = base_config();
-            let overrides = vec!["some.inner.value1 = 'some text'".to_string()];
+            let overrides = &["some.inner.value1 = 'some text'".to_string()];
 
             let new_config = ConfigLoader::override_config_with(original_config, overrides)
                 .expect("config should be successfully overwritten");
