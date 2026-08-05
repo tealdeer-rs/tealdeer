@@ -36,7 +36,6 @@ use std::{
 };
 
 use anyhow::{anyhow, Context, Result};
-use app_dirs::AppInfo;
 use cache::{CacheConfig, TLDR_OLD_PAGES_DIR};
 use clap::Parser;
 use config::{ConfigLoader, Language, StyleConfig, TlsBackend};
@@ -65,10 +64,6 @@ use crate::{
 };
 
 const NAME: &str = "tealdeer";
-const APP_INFO: AppInfo = AppInfo {
-    name: NAME,
-    author: NAME,
-};
 static TEALDEER_PAGE: &str =
     include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/pages/tealdeer.md"));
 
@@ -110,16 +105,14 @@ fn update_cache(
 
 /// Show file paths
 fn show_paths(config: &Config) {
-    let config_dir = get_config_dir().map_or_else(
-        |e| format!("[Error: {e}]"),
-        |(mut path, source)| {
-            path.push(""); // Trailing path separator
-            match path.to_str() {
-                Some(path) => format!("{path} ({source})"),
-                None => "[Invalid]".to_string(),
-            }
-        },
-    );
+    let config_dir = {
+        let (mut path, source) = get_config_dir();
+        path.push(""); // Trailing path separator
+        match path.to_str() {
+            Some(path) => format!("{path} ({source})"),
+            None => "[Invalid]".to_string(),
+        }
+    };
     let config_path = config.file_path.to_string();
     let cache_dir = config.directories.cache_dir.to_string();
     let pages_dir = {
