@@ -246,16 +246,22 @@ impl Default for RawIndent {
     }
 }
 
+impl From<RawIndent> for Indent {
+    fn from(raw_indent: RawIndent) -> Self {
+        Self {
+            base: raw_indent.base,
+            command: raw_indent.command,
+        }
+    }
+}
+
 impl From<&RawDisplayConfig> for DisplayConfig {
     fn from(raw_display_config: &RawDisplayConfig) -> Self {
         Self {
             compact: raw_display_config.compact,
             use_pager: raw_display_config.use_pager,
             show_title: raw_display_config.show_title,
-            indent: Indent {
-                base: raw_display_config.indent.base,
-                command: raw_display_config.indent.command,
-            },
+            indent: raw_display_config.indent.into(),
         }
     }
 }
@@ -791,9 +797,9 @@ impl ConfigLoader {
                     bail!("\"{name}\" is not a valid identifier since \"{subkey}\" already refers to a value which is not a toml-Table.");
                 };
 
-                entry = entry_table.get_mut(subkey).ok_or(anyhow!(
-                    "\"{name}\" is not a valid key starting at \"{subkey}\""
-                ))?;
+                entry = entry_table
+                    .entry(subkey)
+                    .or_insert(toml::Value::Table(Default::default()));
             }
 
             *entry = value;
@@ -1000,6 +1006,7 @@ mod test {
 
     mod override_config {
         use super::*;
+        use toml::Value;
 
         fn base_config() -> toml::Table {
             toml::Table::from_str(
@@ -1022,36 +1029,68 @@ mod test {
         }
 
         #[test]
-        fn change_value() {
+        fn basic() {
             let original_config = base_config();
             let overrides = &["some.inner.value1 = 'some text'".to_string()];
 
             let new_config = ConfigLoader::override_config_with(original_config, overrides)
                 .expect("config should be successfully overwritten");
 
-            assert_eq!(new_config["some"]["value"].as_integer().unwrap(), 0);
-
+            assert_eq!(new_config["some"]["value"], Value::Integer(0));
             assert_eq!(
-                new_config["some"]["inner"]["value1"].as_str().unwrap(),
-                "some text"
+                new_config["some"]["inner"]["value1"],
+                Value::String("some text".to_string()),
             );
-
             assert_eq!(
-                new_config["some"]["inner"]["value2"].as_str().unwrap(),
-                "a string"
+                new_config["some"]["inner"]["value2"],
+                Value::String("a string".to_string()),
             );
+            assert_eq!(new_config["some"]["other"]["value1"], Value::Integer(3));
+            assert_eq!(new_config["global_value"], Value::Boolean(false));
+        }
 
+        macro_rules! style_config_with {
+            ($config:ident, $overrides:expr) => {
+                let loader = ConfigLoader::read(
+                    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/style-config.toml"),
+                    $overrides,
+                )
+                .unwrap();
+                let $config = loader.load().unwrap();
+            };
+        }
+
+        #[test]
+        fn dependent_config() {
+            style_config_with!(config, &["search.languages = ['de', 'it']".to_string()]);
+            assert_eq!(config.search.languages, [Language("de"), Language("it")]);
+            // Value is copied after override is applied
             assert_eq!(
-                new_config["some"]["other"]["value1"].as_integer().unwrap(),
-                3,
+                config.updates.download_languages,
+                [Language("de"), Language("it")]
             );
+        }
 
-            let v2array = new_config["some"]["other"]["value2"].as_array().unwrap();
-            assert_eq!(v2array[0].as_integer().unwrap(), 1);
-            assert_eq!(v2array[1].as_str().unwrap(), "text");
-            assert_eq!(v2array[2].as_bool().unwrap(), true);
+        #[test]
+        fn order() {
+            style_config_with!(
+                config,
+                &[
+                    "display.compact = false".to_string(),
+                    "display.compact = true".to_string(),
+                ]
+            );
+            assert!(config.display.compact);
+        }
 
-            assert_eq!(new_config["global_value"].as_bool().unwrap(), false);
+        #[test]
+        fn override_with_table() {
+            style_config_with!(config, &["display = {'compact' = true}".to_string()]);
+            assert!(config.display.compact);
+            assert_eq!(
+                config.display.indent,
+                RawConfig::default().display.indent.into()
+            );
         }
     }
 
