@@ -57,3 +57,16 @@ auto_update = true
 The directory where the configuration file resides may be overwritten by the
 environment variable `TEALDEER_CONFIG_DIR`. Remember to use an absolute path.
 Variable expansion will not be performed on the path.
+
+## Override Config Values
+
+Individual config values can be overridden using the `--override-config` command
+line argument. The overrides take place after reading the user config file, but
+before the raw config is evaluated.
+
+```shell
+$ tldr --override-config "display.compact = true" tealdeer
+```
+
+Each override is of the form `<name> = <value>` where `name` is a config key and
+`value` is any TOML value.
