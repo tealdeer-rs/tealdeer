@@ -4,11 +4,12 @@ use std::{
     fs::{self, File},
     io::{ErrorKind, Write},
     path::{Component, Path, PathBuf},
+    str::FromStr,
     sync::LazyLock,
     time::Duration,
 };
 
-use anyhow::{anyhow, ensure, Context, Result};
+use anyhow::{anyhow, bail, ensure, Context, Result};
 use clap::ValueEnum;
 use log::info;
 use serde::Serialize as _;
@@ -245,16 +246,22 @@ impl Default for RawIndent {
     }
 }
 
+impl From<RawIndent> for Indent {
+    fn from(raw_indent: RawIndent) -> Self {
+        Self {
+            base: raw_indent.base,
+            command: raw_indent.command,
+        }
+    }
+}
+
 impl From<&RawDisplayConfig> for DisplayConfig {
     fn from(raw_display_config: &RawDisplayConfig) -> Self {
         Self {
             compact: raw_display_config.compact,
             use_pager: raw_display_config.use_pager,
             show_title: raw_display_config.show_title,
-            indent: Indent {
-                base: raw_display_config.indent.base,
-                command: raw_display_config.indent.command,
-            },
+            indent: raw_display_config.indent.into(),
         }
     }
 }
@@ -742,44 +749,87 @@ pub struct ConfigLoader {
 }
 
 impl ConfigLoader {
-    fn read_internal(path: PathWithSource, allow_not_found: bool) -> Result<Self> {
-        match fs::read_to_string(&path.path) {
-            Ok(content) => Ok(Self {
-                raw: toml::from_str(&content).with_context(|| {
-                    format!(
-                        "Could not parse config file contents as toml from {}.",
-                        path.path.display()
-                    )
-                })?,
-                path,
-            }),
-            Err(e) if allow_not_found && e.kind() == ErrorKind::NotFound => Ok(Self {
-                raw: RawConfig::default(),
-                path,
-            }),
-            Err(e) => Err(e).context(format!(
-                "Could not read config file contents from {}.",
-                path.path().display()
-            )),
+    fn read_internal(
+        path: PathWithSource,
+        allow_not_found: bool,
+        overrides: &[String],
+    ) -> Result<Self> {
+        let read_raw_config = match fs::read_to_string(&path.path) {
+            Ok(content) => toml::from_str(&content).with_context(|| {
+                format!(
+                    "Could not parse config file contents as toml from {}.",
+                    path.path.display()
+                )
+            })?,
+            Err(e) if allow_not_found && e.kind() == ErrorKind::NotFound => RawConfig::default(),
+            Err(e) => {
+                return Err(e).context(format!(
+                    "Could not read config file contents from {}.",
+                    path.path().display()
+                ))
+            }
+        };
+
+        let read_config_table = toml::Table::try_from(read_raw_config)?;
+        let used_config_table = Self::override_config_with(read_config_table, overrides)
+            .context("Failed to apply config overrides")?;
+        let raw = used_config_table.try_into()?;
+
+        Ok(Self { raw, path })
+    }
+
+    fn override_config_with(
+        config_table: toml::Table,
+        overrides: &[String],
+    ) -> Result<toml::Table> {
+        let mut config_table = toml::Value::Table(config_table);
+        for override_str in overrides {
+            let (name, value) = override_str
+                .split_once('=')
+                .ok_or(anyhow!("Invalid override-string: {override_str} (correct example: \"display.compact = true\")"))?;
+
+            let name = name.trim();
+            let value = toml::Value::from_str(value.trim())?;
+
+            let mut entry = &mut config_table;
+            for subkey in name.split('.') {
+                let toml::Value::Table(entry_table) = entry else {
+                    bail!("\"{name}\" is not a valid identifier since \"{subkey}\" already refers to a value which is not a toml-Table.");
+                };
+
+                entry = entry_table
+                    .entry(subkey)
+                    .or_insert(toml::Value::Table(Default::default()));
+            }
+
+            *entry = value;
+        }
+
+        match config_table {
+            toml::Value::Table(config_table) => Ok(config_table),
+            _ => unreachable!("root table is never modified"),
         }
     }
 
     /// Create a loader that uses the config at `path`.
-    pub fn read(path: PathBuf) -> Result<Self> {
+    /// `overrides`: If set, overrides the default values of the config
+    pub fn read(path: PathBuf, overrides: &[String]) -> Result<Self> {
         Self::read_internal(
             PathWithSource {
                 path,
                 source: PathSource::Cli,
             },
             false,
+            overrides,
         )
     }
 
     /// Create a loader that uses the default config file location. If no file is present at the default location, the
     /// default configuration is used.
-    pub fn read_default_path() -> Result<Self> {
+    /// `overrides`: If set, overrides the default values of the config
+    pub fn read_default_path(overrides: &[String]) -> Result<Self> {
         let path = get_default_config_path();
-        Self::read_internal(path, true)
+        Self::read_internal(path, true, overrides)
     }
 
     /// Parse the read [`RawConfig`] into a [`Config`].
@@ -952,6 +1002,96 @@ mod test {
             config.directories.custom_pages_dir.unwrap().path(),
             Path::new("/path/to/config/../custom_pages")
         );
+    }
+
+    mod override_config {
+        use super::*;
+        use toml::Value;
+
+        fn base_config() -> toml::Table {
+            toml::Table::from_str(
+                "
+            global_value = false
+
+            [some]
+            value = 0
+
+            [some.inner]
+            value1 = 1
+            value2 = \"a string\"
+
+            [some.other]
+            value1 = 3
+            value2 = [ 1, \"text\", true ]
+            ",
+            )
+            .unwrap()
+        }
+
+        #[test]
+        fn basic() {
+            let original_config = base_config();
+            let overrides = &["some.inner.value1 = 'some text'".to_string()];
+
+            let new_config = ConfigLoader::override_config_with(original_config, overrides)
+                .expect("config should be successfully overwritten");
+
+            assert_eq!(new_config["some"]["value"], Value::Integer(0));
+            assert_eq!(
+                new_config["some"]["inner"]["value1"],
+                Value::String("some text".to_string()),
+            );
+            assert_eq!(
+                new_config["some"]["inner"]["value2"],
+                Value::String("a string".to_string()),
+            );
+            assert_eq!(new_config["some"]["other"]["value1"], Value::Integer(3));
+            assert_eq!(new_config["global_value"], Value::Boolean(false));
+        }
+
+        macro_rules! style_config_with {
+            ($config:ident, $overrides:expr) => {
+                let loader = ConfigLoader::read(
+                    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/style-config.toml"),
+                    $overrides,
+                )
+                .unwrap();
+                let $config = loader.load().unwrap();
+            };
+        }
+
+        #[test]
+        fn dependent_config() {
+            style_config_with!(config, &["search.languages = ['de', 'it']".to_string()]);
+            assert_eq!(config.search.languages, [Language("de"), Language("it")]);
+            // Value is copied after override is applied
+            assert_eq!(
+                config.updates.download_languages,
+                [Language("de"), Language("it")]
+            );
+        }
+
+        #[test]
+        fn order() {
+            style_config_with!(
+                config,
+                &[
+                    "display.compact = false".to_string(),
+                    "display.compact = true".to_string(),
+                ]
+            );
+            assert!(config.display.compact);
+        }
+
+        #[test]
+        fn override_with_table() {
+            style_config_with!(config, &["display = {'compact' = true}".to_string()]);
+            assert!(config.display.compact);
+            assert_eq!(
+                config.display.indent,
+                RawConfig::default().display.indent.into()
+            );
+        }
     }
 
     mod language {
