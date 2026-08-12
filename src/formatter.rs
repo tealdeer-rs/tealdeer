@@ -13,6 +13,7 @@ pub enum PageSnippet<T> {
     Description(T),
     Text(T),
     Title(T),
+    Indent(usize),
     Linebreak,
 }
 
@@ -29,6 +30,7 @@ impl<T> PageSnippet<T> {
             PageSnippet::Description(s) => PageSnippet::Description(f(s)),
             PageSnippet::Text(s) => PageSnippet::Text(f(s)),
             PageSnippet::Title(s) => PageSnippet::Title(f(s)),
+            PageSnippet::Indent(n) => PageSnippet::Indent(n),
             PageSnippet::Linebreak => PageSnippet::Linebreak,
         }
     }
@@ -43,6 +45,7 @@ impl<T: PartialEq<U>, U> PartialEq<PageSnippet<U>> for PageSnippet<T> {
             | (PageSnippet::Description(s), PageSnippet::Description(t))
             | (PageSnippet::Text(s), PageSnippet::Text(t))
             | (PageSnippet::Title(s), PageSnippet::Title(t)) => s == t,
+            (PageSnippet::Indent(n), PageSnippet::Indent(m)) => n == m,
             (PageSnippet::Linebreak, PageSnippet::Linebreak) => true,
             _ => false,
         }
@@ -57,6 +60,7 @@ impl PageSnippet<&str> {
             CommandName(s) | Variable(s) | NormalCode(s) | Description(s) | Text(s) | Title(s) => {
                 s.is_empty()
             }
+            Indent(n) => *n == 0,
             Linebreak => false,
         }
     }
@@ -74,8 +78,6 @@ where
     L: Iterator<Item = LineType>,
     F: for<'snip> FnMut(PageSnippet<&'snip str>) -> Result<(), E>,
 {
-    let base_indent = " ".repeat(indent.base);
-    let command_indent = " ".repeat(indent.command);
     let mut command = String::new();
     for line in lines {
         match line {
@@ -87,7 +89,7 @@ where
             LineType::Title(title) => {
                 if show_title {
                     process_snippet(PageSnippet::Linebreak)?;
-                    process_snippet(PageSnippet::Title(&base_indent))?;
+                    process_snippet(PageSnippet::Indent(indent.base))?;
                     process_snippet(PageSnippet::Title(&title))?;
                     process_snippet(PageSnippet::Linebreak)?;
                 } else {
@@ -99,17 +101,17 @@ where
                 debug!("Detected command name: {command}");
             }
             LineType::Description(text) => {
-                process_snippet(PageSnippet::Description(&base_indent))?;
+                process_snippet(PageSnippet::Indent(indent.base))?;
                 process_snippet(PageSnippet::Description(&text))?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
             LineType::ExampleText(text) => {
-                process_snippet(PageSnippet::Text(&base_indent))?;
+                process_snippet(PageSnippet::Indent(indent.base))?;
                 process_snippet(PageSnippet::Text(&text))?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
             LineType::ExampleCode(text) => {
-                process_snippet(PageSnippet::NormalCode(&command_indent))?;
+                process_snippet(PageSnippet::Indent(indent.command))?;
                 highlight_code(&command, &text, process_snippet)?;
                 process_snippet(PageSnippet::Linebreak)?;
             }
