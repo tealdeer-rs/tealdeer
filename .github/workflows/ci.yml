@@ -75,10 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Setup mdBook
-        uses: peaceiris/actions-mdbook@v2
-        with:
-          mdbook-version: '0.4.4'
+      - run: ./scripts/get-mdbook.sh
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -86,7 +83,7 @@ jobs:
       - name: Build
         run: cargo build
       - name: Ensure that docs can be built
-        run: cd docs && mdbook build
+        run: ./mdbook build docs
       - name: Generate usage string
         run: cargo run -- --help > docs/src/usage-actual.txt
       - name: Ensure that usage string is up to date
