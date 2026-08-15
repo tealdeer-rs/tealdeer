@@ -1298,6 +1298,19 @@ fn test_autoupdate_cache() {
     check_cache_updated(false);
 }
 
+/// Regression test: `--no-auto-update` should be usable together with `--list`,
+/// since the auto-update gate in `main.rs` also applies to `--list`.
+#[test]
+fn test_no_auto_update_with_list() {
+    let testenv = TestEnv::new().install_default_cache();
+
+    testenv
+        .command()
+        .args(["--list", "--no-auto-update"])
+        .assert()
+        .success();
+}
+
 /// End-end test to ensure .page.md files overwrite pages in cache_dir
 #[test]
 fn test_custom_page_overwrites() {
