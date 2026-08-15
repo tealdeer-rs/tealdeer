@@ -469,6 +469,21 @@ fn test_quiet_failures() {
 }
 
 #[test]
+fn test_quiet_missing_cache() {
+    let testenv = TestEnv::new();
+
+    for args in [["--list", "--quiet"], ["sl", "--quiet"]] {
+        testenv
+            .command()
+            .args(args)
+            .assert()
+            .failure()
+            .stdout(is_empty())
+            .stderr(is_empty());
+    }
+}
+
+#[test]
 fn test_quiet_old_cache() {
     let testenv = TestEnv::new().install_default_cache();
 
