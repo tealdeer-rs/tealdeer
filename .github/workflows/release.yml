@@ -100,19 +100,27 @@ jobs:
           path: "target/${{ matrix.arch }}-apple-darwin/release/tldr"
 
   build-windows:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - arch: "x86_64"
+            os: windows-latest
+          - arch: "aarch64"
+            os: windows-11-arm
     steps:
       - uses: actions/checkout@v7
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@master
         with:
             toolchain: stable
+            targets: "${{ matrix.arch }}-pc-windows-msvc"
       - name: Build
-        run: cargo build --release --target x86_64-pc-windows-msvc
+        run: cargo build --release --target ${{ matrix.arch }}-pc-windows-msvc
       - uses: actions/upload-artifact@v7
         with:
-          name: "tealdeer-windows-x86_64-msvc"
-          path: "target/x86_64-pc-windows-msvc/release/tldr.exe"
+          name: "tealdeer-windows-${{ matrix.arch }}-msvc"
+          path: "target/${{ matrix.arch }}-pc-windows-msvc/release/tldr.exe"
 
   upload-release:
     needs:
@@ -133,6 +141,7 @@ jobs:
           - macos-x86_64
           - macos-aarch64
           - windows-x86_64-msvc
+          - windows-aarch64-msvc
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
