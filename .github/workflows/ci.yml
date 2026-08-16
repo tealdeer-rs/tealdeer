@@ -28,23 +28,23 @@ jobs:
       - run: mkdir artifacts
       - name: Build with default features
         run: |
-          cargo build
+          cargo build --locked
           cp target/debug/tldr${{ matrix.exe_suffix}} artifacts/tldr-default${{ matrix.exe_suffix}}
       - name: Build with logging and Rustls with webpki roots
         run: |
-          cargo build --features logging,rustls-with-webpki-roots --no-default-features
+          cargo build --locked --features logging,rustls-with-webpki-roots --no-default-features
           cp target/debug/tldr${{ matrix.exe_suffix}} artifacts/tldr-logging-rustls-webpki${{ matrix.exe_suffix}}
       - name: Build with native TLS backend
         run: |
           # expects runners have the proper Native SSL library
-          cargo build --features native-tls --no-default-features
+          cargo build --locked --features native-tls --no-default-features
           cp target/debug/tldr${{ matrix.exe_suffix}} artifacts/tldr-native-tls${{ matrix.exe_suffix}}
       - uses: actions/upload-artifact@v7
         with:
           name: tldr-debug-build-${{ matrix.platform }}-rust-${{ matrix.toolchain }}
           path: artifacts/
       - name: Run tests
-        run: cargo test -- --test-threads 1
+        run: cargo test --locked -- --test-threads 1
 
   clippy:
     name: run clippy lints
@@ -56,7 +56,7 @@ jobs:
            toolchain: stable
            components: clippy
        - name: run clippy lints
-         run: cargo clippy --all-targets --features logging
+         run: cargo clippy --locked --all-targets --features logging
 
   fmt:
     name: run rustfmt
@@ -84,10 +84,10 @@ jobs:
         with:
             toolchain: stable
       - name: Build
-        run: cargo build
+        run: cargo build --locked
       - name: Ensure that docs can be built
         run: cd docs && mdbook build
       - name: Generate usage string
-        run: cargo run -- --help > docs/src/usage-actual.txt
+        run: cargo run --locked -- --help > docs/src/usage-actual.txt
       - name: Ensure that usage string is up to date
         run: diff docs/src/usage{,-actual}.txt
