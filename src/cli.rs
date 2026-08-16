@@ -69,7 +69,7 @@ pub(crate) struct Cli {
     pub update: bool,
 
     /// If auto update is configured, disable it for this run
-    #[arg(long = "no-auto-update", requires = "command_or_file")]
+    #[arg(long = "no-auto-update")]
     pub no_auto_update: bool,
 
     /// Clear the local cache
