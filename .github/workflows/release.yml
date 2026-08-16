@@ -70,7 +70,7 @@ jobs:
       - name: Pull Docker image
         run: docker pull messense/rust-musl-cross:${{ matrix.arch }}-${{ matrix.libc }}
       - name: Build in Docker
-        run: docker run --rm -i -v "$(pwd)":/home/rust/src messense/rust-musl-cross:${{ matrix.arch }}-${{ matrix.libc }} cargo build --release
+        run: docker run --rm -i -v "$(pwd)":/home/rust/src messense/rust-musl-cross:${{ matrix.arch }}-${{ matrix.libc }} cargo build --locked --release
       - name: Strip binary
         run: docker run --rm -i -v "$(pwd)":/home/rust/src messense/rust-musl-cross:${{ matrix.arch }}-${{ matrix.libc }} musl-strip -s /home/rust/src/target/${{ matrix.arch }}-unknown-linux-${{ matrix.libc }}/release/tldr
       - uses: actions/upload-artifact@v7
@@ -93,7 +93,7 @@ jobs:
           toolchain: stable
           targets: "${{ matrix.arch }}-apple-darwin"
       - name: Build
-        run: cargo build --release --target ${{ matrix.arch }}-apple-darwin
+        run: cargo build --locked --release --target ${{ matrix.arch }}-apple-darwin
       - uses: actions/upload-artifact@v7
         with:
           name: "tealdeer-macos-${{ matrix.arch }}"
@@ -116,7 +116,7 @@ jobs:
             toolchain: stable
             targets: "${{ matrix.arch }}-pc-windows-msvc"
       - name: Build
-        run: cargo build --release --target ${{ matrix.arch }}-pc-windows-msvc
+        run: cargo build --locked --release --target ${{ matrix.arch }}-pc-windows-msvc
       - uses: actions/upload-artifact@v7
         with:
           name: "tealdeer-windows-${{ matrix.arch }}-msvc"
