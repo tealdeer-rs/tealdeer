@@ -14,10 +14,12 @@ jobs:
     name: run tests
     strategy:
       matrix:
-        platform: [ubuntu-latest, macos-latest, windows-latest]
+        platform: [ubuntu-latest, macos-latest, windows-latest, windows-11-arm]
         toolchain: [stable, 1.87.0] # MSRV
         include:
           - platform: windows-latest
+            exe_suffix: .exe
+          - platform: windows-11-arm
             exe_suffix: .exe
     runs-on: ${{ matrix.platform }}
     steps:
