@@ -501,12 +501,21 @@ fn get_languages<'a>(
             continue;
         }
 
+        // Strip the encoding suffix (e.g. `de_DE.UTF-8` -> `de_DE`)
+        let locale = locale.split('.').next().unwrap_or(locale);
+
+        // `C` and `POSIX` are not languages and must be ignored
+        if locale == "C" || locale == "POSIX" {
+            info!("Skipping locale string without language: {locale}");
+            continue;
+        }
+
         // Language plus country code (e.g. `en_US`)
         if locale.len() >= 5 && locale.chars().nth(2) == Some('_') {
             lang_list.push(Language(&locale[..5]));
         }
         // Language code only (e.g. `en`)
-        if locale.len() >= 2 && locale != "POSIX" {
+        if locale.len() >= 2 {
             lang_list.push(Language(&locale[..2]));
         }
     }
@@ -1149,6 +1158,14 @@ mod test {
             assert_eq!(lang_list, [Language("en")]);
             let lang_list = get_languages(Some("C"), None);
             assert_eq!(lang_list, [Language("en")]);
+        }
+
+        #[test]
+        fn ignore_posix_and_c_with_encoding() {
+            let lang_list = get_languages(Some("C.UTF-8"), None);
+            assert_eq!(lang_list, [Language("en")]);
+            let lang_list = get_languages(Some("de"), Some("C.UTF-8:POSIX.UTF-8"));
+            assert_eq!(lang_list, [Language("de"), Language("en")]);
         }
 
         #[test]

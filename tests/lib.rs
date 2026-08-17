@@ -1134,6 +1134,27 @@ fn test_search_language_precedence() {
     run(env_cases);
 }
 
+/// Regression test: `C` and `POSIX` must be ignored even when the locale
+/// carries an encoding suffix, e.g. `C.UTF-8`.
+#[test]
+fn test_search_language_ignores_c_and_posix_with_encoding() {
+    let testenv = TestEnv::new();
+    testenv.add_lang_entry("en", "in-english", "");
+    // Pages in a directory named after the truncated locale must not be found.
+    testenv.add_lang_entry("C.", "bogus-c", "");
+    testenv.add_lang_entry("PO", "bogus-posix", "");
+
+    for lang in ["C.UTF-8", "POSIX.UTF-8"] {
+        testenv
+            .command()
+            .env("LANG", lang)
+            .arg("--list")
+            .assert()
+            .success()
+            .stdout(eq("in-english\n"));
+    }
+}
+
 #[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_update_language_arg() {
