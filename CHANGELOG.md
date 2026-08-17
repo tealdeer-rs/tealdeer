@@ -527,7 +527,7 @@ Thanks!
 
 - First crates.io release
 
-[user documentation]: https://tealdeer-rs.github.io/tealdeer/
+[user documentation]: https://docs.tealdeer.org
 
 [@0ndorio]: https://github.com/0ndorio
 [@adamazing]: https://github.com/adamazing

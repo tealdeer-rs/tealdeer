@@ -363,7 +363,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
                 println!("The path to your config file can be looked up with `tldr --show-paths`.");
                 println!("To create an initial config file, use `tldr --seed-config`.\n");
                 println!("You can find more tips and tricks in our docs:\n");
-                println!("  https://tealdeer-rs.github.io/tealdeer/config_updates.html");
+                println!("  https://docs.tealdeer.org");
             }
 
             return Ok(ExitCode::FAILURE);

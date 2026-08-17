@@ -19,7 +19,7 @@ binaries on the [GitHub releases page](https://github.com/tealdeer-rs/tealdeer/r
 
 ## Docs (Installing, Usage, Configuration)
 
-User documentation is available at <https://tealdeer-rs.github.io/tealdeer/>!
+User documentation is available at <https://docs.tealdeer.org>!
 
 The docs are generated using [mdbook](https://rust-lang.github.io/mdBook/index.html).
 They can be edited through the markdown files in the `docs/src/` directory.
@@ -94,7 +94,7 @@ Using AI is generally discouraged. However, if it is used as part of a contribut
 2. Check all output of AI tools before sharing it with others in the tealdeer project.
 3. Not post slop, spam, or low quality contributions. This includes pull request descriptions and comments with excessive text and markdown flair.
 4. Leave small or easy tasks to new contributors who want to learn without the use of AI. This is to maintain the presence of the `good-first-issue` tag.
-5. Be respectful of everyone's time: *maintainers and other contributors will be reviewing your PRs.* 
+5. Be respectful of everyone's time: *maintainers and other contributors will be reviewing your PRs.*
 
 
 ## MSRV (Minimally Supported Rust Version)

@@ -1,7 +1,7 @@
 # tldr
 
 > This is a builtin page that shows information for your installed tealdeer version.
-> More information: <https://tealdeer-rs.github.io/tealdeer/>.
+> More information: <https://docs.tealdeer.org>.
 
 > This page shows tealdeer specific functionality. See tldr tldr for more examples.
 
