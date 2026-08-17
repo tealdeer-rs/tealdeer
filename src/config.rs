@@ -618,7 +618,11 @@ impl<'a> Config<'a> {
     ///
     /// For this, some values need to be converted to other types and some
     /// defaults need to be set (sometimes based on env variables).
-    fn from_raw(raw_config: &'a RawConfig, config_file_path: PathWithSource) -> Result<Self> {
+    fn from_raw(
+        raw_config: &'a RawConfig,
+        config_file_path: PathWithSource,
+        quiet: bool,
+    ) -> Result<Self> {
         let style = (&raw_config.style).into();
         let display = (&raw_config.display).into();
         let search: SearchConfig<'a> = (&raw_config.search).into();
@@ -654,7 +658,9 @@ impl<'a> Config<'a> {
             // For backwards compatibility reasons, the cache directory can be
             // overridden using an env variable. This is deprecated and will be
             // phased out in the future.
-            eprintln!("Warning: The ${cache_dir_env_var} env variable is deprecated, use the `cache_dir` option in the config file instead.");
+            if !quiet {
+                eprintln!("Warning: The ${cache_dir_env_var} env variable is deprecated, use the `cache_dir` option in the config file instead.");
+            }
             PathWithSource {
                 path: PathBuf::from(env_var),
                 source: PathSource::EnvVar,
@@ -833,8 +839,9 @@ impl ConfigLoader {
     }
 
     /// Parse the read [`RawConfig`] into a [`Config`].
-    pub fn load(&self) -> Result<Config<'_>> {
-        Config::from_raw(&self.raw, self.path.clone())
+    /// `quiet`: If true, informational messages are suppressed.
+    pub fn load(&self, quiet: bool) -> Result<Config<'_>> {
+        Config::from_raw(&self.raw, self.path.clone(), quiet)
             .context("Could not process raw config into rich config")
     }
 }
@@ -964,6 +971,7 @@ mod test {
                 path: PathBuf::from("/path/to/config/config.toml"),
                 source: PathSource::OsConvention,
             },
+            false,
         )
         .unwrap();
 
@@ -991,6 +999,7 @@ mod test {
                 path: PathBuf::from("/path/to/config/config.toml"),
                 source: PathSource::OsConvention,
             },
+            false,
         )
         .unwrap();
 
@@ -1056,7 +1065,7 @@ mod test {
                     $overrides,
                 )
                 .unwrap();
-                let $config = loader.load().unwrap();
+                let $config = loader.load(false).unwrap();
             };
         }
 

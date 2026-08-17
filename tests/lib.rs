@@ -509,6 +509,51 @@ fn test_quiet_old_cache() {
 }
 
 #[test]
+fn test_quiet_old_pages_directory() {
+    let testenv = TestEnv::new().install_default_cache();
+    fs::rename(
+        testenv.cache_dir().join(TLDR_PAGES_DIR),
+        testenv.cache_dir().join(TLDR_OLD_PAGES_DIR),
+    )
+    .unwrap();
+
+    testenv
+        .command()
+        .args(["--list", "--quiet"])
+        .assert()
+        .failure()
+        .stderr(contains("Cleared pages from old cache location.").not());
+}
+
+#[test]
+fn test_quiet_deprecated_cache_dir_env_var() {
+    let testenv = TestEnv::new().install_default_cache();
+
+    testenv
+        .command()
+        .env("TEALDEER_CACHE_DIR", testenv.cache_dir().to_str().unwrap())
+        .args(["which", "--quiet"])
+        .assert()
+        .success()
+        .stderr(contains("env variable is deprecated").not());
+}
+
+#[test]
+fn test_quiet_cache_directory_creation() {
+    let testenv = TestEnv::new();
+    // Point at an unreachable archive so that no network access is needed. The cache directory is
+    // created before the download is attempted.
+    testenv.append_to_config("updates.archive_source = 'http://127.0.0.1:1/'\n");
+
+    testenv
+        .command()
+        .args(["--update", "--quiet"])
+        .assert()
+        .failure()
+        .stderr(contains("Successfully created cache directory").not());
+}
+
+#[test]
 fn test_warn_cache_age_never() {
     let testenv = TestEnv::new().install_default_cache();
 

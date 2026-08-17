@@ -207,7 +207,7 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         _ => ConfigLoader::read_default_path(&args.override_config)
             .context("Could not read config from default path")?,
     };
-    let mut config = config_loader.load()?;
+    let mut config = config_loader.load(args.quiet)?;
 
     // Override styles if needed
     if !enable_styles {
@@ -300,7 +300,9 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     };
     if let Ok(Some(old_cache)) = Cache::open(old_config) {
         old_cache.clear()?;
-        eprintln!("Cleared pages from old cache location.");
+        if !args.quiet {
+            eprintln!("Cleared pages from old cache location.");
+        }
     }
 
     if args.clear_cache {
@@ -312,6 +314,12 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
 
     let cache = if args.update || config.updates.auto_update && !args.no_auto_update {
         let (mut cache, was_created) = Cache::open_or_create(cache_config)?;
+        if was_created && !args.quiet {
+            eprintln!(
+                "Successfully created cache directory `{}`.",
+                cache.config().pages_directory.display(),
+            );
+        }
         if was_created || args.update || cache.age()? >= config.updates.auto_update_interval {
             let result = update_cache(
                 &mut cache,

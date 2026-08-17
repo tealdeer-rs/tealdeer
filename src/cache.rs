@@ -77,10 +77,6 @@ impl<'a> Cache<'a> {
                 config.pages_directory.display(),
             )
         })?;
-        eprintln!(
-            "Successfully created cache directory `{}`.",
-            config.pages_directory.display(),
-        );
 
         Ok((Cache { config }, true))
     }
