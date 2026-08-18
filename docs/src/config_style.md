@@ -10,7 +10,7 @@ Using the config file, the style (e.g. colors or underlines) can be customized.
 - `command_name`: The command name as part of the example code
 - `example_text`: The text that describes an example
 - `example_code`: The example itself (except the `command_name` and `example_variable`)
-- `example_variable`: The variables in the example
+- `example_variable`: The variables (placeholders) in the example
 
 ## Attributes
 
