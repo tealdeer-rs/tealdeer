@@ -92,9 +92,18 @@ impl<'a> Cache<'a> {
             .context("Error comparing cache mtime with current time")
     }
 
+    /// Look up the patch file (`<command>.patch.md`) for `command` in the
+    /// custom pages directory, returning its path if such a file exists.
+    pub fn find_patch(&self, command: &str) -> Option<PathBuf> {
+        let patch_filename = format!("{command}.patch.md");
+        self.config
+            .custom_pages_directory
+            .map(|dir| dir.join(&patch_filename))
+            .filter(|path| path.is_file())
+    }
+
     pub fn find_page(&self, command: &str) -> Option<PageLookupResult> {
         let page_filename = format!("{command}.md");
-        let patch_filename = format!("{command}.patch.md");
         let custom_filename = format!("{command}.page.md");
 
         if let Some(custom_pages_dir) = self.config.custom_pages_directory {
@@ -104,11 +113,7 @@ impl<'a> Cache<'a> {
             }
         }
 
-        let patch_path = self
-            .config
-            .custom_pages_directory
-            .map(|dir| dir.join(&patch_filename))
-            .filter(|path| path.is_file());
+        let patch_path = self.find_patch(command);
 
         for &platform in self.config.platforms {
             for language in self.config.search_languages {

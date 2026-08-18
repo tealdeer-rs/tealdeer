@@ -29,6 +29,7 @@ compile_error!(
 
 use std::{
     env,
+    fmt::Write as _,
     fs::create_dir_all,
     io::{self, IsTerminal},
     path::Path,
@@ -419,14 +420,20 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
 
         let Some(result) = cache.find_page(&command) else {
             if !args.quiet {
-                print_warning(
-                    enable_styles,
-                    &format!(
-                        "Page `{command}` not found in cache.\n\
-                         Try updating with `tldr --update`, or submit a pull request to:\n\
-                         https://github.com/tldr-pages/tldr"
-                    ),
+                let mut message = format!(
+                    "Page `{command}` not found in cache.\n\
+                     Try updating with `tldr --update`, or submit a pull request to:\n\
+                     https://github.com/tldr-pages/tldr"
                 );
+                if let Some(patch_path) = cache.find_patch(&command) {
+                    let _ = write!(
+                        message,
+                        "\n\nNote: a patch for `{command}` exists at {}, \
+                         but there is no page for it to apply to.",
+                        patch_path.display(),
+                    );
+                }
+                print_warning(enable_styles, &message);
             }
             return Ok(ExitCode::FAILURE);
         };

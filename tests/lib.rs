@@ -1024,6 +1024,40 @@ fn test_multiple_platform_command_search_not_found() {
 }
 
 #[test]
+fn test_orphaned_patch_note() {
+    let testenv = TestEnv::new().write_custom_pages_config();
+
+    // Populate the cache so the lookup reaches the page-not-found path.
+    testenv.add_entry("foo", "");
+
+    // A patch with no corresponding page (an orphaned patch).
+    testenv.add_patch_entry("bar", "");
+
+    testenv
+        .command()
+        .args(["bar"])
+        .assert()
+        .failure()
+        .stderr(contains("Page `bar` not found in cache."))
+        .stderr(contains("a patch for `bar` exists"));
+}
+
+#[test]
+fn test_not_found_without_patch_has_no_note() {
+    let testenv = TestEnv::new().write_custom_pages_config();
+
+    testenv.add_entry("foo", "");
+
+    testenv
+        .command()
+        .args(["bar"])
+        .assert()
+        .failure()
+        .stderr(contains("Page `bar` not found in cache."))
+        .stderr(contains("a patch for").not());
+}
+
+#[test]
 fn test_macos_is_alias_for_osx() {
     let testenv = TestEnv::new();
     testenv.add_os_entry("osx", "maconly", "this command only exists on mac");
