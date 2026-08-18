@@ -89,6 +89,9 @@ fn print_snippet(
     match snip {
         CommandName(s) | Title(s) => write!(writer, "{}", s.paint(style.command_name)),
         Placeholder(s) => write!(writer, "{}", s.paint(style.example_variable)),
+        PlaceholderVariants { short, long } => {
+            write!(writer, "{}", long.paint(style.example_variable))
+        }
         NormalCode(s) => write!(writer, "{}", s.paint(style.example_code)),
         Description(s) => write!(writer, "{}", s.paint(style.description)),
         Text(s) => write!(writer, "{}", s.paint(style.example_text)),

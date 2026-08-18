@@ -9,6 +9,7 @@ use crate::{config::Indent, extensions::FindFrom, types::LineType};
 pub enum PageSnippet<T> {
     CommandName(T),
     Placeholder(T),
+    PlaceholderVariants { short: T, long: T },
     NormalCode(T),
     Description(T),
     Text(T),
@@ -21,11 +22,15 @@ pub enum PageSnippet<T> {
 impl<T> PageSnippet<T> {
     pub fn map<F, U>(self, f: F) -> PageSnippet<U>
     where
-        F: FnOnce(T) -> U,
+        F: Fn(T) -> U,
     {
         match self {
             PageSnippet::CommandName(s) => PageSnippet::CommandName(f(s)),
             PageSnippet::Placeholder(s) => PageSnippet::Placeholder(f(s)),
+            PageSnippet::PlaceholderVariants { short, long } => PageSnippet::PlaceholderVariants {
+                short: f(short),
+                long: f(long),
+            },
             PageSnippet::NormalCode(s) => PageSnippet::NormalCode(f(s)),
             PageSnippet::Description(s) => PageSnippet::Description(f(s)),
             PageSnippet::Text(s) => PageSnippet::Text(f(s)),
@@ -45,6 +50,16 @@ impl<T: PartialEq<U>, U> PartialEq<PageSnippet<U>> for PageSnippet<T> {
             | (PageSnippet::Description(s), PageSnippet::Description(t))
             | (PageSnippet::Text(s), PageSnippet::Text(t))
             | (PageSnippet::Title(s), PageSnippet::Title(t)) => s == t,
+            (
+                PageSnippet::PlaceholderVariants {
+                    short: left_short,
+                    long: left_long,
+                },
+                PageSnippet::PlaceholderVariants {
+                    short: right_short,
+                    long: right_long,
+                },
+            ) => left_short == right_short && left_long == right_long,
             (PageSnippet::Indent(n), PageSnippet::Indent(m)) => n == m,
             (PageSnippet::Linebreak, PageSnippet::Linebreak) => true,
             _ => false,
@@ -59,6 +74,7 @@ impl PageSnippet<&str> {
         match self {
             CommandName(s) | Placeholder(s) | NormalCode(s) | Description(s) | Text(s)
             | Title(s) => s.is_empty(),
+            PageSnippet::PlaceholderVariants { short, long } => short.is_empty() && long.is_empty(),
             Indent(n) => *n == 0,
             Linebreak => false,
         }
@@ -160,9 +176,16 @@ fn highlight_code<E>(
                 process_snippet,
             )?;
         }
-        process_snippet(PageSnippet::Placeholder(&replace_escaped(
-            placeholder_content,
-        )))?;
+
+        let placeholder_content = replace_escaped(placeholder_content);
+        if let Some(s) = placeholder_content.strip_prefix('[')
+            && let Some(s) = s.strip_suffix(']')
+            && let Some((short, long)) = s.split_once('|')
+        {
+            process_snippet(PageSnippet::PlaceholderVariants { short, long })?;
+        } else {
+            process_snippet(PageSnippet::Placeholder(&placeholder_content))?;
+        }
 
         text = &text[end_marker + 2..];
     }
@@ -431,7 +454,10 @@ mod tests {
                 [
                     CommandName("playerctl"),
                     NormalCode(" metadata "),
-                    Placeholder("[-f|--format]"),
+                    PlaceholderVariants {
+                        short: "-f",
+                        long: "--format"
+                    },
                     NormalCode(" \""),
                     Placeholder("Now playing: {{artist}} - {{album}} - {{title}}"),
                     NormalCode("\""),
