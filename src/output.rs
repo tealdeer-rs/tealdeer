@@ -6,7 +6,7 @@ use anyhow::{Context, Result};
 use yansi::Paint;
 
 use crate::{
-    config::{Config, StyleConfig},
+    config::{Config, PlaceholderFormat, StyleConfig},
     formatter::{PageSnippet, highlight_lines},
     line_iterator::LineIterator,
 };
@@ -58,7 +58,13 @@ pub fn print_page(
             if snip.is_empty() {
                 Ok(())
             } else {
-                print_snippet(&mut handle, snip, &config.style).context("Failed to print snippet")
+                print_snippet(
+                    &mut handle,
+                    snip,
+                    &config.style,
+                    config.display.placeholder_format,
+                )
+                .context("Failed to print snippet")
             }
         };
 
@@ -83,15 +89,24 @@ fn print_snippet(
     writer: &mut impl Write,
     snip: PageSnippet<&str>,
     style: &StyleConfig,
+    placeholder_format: PlaceholderFormat,
 ) -> io::Result<()> {
     use PageSnippet::*;
 
     match snip {
         CommandName(s) | Title(s) => write!(writer, "{}", s.paint(style.command_name)),
         Placeholder(s) => write!(writer, "{}", s.paint(style.example_variable)),
-        PlaceholderVariants { short, long } => {
-            write!(writer, "{}", long.paint(style.example_variable))
-        }
+        PlaceholderVariants { short, long } => match placeholder_format {
+            PlaceholderFormat::Short => write!(writer, "{}", short.paint(style.example_variable)),
+            PlaceholderFormat::Long => write!(writer, "{}", long.paint(style.example_variable)),
+            PlaceholderFormat::Both => {
+                write!(
+                    writer,
+                    "{}",
+                    format!("[{short}|{long}]").paint(style.example_variable)
+                )
+            }
+        },
         NormalCode(s) => write!(writer, "{}", s.paint(style.example_code)),
         Description(s) => write!(writer, "{}", s.paint(style.description)),
         Text(s) => write!(writer, "{}", s.paint(style.example_text)),
