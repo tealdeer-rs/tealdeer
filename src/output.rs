@@ -97,13 +97,13 @@ fn print_snippet(
         CommandName(s) | Title(s) => write!(writer, "{}", s.paint(style.command_name)),
         Placeholder(s) => write!(writer, "{}", s.paint(style.example_variable)),
         PlaceholderVariants { short, long } => match placeholder_format {
-            PlaceholderFormat::Short => write!(writer, "{}", short.paint(style.example_variable)),
-            PlaceholderFormat::Long => write!(writer, "{}", long.paint(style.example_variable)),
+            PlaceholderFormat::Short => write!(writer, "{}", short.paint(style.example_code)),
+            PlaceholderFormat::Long => write!(writer, "{}", long.paint(style.example_code)),
             PlaceholderFormat::Both => {
                 write!(
                     writer,
                     "{}",
-                    format!("[{short}|{long}]").paint(style.example_variable)
+                    format!("[{short}|{long}]").paint(style.example_code)
                 )
             }
         },

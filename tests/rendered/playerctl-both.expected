@@ -16,17 +16,17 @@
 
   [32mList all players:[0m
 
-      [36mplayerctl[0m[36m [0m[4;36m[-l|--list-all][0m
+      [36mplayerctl[0m[36m [0m[36m[-l|--list-all][0m
 
   [32mSend a command to a specific player:[0m
 
-      [36mplayerctl[0m[36m [0m[4;36m[-p|--player][0m[36m [0m[4;36mplayer_name[0m[36m [0m[4;36mplay-pause|next|previous|...[0m
+      [36mplayerctl[0m[36m [0m[36m[-p|--player][0m[36m [0m[4;36mplayer_name[0m[36m [0m[4;36mplay-pause|next|previous|...[0m
 
   [32mSend a command to all players:[0m
 
-      [36mplayerctl[0m[36m [0m[4;36m[-a|--all-players][0m[36m [0m[4;36mplay-pause|next|previous|...[0m
+      [36mplayerctl[0m[36m [0m[36m[-a|--all-players][0m[36m [0m[4;36mplay-pause|next|previous|...[0m
 
   [32mDisplay metadata about the current track:[0m
 
-      [36mplayerctl[0m[36m metadata [0m[4;36m[-f|--format][0m[36m "[0m[4;36mNow playing: {{artist}} - {{album}} - {{title}}[0m[36m"[0m
+      [36mplayerctl[0m[36m metadata [0m[36m[-f|--format][0m[36m "[0m[4;36mNow playing: {{artist}} - {{album}} - {{title}}[0m[36m"[0m
 
