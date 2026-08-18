@@ -72,8 +72,8 @@ indent = {
 
 ## `placeholder_format`
 
-Display the short and/or long variants of placeholders, if available (default `"long"`).
-Possible values: `"short"`, `"long"`, or `"both"`.
+Display the short and/or long variants of placeholders, if available.
+Possible values: `"short"`, `"long"`, or `"both"` (default `"long"`).
 This behavior can be overridden with the `--short-options` and `--long-options` flags.
 
 ```toml
@@ -81,3 +81,8 @@ This behavior can be overridden with the `--short-options` and `--long-options` 
 # Display only short variants
 placeholder_format = "short"
 ```
+
+For example, when displaying the builtin page with `tldr tealdeer`, the `-f` / `--render` flag is displayed as follows:
+- `-f`, if `placeholder_format = "short"`
+- `--render`, if `placeholder_format = "long"`
+- `[-f|--render]`, if `placeholder_format = "both"`

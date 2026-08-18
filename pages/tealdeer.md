@@ -7,11 +7,11 @@
 
 - Render a local markdown file as a tldr page:
 
-`tldr --render {{path/to/file.md}}`
+`tldr {{[-f|--render]}} {{path/to/file.md}}`
 
 - Show the raw markdown source of a page instead of rendering it:
 
-`tldr --raw {{command}}`
+`tldr {{[-r|--raw]}} {{command}}`
 
 - Show file and directory paths used by tealdeer:
 
@@ -35,7 +35,7 @@
 
 - Clear the local cache:
 
-`tldr --clear-cache`
+`tldr {{[-c|--clear-cache]}}`
 
 - If auto update is configured, disable it for this run:
 
