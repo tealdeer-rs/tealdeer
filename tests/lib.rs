@@ -1524,3 +1524,68 @@ fn test_custom_pages_dir_is_not_dir() {
         .assert()
         .failure();
 }
+
+mod placeholder_format {
+    use super::*;
+
+    #[test]
+    fn default_long() {
+        let testenv = TestEnv::new().install_default_cache();
+        testenv
+            .command()
+            .args(["--color=always", "playerctl"])
+            .assert()
+            .success()
+            .stdout(eq(include_str!("rendered/playerctl-long.expected")));
+    }
+
+    #[test]
+    fn config() {
+        let cases = [
+            ("short", include_str!("rendered/playerctl-short.expected")),
+            ("long", include_str!("rendered/playerctl-long.expected")),
+            ("both", include_str!("rendered/playerctl-both.expected")),
+        ];
+        for (setting, expected) in cases {
+            let testenv = TestEnv::new().install_default_cache();
+            testenv.append_to_config(format!("display.placeholder_format = \"{setting}\"\n"));
+            testenv
+                .command()
+                .args(["--color=always", "playerctl"])
+                .assert()
+                .success()
+                .stdout(eq(expected));
+        }
+    }
+
+    #[test]
+    fn cli() {
+        let testenv = TestEnv::new().install_default_cache();
+        testenv.append_to_config("display.placeholder_format = \"both\"\n");
+        testenv
+            .command()
+            .args(["--color=always", "--short-options", "playerctl"])
+            .assert()
+            .success()
+            .stdout(eq(include_str!("rendered/playerctl-short.expected")));
+
+        testenv
+            .command()
+            .args(["--color=always", "--long-options", "playerctl"])
+            .assert()
+            .success()
+            .stdout(eq(include_str!("rendered/playerctl-long.expected")));
+
+        testenv
+            .command()
+            .args([
+                "--color=always",
+                "--short-options",
+                "--long-options",
+                "playerctl",
+            ])
+            .assert()
+            .success()
+            .stdout(eq(include_str!("rendered/playerctl-both.expected")));
+    }
+}

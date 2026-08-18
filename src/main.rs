@@ -56,7 +56,8 @@ use crate::{
     cache::{Cache, PageLookupResult, TLDR_PAGES_DIR},
     cli::Cli,
     config::{
-        Config, PathWithSource, get_config_dir, make_default_config, supported_tls_backends_string,
+        Config, PathWithSource, PlaceholderFormat, get_config_dir, make_default_config,
+        supported_tls_backends_string,
     },
     output::print_page,
     types::ColorOptions,
@@ -213,6 +214,13 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     if !enable_styles {
         config.style = StyleConfig::default();
     }
+
+    config.display.placeholder_format = match (args.short_options, args.long_options) {
+        (false, false) => config.display.placeholder_format, // keep old value
+        (true, false) => PlaceholderFormat::Short,
+        (false, true) => PlaceholderFormat::Long,
+        (true, true) => PlaceholderFormat::Both,
+    };
 
     let custom_pages_dir = config
         .directories

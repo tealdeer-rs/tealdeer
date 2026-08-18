@@ -28,6 +28,8 @@ Options:
       --seed-config                 Create a basic config
       --color <WHEN>                Control whether to use color [possible values: always, auto,
                                     never]
+      --short-options               Display the short variants of placeholders
+      --long-options                Display the long variants of placeholders
   -v, --version                     Print the version
   -h, --help                        Print help
 

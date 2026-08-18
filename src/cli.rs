@@ -108,6 +108,14 @@ pub(crate) struct Cli {
     #[arg(long = "color", value_name = "WHEN")]
     pub color: Option<ColorOptions>,
 
+    /// Display the short variants of placeholders
+    #[arg(long)]
+    pub short_options: bool,
+
+    /// Display the long variants of placeholders
+    #[arg(long)]
+    pub long_options: bool,
+
     /// Print the version
     // Note: We override the version flag because clap uses `-V` by default,
     // while TLDR specification requires `-v` to be used.

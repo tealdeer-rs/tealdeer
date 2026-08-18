@@ -8,7 +8,8 @@ use crate::{config::Indent, extensions::FindFrom, types::LineType};
 /// Represents a snippet from a page of a specific highlighting class.
 pub enum PageSnippet<T> {
     CommandName(T),
-    Variable(T),
+    Placeholder(T),
+    PlaceholderVariants { short: T, long: T },
     NormalCode(T),
     Description(T),
     Text(T),
@@ -21,11 +22,15 @@ pub enum PageSnippet<T> {
 impl<T> PageSnippet<T> {
     pub fn map<F, U>(self, f: F) -> PageSnippet<U>
     where
-        F: FnOnce(T) -> U,
+        F: Fn(T) -> U,
     {
         match self {
             PageSnippet::CommandName(s) => PageSnippet::CommandName(f(s)),
-            PageSnippet::Variable(s) => PageSnippet::Variable(f(s)),
+            PageSnippet::Placeholder(s) => PageSnippet::Placeholder(f(s)),
+            PageSnippet::PlaceholderVariants { short, long } => PageSnippet::PlaceholderVariants {
+                short: f(short),
+                long: f(long),
+            },
             PageSnippet::NormalCode(s) => PageSnippet::NormalCode(f(s)),
             PageSnippet::Description(s) => PageSnippet::Description(f(s)),
             PageSnippet::Text(s) => PageSnippet::Text(f(s)),
@@ -40,11 +45,21 @@ impl<T: PartialEq<U>, U> PartialEq<PageSnippet<U>> for PageSnippet<T> {
     fn eq(&self, other: &PageSnippet<U>) -> bool {
         match (self, other) {
             (PageSnippet::CommandName(s), PageSnippet::CommandName(t))
-            | (PageSnippet::Variable(s), PageSnippet::Variable(t))
+            | (PageSnippet::Placeholder(s), PageSnippet::Placeholder(t))
             | (PageSnippet::NormalCode(s), PageSnippet::NormalCode(t))
             | (PageSnippet::Description(s), PageSnippet::Description(t))
             | (PageSnippet::Text(s), PageSnippet::Text(t))
             | (PageSnippet::Title(s), PageSnippet::Title(t)) => s == t,
+            (
+                PageSnippet::PlaceholderVariants {
+                    short: left_short,
+                    long: left_long,
+                },
+                PageSnippet::PlaceholderVariants {
+                    short: right_short,
+                    long: right_long,
+                },
+            ) => left_short == right_short && left_long == right_long,
             (PageSnippet::Indent(n), PageSnippet::Indent(m)) => n == m,
             (PageSnippet::Linebreak, PageSnippet::Linebreak) => true,
             _ => false,
@@ -57,9 +72,9 @@ impl PageSnippet<&str> {
         use PageSnippet::*;
 
         match self {
-            CommandName(s) | Variable(s) | NormalCode(s) | Description(s) | Text(s) | Title(s) => {
-                s.is_empty()
-            }
+            CommandName(s) | Placeholder(s) | NormalCode(s) | Description(s) | Text(s)
+            | Title(s) => s.is_empty(),
+            PageSnippet::PlaceholderVariants { short, long } => short.is_empty() && long.is_empty(),
             Indent(n) => *n == 0,
             Linebreak => false,
         }
@@ -161,7 +176,16 @@ fn highlight_code<E>(
                 process_snippet,
             )?;
         }
-        process_snippet(PageSnippet::Variable(&replace_escaped(placeholder_content)))?;
+
+        let placeholder_content = replace_escaped(placeholder_content);
+        if let Some(s) = placeholder_content.strip_prefix('[')
+            && let Some(s) = s.strip_suffix(']')
+            && let Some((short, long)) = s.split_once('|')
+        {
+            process_snippet(PageSnippet::PlaceholderVariants { short, long })?;
+        } else {
+            process_snippet(PageSnippet::Placeholder(&placeholder_content))?;
+        }
 
         text = &text[end_marker + 2..];
     }
@@ -197,7 +221,7 @@ fn find_marker(s: &str, marker: &str, forbidden_prefix: &str) -> Option<usize> {
 }
 
 /// Yields `NormalCode` and `CommandName` in alternating order according to the occurrences of
-/// `command_name` in `segment`. Variables are not detected here, see `highlight_code`
+/// `command_name` in `segment`. Placeholders are not detected here, see `highlight_code`
 /// instead.
 fn highlight_code_segment<'a, E>(
     command_name: &'a str,
@@ -355,13 +379,13 @@ mod tests {
         use PageSnippet::*;
 
         #[test]
-        fn variable_vs_escaped() {
+        fn placeholder_vs_escaped() {
             assert_eq!(
                 run("ping", "ping {{example.com}}"),
                 [
                     CommandName("ping"),
                     NormalCode(" "),
-                    Variable("example.com"),
+                    Placeholder("example.com"),
                 ],
             );
             assert_eq!(
@@ -374,7 +398,7 @@ mod tests {
                     NormalCode(
                         " --format '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "
                     ),
-                    Variable("container"),
+                    Placeholder("container"),
                 ],
             );
             assert_eq!(
@@ -382,16 +406,16 @@ mod tests {
                 [
                     CommandName("mount"),
                     NormalCode(r" \\"),
-                    Variable("computer_name"),
+                    Placeholder("computer_name"),
                     NormalCode(r"\"),
-                    Variable("share_name"),
+                    Placeholder("share_name"),
                     NormalCode(" Z:"),
                 ],
             );
 
             assert_eq!(run("", r"\{"), [NormalCode(r"\{")]);
             assert_eq!(run("", r"\{{a"), [NormalCode(r"\{{a")]);
-            assert_eq!(run("", r"\{{a}}"), [NormalCode(r"\"), Variable("a")]);
+            assert_eq!(run("", r"\{{a}}"), [NormalCode(r"\"), Placeholder("a")]);
 
             // Placeholder has begin marker, but no end marker
             assert_eq!(run("", r"{{\}\}}"), [NormalCode("{{}}}")]);
@@ -404,20 +428,20 @@ mod tests {
                 [
                     CommandName("git stash"),
                     NormalCode(" show --patch "),
-                    Variable("stash@{0}"),
+                    Placeholder("stash@{0}"),
                 ],
             );
 
             // The following is not listed in the specification, but this is the highlighting I would expect.
             assert_eq!(
                 run("rg", "rg {{}}}"),
-                [CommandName("rg"), NormalCode(" "), Variable("}")]
+                [CommandName("rg"), NormalCode(" "), Placeholder("}")]
             );
 
             // And these are just to document the current behavior
-            assert_eq!(run("", "{{{}}}"), [Variable("{}")]);
-            assert_eq!(run("", "{{{{}}}"), [Variable("{{}")]);
-            assert_eq!(run("", "{{{}}}}"), [Variable("{}}")]);
+            assert_eq!(run("", "{{{}}}"), [Placeholder("{}")]);
+            assert_eq!(run("", "{{{{}}}"), [Placeholder("{{}")]);
+            assert_eq!(run("", "{{{}}}}"), [Placeholder("{}}")]);
         }
 
         #[test]
@@ -430,9 +454,12 @@ mod tests {
                 [
                     CommandName("playerctl"),
                     NormalCode(" metadata "),
-                    Variable("[-f|--format]"),
+                    PlaceholderVariants {
+                        short: "-f",
+                        long: "--format"
+                    },
                     NormalCode(" \""),
-                    Variable("Now playing: {{artist}} - {{album}} - {{title}}"),
+                    Placeholder("Now playing: {{artist}} - {{album}} - {{title}}"),
                     NormalCode("\""),
                 ],
             );
@@ -445,7 +472,7 @@ mod tests {
                 [
                     CommandName("test"),
                     NormalCode(" {{"),
-                    Variable("var"),
+                    Placeholder("var"),
                     NormalCode(" normal}}"),
                 ],
             );
@@ -455,7 +482,7 @@ mod tests {
         /// Regression test for <https://github.com/tealdeer-rs/tealdeer/issues/473>
         fn prefix_check_character_boundary() {
             assert_eq!("Ä".len(), 2);
-            assert_eq!(run("", r"Äxx{{x}}"), [NormalCode("Äxx"), Variable("x")],);
+            assert_eq!(run("", r"Äxx{{x}}"), [NormalCode("Äxx"), Placeholder("x")],);
         }
     }
 }
