@@ -105,10 +105,6 @@ fn default_italic() -> bool {
     false
 }
 
-fn true_() -> bool {
-    true
-}
-
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "lowercase")]
 pub enum RawColor {
@@ -232,9 +228,7 @@ struct RawDisplayConfig {
     #[serde(default)]
     pub indent: RawIndent,
     #[serde(default)]
-    pub short_options: bool,
-    #[serde(default = "true_")]
-    pub long_options: bool,
+    pub placeholder_variants: PlaceholderVariants,
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -263,6 +257,15 @@ impl From<RawIndent> for Indent {
     }
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum PlaceholderVariants {
+    Short,
+    #[default]
+    Long,
+    Both,
+}
+
 impl From<&RawDisplayConfig> for DisplayConfig {
     fn from(raw_display_config: &RawDisplayConfig) -> Self {
         Self {
@@ -270,8 +273,7 @@ impl From<&RawDisplayConfig> for DisplayConfig {
             use_pager: raw_display_config.use_pager,
             show_title: raw_display_config.show_title,
             indent: raw_display_config.indent.into(),
-            short_options: raw_display_config.short_options,
-            long_options: raw_display_config.long_options,
+            placeholder_variants: raw_display_config.placeholder_variants,
         }
     }
 }
@@ -439,8 +441,7 @@ pub struct DisplayConfig {
     pub use_pager: bool,
     pub show_title: bool,
     pub indent: Indent,
-    pub short_options: bool,
-    pub long_options: bool,
+    pub placeholder_variants: PlaceholderVariants,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

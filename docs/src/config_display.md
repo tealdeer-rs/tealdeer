@@ -70,13 +70,14 @@ indent = {
 }
 ```
 
-## `short_options` and `long_options`
+## `placeholder_variants`
 
-Display the short and/or long variants of placeholders, if available.
+Display the short and/or long variants of placeholders, if available (default `"long"`).
+Possible values: `"short"`, `"long"`, or `"both"`.
+This behavior can be overridden with the `--short-options` and `--long-options` flags.
 
 ```toml
 [display]
 # Display only short variants
-short_options = true
-long_options = false
+placeholder_variants = "short"
 ```
