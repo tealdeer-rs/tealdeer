@@ -1,0 +1,32 @@
+
+  Control media players via MPRIS.
+  More information: <https://github.com/altdesktop/playerctl#using-the-cli>.
+
+  [32mToggle play:[0m
+
+      [36mplayerctl[0m[36m play-pause[0m
+
+  [32mSkip to the next track:[0m
+
+      [36mplayerctl[0m[36m next[0m
+
+  [32mGo back to the previous track:[0m
+
+      [36mplayerctl[0m[36m previous[0m
+
+  [32mList all players:[0m
+
+      [36mplayerctl[0m[36m [0m[4;36m[-l|--list-all][0m
+
+  [32mSend a command to a specific player:[0m
+
+      [36mplayerctl[0m[36m [0m[4;36m[-p|--player][0m[36m [0m[4;36mplayer_name[0m[36m [0m[4;36mplay-pause|next|previous|...[0m
+
+  [32mSend a command to all players:[0m
+
+      [36mplayerctl[0m[36m [0m[4;36m[-a|--all-players][0m[36m [0m[4;36mplay-pause|next|previous|...[0m
+
+  [32mDisplay metadata about the current track:[0m
+
+      [36mplayerctl[0m[36m metadata [0m[4;36m[-f|--format][0m[36m "[0m[4;36mNow playing: {{artist}} - {{album}} - {{title}}[0m[36m"[0m
+

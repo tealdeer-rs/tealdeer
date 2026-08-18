@@ -1524,3 +1524,108 @@ fn test_custom_pages_dir_is_not_dir() {
         .assert()
         .failure();
 }
+
+mod short_long_variants {
+    use super::*;
+
+    #[test]
+    fn default_long() {
+        let testenv = TestEnv::new().install_default_cache();
+        testenv
+            .command()
+            .args(["--color=always", "playerctl"])
+            .assert()
+            .success()
+            .stdout(eq(include_str!("rendered/playerctl-long.expected")));
+    }
+
+    #[test]
+    fn config_short() {
+        let testenv = TestEnv::new().install_default_cache();
+        testenv.append_to_config("display.short_options = true\n");
+        testenv
+            .command()
+            .args(["--color=always", "playerctl"])
+            .assert()
+            .success()
+            .stdout(eq(include_str!("rendered/playerctl-both.expected")));
+        testenv.append_to_config("display.long_options = false\n");
+
+        testenv
+            .command()
+            .args(["--color=always", "playerctl"])
+            .assert()
+            .success()
+            .stdout(eq(include_str!("rendered/playerctl-short.expected")));
+    }
+
+    #[test]
+    fn config_none() {
+        let testenv = TestEnv::new().install_default_cache();
+        testenv.append_to_config("display.short_options = false\n");
+        testenv.append_to_config("display.long_options = false\n");
+        testenv
+            .command()
+            .args(["--color=always", "playerctl"])
+            .assert()
+            .failure()
+            .stderr(contains(
+                "at least one of display.short_options and display.long_options must be set",
+            ));
+    }
+
+    #[test]
+    fn cli_short() {
+        let testenv = TestEnv::new().install_default_cache();
+        testenv
+            .command()
+            .args(["--color=always", "--short-options", "playerctl"])
+            .assert()
+            .success()
+            .stdout(eq(include_str!("rendered/playerctl-short.expected")));
+
+        testenv.append_to_config("display.long_options = true\n");
+        testenv
+            .command()
+            .args(["--color=always", "--short-options", "playerctl"])
+            .assert()
+            .success()
+            .stdout(eq(include_str!("rendered/playerctl-short.expected")));
+    }
+
+    #[test]
+    fn cli_long() {
+        let testenv = TestEnv::new().install_default_cache();
+        testenv
+            .command()
+            .args(["--color=always", "--long-options", "playerctl"])
+            .assert()
+            .success()
+            .stdout(eq(include_str!("rendered/playerctl-long.expected")));
+
+        testenv.append_to_config("display.short_options = true\n");
+        testenv.append_to_config("display.long_options = false\n");
+        testenv
+            .command()
+            .args(["--color=always", "--short-options", "playerctl"])
+            .assert()
+            .success()
+            .stdout(eq(include_str!("rendered/playerctl-long.expected")));
+    }
+
+    #[test]
+    fn both() {
+        let testenv = TestEnv::new().install_default_cache();
+        testenv
+            .command()
+            .args([
+                "--color=always",
+                "--short-options",
+                "--long-options",
+                "playerctl",
+            ])
+            .assert()
+            .success()
+            .stdout(eq(include_str!("rendered/playerctl-both.expected")));
+    }
+}
