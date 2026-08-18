@@ -55,7 +55,7 @@ jobs:
        - uses: actions/checkout@v7
        - uses: dtolnay/rust-toolchain@master
          with:
-           toolchain: stable
+           toolchain: 1.87.0 # MSRV
            components: clippy
        - name: run clippy lints
          run: cargo clippy --locked --all-targets --features logging
