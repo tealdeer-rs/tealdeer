@@ -7,7 +7,7 @@ use yansi::Paint;
 
 use crate::{
     config::{Config, StyleConfig},
-    formatter::{highlight_lines, PageSnippet},
+    formatter::{PageSnippet, highlight_lines},
     line_iterator::LineIterator,
 };
 

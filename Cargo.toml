@@ -13,7 +13,7 @@ documentation = "https://docs.tealdeer.org"
 version = "1.8.1"
 include = ["/src/**/*", "/tests/**/*", "/Cargo.toml", "/README.md", "/LICENSE-*", "/screenshot.png", "completion/*"]
 rust-version = "1.87"  # MSRV
-edition = "2021"
+edition = "2024"
 
 [[bin]]
 name = "tldr"
