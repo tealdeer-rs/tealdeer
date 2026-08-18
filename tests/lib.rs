@@ -1525,7 +1525,7 @@ fn test_custom_pages_dir_is_not_dir() {
         .failure();
 }
 
-mod placeholder_variants {
+mod placeholder_format {
     use super::*;
 
     #[test]
@@ -1548,7 +1548,7 @@ mod placeholder_variants {
         ];
         for (setting, expected) in cases {
             let testenv = TestEnv::new().install_default_cache();
-            testenv.append_to_config(format!("display.placeholder_variants = \"{setting}\"\n"));
+            testenv.append_to_config(format!("display.placeholder_format = \"{setting}\"\n"));
             testenv
                 .command()
                 .args(["--color=always", "playerctl"])
@@ -1561,7 +1561,7 @@ mod placeholder_variants {
     #[test]
     fn cli() {
         let testenv = TestEnv::new().install_default_cache();
-        testenv.append_to_config("display.placeholder_variants = \"both\"\n");
+        testenv.append_to_config("display.placeholder_format = \"both\"\n");
         testenv
             .command()
             .args(["--color=always", "--short-options", "playerctl"])

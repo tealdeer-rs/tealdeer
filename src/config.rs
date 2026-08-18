@@ -228,7 +228,7 @@ struct RawDisplayConfig {
     #[serde(default)]
     pub indent: RawIndent,
     #[serde(default)]
-    pub placeholder_variants: PlaceholderVariants,
+    pub placeholder_format: PlaceholderFormat,
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -259,7 +259,7 @@ impl From<RawIndent> for Indent {
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "lowercase")]
-pub enum PlaceholderVariants {
+pub enum PlaceholderFormat {
     Short,
     #[default]
     Long,
@@ -273,7 +273,7 @@ impl From<&RawDisplayConfig> for DisplayConfig {
             use_pager: raw_display_config.use_pager,
             show_title: raw_display_config.show_title,
             indent: raw_display_config.indent.into(),
-            placeholder_variants: raw_display_config.placeholder_variants,
+            placeholder_format: raw_display_config.placeholder_format,
         }
     }
 }
@@ -441,7 +441,7 @@ pub struct DisplayConfig {
     pub use_pager: bool,
     pub show_title: bool,
     pub indent: Indent,
-    pub placeholder_variants: PlaceholderVariants,
+    pub placeholder_format: PlaceholderFormat,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
