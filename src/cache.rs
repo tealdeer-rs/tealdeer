@@ -5,12 +5,12 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use anyhow::{anyhow, bail, ensure, Context, Result};
+use anyhow::{Context, Result, anyhow, bail, ensure};
 use log::{debug, info};
 use ureq::{
+    Agent,
     http::StatusCode,
     tls::{RootCerts, TlsConfig, TlsProvider},
-    Agent,
 };
 use zip::ZipArchive;
 
@@ -128,7 +128,7 @@ impl<'a> Cache<'a> {
         None
     }
 
-    pub fn list_pages(&self) -> Result<impl IntoIterator<Item = String>> {
+    pub fn list_pages(&self) -> Result<impl IntoIterator<Item = String> + use<>> {
         let mut pages = Vec::new();
 
         let mut append_all = |directory: &Path, suffix: &str| -> Result<()> {
@@ -215,7 +215,7 @@ impl<'a> Cache<'a> {
         &mut self,
         archive_url: &str,
         tls_backend: TlsBackend,
-    ) -> Result<impl IntoIterator<Item = Language<'_>>> {
+    ) -> Result<impl IntoIterator<Item = Language<'_>> + use<'_>> {
         let client = Self::build_client(tls_backend);
 
         // Download everything before deleting anything

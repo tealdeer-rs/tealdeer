@@ -9,7 +9,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{anyhow, bail, ensure, Context, Result};
+use anyhow::{Context, Result, anyhow, bail, ensure};
 use clap::ValueEnum;
 use log::info;
 use serde::Serialize as _;
@@ -42,7 +42,7 @@ struct SystemDirectories {
 impl SystemDirectories {
     fn discover() -> Result<Self> {
         use etcetera::{
-            app_strategy::choose_native_strategy, choose_app_strategy, AppStrategy, AppStrategyArgs,
+            AppStrategy, AppStrategyArgs, app_strategy::choose_native_strategy, choose_app_strategy,
         };
 
         let args = AppStrategyArgs {
@@ -579,7 +579,7 @@ impl TryFrom<RawTlsBackend> for TlsBackend {
                 "Unsupported TLS backend: {}. This tealdeer build has support for the following options: {}",
                 raw,
                 supported_tls_backends_string(),
-            ))
+            )),
         }
     }
 }
@@ -654,7 +654,9 @@ impl<'a> Config<'a> {
             // For backwards compatibility reasons, the cache directory can be
             // overridden using an env variable. This is deprecated and will be
             // phased out in the future.
-            eprintln!("Warning: The ${cache_dir_env_var} env variable is deprecated, use the `cache_dir` option in the config file instead.");
+            eprintln!(
+                "Warning: The ${cache_dir_env_var} env variable is deprecated, use the `cache_dir` option in the config file instead."
+            );
             PathWithSource {
                 path: PathBuf::from(env_var),
                 source: PathSource::EnvVar,
@@ -766,7 +768,7 @@ impl ConfigLoader {
                 return Err(e).context(format!(
                     "Could not read config file contents from {}.",
                     path.path().display()
-                ))
+                ));
             }
         };
 
@@ -794,7 +796,9 @@ impl ConfigLoader {
             let mut entry = &mut config_table;
             for subkey in name.split('.') {
                 let toml::Value::Table(entry_table) = entry else {
-                    bail!("\"{name}\" is not a valid identifier since \"{subkey}\" already refers to a value which is not a toml-Table.");
+                    bail!(
+                        "\"{name}\" is not a valid identifier since \"{subkey}\" already refers to a value which is not a toml-Table."
+                    );
                 };
 
                 entry = entry_table

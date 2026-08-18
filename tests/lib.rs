@@ -1,7 +1,7 @@
 //! Integration tests.
 
 use std::{
-    fs::{self, create_dir_all, File},
+    fs::{self, File, create_dir_all},
     io::{self, Write},
     path::{Path, PathBuf},
     process::Command,

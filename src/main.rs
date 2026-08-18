@@ -35,7 +35,7 @@ use std::{
     process::{Command, ExitCode},
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use cache::{CacheConfig, TLDR_OLD_PAGES_DIR};
 use clap::Parser;
 use config::{ConfigLoader, Language, StyleConfig, TlsBackend};
@@ -56,7 +56,7 @@ use crate::{
     cache::{Cache, PageLookupResult, TLDR_PAGES_DIR},
     cli::Cli,
     config::{
-        get_config_dir, make_default_config, supported_tls_backends_string, Config, PathWithSource,
+        Config, PathWithSource, get_config_dir, make_default_config, supported_tls_backends_string,
     },
     output::print_page,
     types::ColorOptions,
@@ -324,7 +324,9 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
                 print_error(enable_styles, &e);
 
                 eprintln!();
-                eprintln!("Note: Update errors are often caused by unexpected or missing TLS certificates.");
+                eprintln!(
+                    "Note: Update errors are often caused by unexpected or missing TLS certificates."
+                );
                 eprintln!(
                     "You are currently using the following TLS backend: {}",
                     config.updates.tls_backend,
