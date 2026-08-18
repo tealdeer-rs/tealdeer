@@ -105,6 +105,10 @@ fn default_italic() -> bool {
     false
 }
 
+fn true_() -> bool {
+    true
+}
+
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "lowercase")]
 pub enum RawColor {
@@ -227,6 +231,10 @@ struct RawDisplayConfig {
     pub show_title: bool,
     #[serde(default)]
     pub indent: RawIndent,
+    #[serde(default)]
+    pub short_options: bool,
+    #[serde(default = "true_")]
+    pub long_options: bool,
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -262,6 +270,8 @@ impl From<&RawDisplayConfig> for DisplayConfig {
             use_pager: raw_display_config.use_pager,
             show_title: raw_display_config.show_title,
             indent: raw_display_config.indent.into(),
+            short_options: raw_display_config.short_options,
+            long_options: raw_display_config.long_options,
         }
     }
 }
@@ -429,6 +439,8 @@ pub struct DisplayConfig {
     pub use_pager: bool,
     pub show_title: bool,
     pub indent: Indent,
+    pub short_options: bool,
+    pub long_options: bool,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

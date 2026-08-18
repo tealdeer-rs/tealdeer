@@ -214,6 +214,11 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
         config.style = StyleConfig::default();
     }
 
+    if args.short_options || args.long_options {
+        config.display.short_options = args.short_options;
+        config.display.long_options = args.long_options;
+    }
+
     let custom_pages_dir = config
         .directories
         .custom_pages_dir

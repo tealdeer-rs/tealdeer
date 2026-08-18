@@ -69,3 +69,14 @@ indent = {
   command = 6,
 }
 ```
+
+## `short_options` and `long_options`
+
+Display the short and/or long variants of placeholders, if available.
+
+```toml
+[display]
+# Display only short variants
+short_options = true
+long_options = false
+```
