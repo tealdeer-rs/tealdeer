@@ -20,7 +20,6 @@ use crate::{
 };
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
-pub static TLDR_OLD_PAGES_DIR: &str = "tldr-master";
 
 #[derive(Clone)]
 pub struct CacheConfig<'a> {
