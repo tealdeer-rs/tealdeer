@@ -14,6 +14,7 @@ use clap::ValueEnum;
 use log::info;
 use serde::Serialize as _;
 use serde_derive::{Deserialize, Serialize};
+use toml::map::Map;
 use yansi::{Color, Style};
 
 use crate::{
@@ -816,7 +817,7 @@ impl ConfigLoader {
 
                 entry = entry_table
                     .entry(subkey)
-                    .or_insert(toml::Value::Table(Default::default()));
+                    .or_insert(toml::Value::Table(Map::default()));
             }
 
             *entry = value;

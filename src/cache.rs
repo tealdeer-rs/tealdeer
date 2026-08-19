@@ -188,10 +188,10 @@ impl<'a> Cache<'a> {
         };
 
         for entry in file_iter {
-            if let Some(extension) = entry?.path().extension() {
-                if extension == "page" || extension == "patch" {
-                    return Ok(true);
-                }
+            if let Some(extension) = entry?.path().extension()
+                && (extension == "page" || extension == "patch")
+            {
+                return Ok(true);
             }
         }
 
