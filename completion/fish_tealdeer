@@ -22,6 +22,8 @@ complete -c tldr -s q -l quiet                -d 'Suppress informational message
 complete -c tldr      -l show-paths           -d 'Show file and directory paths used by tealdeer' -f
 complete -c tldr      -l seed-config          -d 'Create a basic config' -f
 complete -c tldr      -l color                -d 'Controls when to use color' -xa 'always auto never'
+complete -c tldr      -l short-options        -d 'Display the short variants of placeholders' -f
+complete -c tldr      -l long-options         -d 'Display the long variants of placeholders' -f
 
 function __tealdeer_entries
     if set entries (tldr --list  2>/dev/null)

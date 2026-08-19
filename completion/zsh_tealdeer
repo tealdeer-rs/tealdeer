@@ -44,6 +44,8 @@ _tealdeer() {
             auto
             never
         ))"
+        "($I)--short-options[Display the short variants of placeholders]"
+        "($I)--long-options[Display the long variants of placeholders]"
         '(- *)'{-h,--help}'[Display help]'
         '(- *)'{-v,--version}'[Show version information]'
         '1: :_applications'
