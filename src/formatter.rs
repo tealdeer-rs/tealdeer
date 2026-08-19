@@ -485,4 +485,59 @@ mod tests {
             assert_eq!(run("", r"Äxx{{x}}"), [NormalCode("Äxx"), Placeholder("x")],);
         }
     }
+
+    mod placeholder_variants {
+        use super::*;
+        use PageSnippet::*;
+
+        #[test]
+        fn missing_marker() {
+            assert_eq!(
+                run("foo", "{{[short|long]}}"),
+                [PlaceholderVariants {
+                    short: "short",
+                    long: "long"
+                }]
+            );
+
+            assert_eq!(run("foo", "{{short|long]}}"), [Placeholder("short|long]")]);
+            assert_eq!(run("foo", "{{[short|long}}"), [Placeholder("[short|long")]);
+            assert_eq!(run("foo", "{{[shortlong]}}"), [Placeholder("[shortlong]")]);
+        }
+
+        /// The character `[` is a valid command name
+        #[test]
+        fn command_name_interaction() {
+            for name in ["[", "]", "|"] {
+                assert_eq!(
+                    run(name, "{{[short|long]}}"),
+                    [PlaceholderVariants {
+                        short: "short",
+                        long: "long"
+                    }]
+                );
+            }
+        }
+
+        #[test]
+        fn empty_variant() {
+            for name in ["[", "]", "|"] {
+                assert_eq!(
+                    run(name, "{{[|long]}}"),
+                    [PlaceholderVariants {
+                        short: "",
+                        long: "long"
+                    }]
+                );
+                assert_eq!(
+                    run(name, "{{[short|]}}"),
+                    [PlaceholderVariants {
+                        short: "short",
+                        long: ""
+                    }]
+                );
+                assert_eq!(run(name, "{{[|]}}"), [] as [PageSnippet::<String>; 0]);
+            }
+        }
+    }
 }
