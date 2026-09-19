@@ -17,7 +17,7 @@ conventions. On Linux for instance, the default location is
 run `tldr --show-paths`.
 
 The custom pages directory can be [overridden by the config
-file](config_directories.html).
+file](config_directories.md).
 
 ## Custom Pages
 

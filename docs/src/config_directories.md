@@ -20,7 +20,7 @@ Use `tldr --show-paths` to show the path that is being used.
 ## `custom_pages_dir`
 
 Set the directory to be used to look up [custom
-pages](usage_custom_pages.html). Remember to use an absolute path. Variable
+pages](usage_custom_pages.md). Remember to use an absolute path. Variable
 expansion will not be performed on the path.
 
 ```toml
