@@ -4,7 +4,7 @@ use std::{
     fs::{self, File, create_dir_all},
     io::{self, Write},
     path::{Path, PathBuf},
-    process::Command,
+    process::{Command, Stdio},
     time::{Duration, SystemTime},
 };
 
@@ -443,6 +443,73 @@ fn test_quiet_failures() {
         .assert()
         .failure()
         .stdout(is_empty());
+}
+
+#[test]
+fn test_list_broken_pipe() {
+    let testenv = TestEnv::new().install_default_cache();
+
+    // When stdout is closed early (e.g. `tldr --list | head -n 1`), tealdeer
+    // should exit gracefully instead of panicking with a broken pipe error.
+    let mut child = testenv
+        .command()
+        .arg("--list")
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("Failed to spawn tldr");
+    drop(child.stdout.take());
+
+    assert!(child.wait().unwrap().success());
+}
+
+#[test]
+fn test_invalid_page_name() {
+    let testenv = TestEnv::new();
+
+    // Page names are used as file names, so they must not contain path
+    // separators, `..` components or a path prefix/root (path traversal).
+    for name in ["../escape", "..", "a/b", "/absolute"] {
+        testenv
+            .command()
+            .arg(name)
+            .assert()
+            .failure()
+            .stderr(contains("Invalid page name"));
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn test_seed_config_with_non_utf8_path() {
+    use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
+
+    let testenv = TestEnv::new();
+    let non_utf8_path = testenv
+        .config_dir()
+        .join(OsStr::from_bytes(b"config-\xFF.toml"));
+
+    // Creating a seed config should work, even if the path is not valid UTF-8
+    testenv
+        .command()
+        .arg("--seed-config")
+        .arg("--config-path")
+        .arg(&non_utf8_path)
+        .assert()
+        .success()
+        .stderr(contains("Successfully created seed config file"));
+
+    assert!(non_utf8_path.is_file());
+
+    // If the config file already exists, a proper error should be shown
+    // instead of panicking
+    testenv
+        .command()
+        .arg("--seed-config")
+        .arg("--config-path")
+        .arg(&non_utf8_path)
+        .assert()
+        .failure()
+        .stderr(contains("A configuration file already exists at"));
 }
 
 #[test]
