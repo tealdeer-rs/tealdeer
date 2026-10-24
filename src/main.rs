@@ -243,8 +243,6 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#page-names
     let command = args.command.join("-").to_lowercase();
 
-    // Ensure that the page name can be used as a file name to prevent it
-    // from escaping the pages directory (path traversal).
     ensure!(
         command.is_empty() || is_valid_page_name(&command),
         "Invalid page name: `{command}`"
@@ -407,14 +405,10 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     };
 
     if args.list {
-        // Lock stdout only once, this improves performance considerably
-        let stdout = io::stdout();
-        let mut handle = stdout.lock();
+        let mut stdout = io::stdout().lock();
 
         for page in cache.list_pages()? {
-            if let Err(error) = writeln!(handle, "{page}") {
-                // If the output consumer closed the pipe early (e.g.
-                // `tldr --list | head -n 1`), exit gracefully.
+            if let Err(error) = writeln!(stdout, "{page}") {
                 if error.kind() == io::ErrorKind::BrokenPipe {
                     return Ok(ExitCode::SUCCESS);
                 }
