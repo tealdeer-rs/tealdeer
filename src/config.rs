@@ -918,7 +918,7 @@ pub fn make_default_config(path: Option<&Path>) -> Result<PathBuf> {
     ensure!(
         !config_file_path.is_file(),
         "A configuration file already exists at {}, no action was taken.",
-        config_file_path.to_str().unwrap()
+        config_file_path.display()
     );
 
     // Create default config

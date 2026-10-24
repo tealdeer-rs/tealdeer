@@ -30,12 +30,12 @@ compile_error!(
 use std::{
     env,
     fs::create_dir_all,
-    io::{self, IsTerminal},
-    path::Path,
+    io::{self, IsTerminal, Write},
+    path::{Component, Path},
     process::{Command, ExitCode},
 };
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result, anyhow, ensure};
 use cache::CacheConfig;
 use clap::Parser;
 use config::{ConfigLoader, Language, StyleConfig, TlsBackend};
@@ -137,9 +137,19 @@ fn create_config(path: Option<&Path>) -> Result<()> {
     let config_file_path = make_default_config(path).context("Could not create seed config")?;
     eprintln!(
         "Successfully created seed config file here: {}",
-        config_file_path.to_str().unwrap()
+        config_file_path.display()
     );
     Ok(())
+}
+
+/// Return whether the given page name is valid, i.e. whether it consists of a
+/// single normal path component. Page names are used as file names, so they
+/// must not contain path separators, `..` components or a path prefix/root.
+/// Otherwise they could be used to access files outside of the pages
+/// directory (path traversal).
+fn is_valid_page_name(name: &str) -> bool {
+    let mut components = Path::new(name).components();
+    matches!(components.next(), Some(Component::Normal(_))) && components.next().is_none()
 }
 
 #[cfg(feature = "logging")]
@@ -232,6 +242,11 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     // lowercased before lookup:
     // https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md#page-names
     let command = args.command.join("-").to_lowercase();
+
+    ensure!(
+        command.is_empty() || is_valid_page_name(&command),
+        "Invalid page name: `{command}`"
+    );
 
     if args.edit_patch || args.edit_page {
         let file_name = if args.edit_patch {
@@ -390,8 +405,15 @@ fn try_main(args: Cli, enable_styles: bool) -> Result<ExitCode> {
     };
 
     if args.list {
+        let mut stdout = io::stdout().lock();
+
         for page in cache.list_pages()? {
-            println!("{page}");
+            if let Err(error) = writeln!(stdout, "{page}") {
+                if error.kind() == io::ErrorKind::BrokenPipe {
+                    return Ok(ExitCode::SUCCESS);
+                }
+                return Err(error).context("Could not write to stdout");
+            }
         }
 
         return Ok(ExitCode::SUCCESS);
