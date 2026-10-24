@@ -1134,7 +1134,7 @@ dependencies = [
 
 [[package]]
 name = "tealdeer"
-version = "1.9.0"
+version = "1.9.1"
 dependencies = [
  "anyhow",
  "assert_cmd",

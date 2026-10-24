@@ -1,5 +1,33 @@
 # Changelog
 
+### [v1.9.1][v1.9.1] (2026-10-24)
+
+This patch release updates tealdeer's dependencies. Most notably, the `zip`
+crate and the webpki roots are updated to the latest version. This prevents a
+hypothetical attack on tealdeer in which an attacker uses the recently
+compromised TLS certificates to pose as the archive source for updating the
+cache, and then serves a malicious zip archive that exploits vulnerabilities in
+the `zip` crate.
+
+I am not aware of any such attacks in the wild, but it can't hurt to play it
+safe and update. If you are using tealdeer versions before 1.9, please check
+whether your distribution ships an up-to-date build of your tealdeer version, or
+build tealdeer from source yourself (without using the committed lockfile).
+
+Additionally, this release contains bug fixes for three edge cases.
+
+#### Changes:
+
+- [changed] Do not panic on broken pipe / non-UTF-8 config path, and reject traversal page names ([#526])
+- [security] Update zip to 9, run `cargo update` ([#529])
+
+#### Contributors to this version:
+
+- [jk][@Mathjk]
+- [Niklas Mohrin][@niklasmohrin]
+
+Thanks!
+
 ### [v1.9.0][v1.9.0] (2026-08-24)
 
 This release of tealdeer adds support for placeholder escaping and placeholder
@@ -616,6 +644,7 @@ Thanks!
 [@korrat]: https://github.com/korrat
 [@laxect]: https://github.com/laxect
 [@LovecraftianHorror]: https://github.com/LovecraftianHorror
+[@Mathjk]: https://github.com/Mathjk
 [@ma-renaud]: https://github.com/ma-renaud
 [@michaeldel]: https://github.com/michaeldel
 [@mucinoab]: https://github.com/mucinoab
@@ -673,6 +702,7 @@ Thanks!
 [v1.8.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.7.2...v1.8.0
 [v1.8.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.8.0...v1.8.1
 [v1.9.0]: https://github.com/tealdeer-rs/tealdeer/compare/v1.8.1...v1.9.0
+[v1.9.1]: https://github.com/tealdeer-rs/tealdeer/compare/v1.9.0...v1.9.1
 
 [i34]: https://github.com/tealdeer-rs/tealdeer/issues/34
 [i43]: https://github.com/tealdeer-rs/tealdeer/issues/43
@@ -796,3 +826,5 @@ Thanks!
 [#514]: https://github.com/tealdeer-rs/tealdeer/pull/514
 [#358]: https://github.com/tealdeer-rs/tealdeer/issues/358
 [#516]: https://github.com/tealdeer-rs/tealdeer/pull/516
+[#526]: https://github.com/tealdeer-rs/tealdeer/pull/526
+[#529]: https://github.com/tealdeer-rs/tealdeer/pull/529
