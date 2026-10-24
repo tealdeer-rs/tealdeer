@@ -478,7 +478,7 @@ fn test_invalid_page_name() {
     }
 }
 
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 #[test]
 fn test_seed_config_with_non_utf8_path() {
     use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
