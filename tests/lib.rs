@@ -2,10 +2,11 @@
 
 use std::{
     fs::{self, File, create_dir_all},
-    io::{self, Write},
+    io::{self, BufRead, BufReader, Write},
+    net::{TcpListener, TcpStream},
     path::{Path, PathBuf},
     process::{Command, Stdio},
-    time::{Duration, SystemTime},
+    time::{Duration, Instant, SystemTime},
 };
 
 use assert_cmd::prelude::*;
@@ -330,6 +331,124 @@ fn test_update_cache_default_features() {
         .stderr(contains("Successfully updated cache."));
 
     testenv.command().args(["sl"]).assert().success();
+}
+
+fn accept_proxy_connection(listener: TcpListener) -> TcpStream {
+    listener.set_nonblocking(true).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let stream = loop {
+        match listener.accept() {
+            Ok((stream, _)) => break stream,
+            Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
+                assert!(Instant::now() < deadline, "no request reached the proxy");
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            Err(error) => panic!("could not accept proxy request: {error}"),
+        }
+    };
+    stream.set_nonblocking(false).unwrap();
+    stream
+        .set_read_timeout(Some(Duration::from_secs(5)))
+        .unwrap();
+    stream
+}
+
+#[test]
+fn test_update_uses_http_proxy() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let proxy_url = format!("http://{}", listener.local_addr().unwrap());
+    let proxy = std::thread::spawn(move || {
+        let mut stream = accept_proxy_connection(listener);
+        let mut reader = BufReader::new(&stream);
+        let mut connect_line = String::new();
+        reader.read_line(&mut connect_line).unwrap();
+        loop {
+            let mut header = String::new();
+            reader.read_line(&mut header).unwrap();
+            if header == "\r\n" {
+                break;
+            }
+        }
+        drop(reader);
+        stream
+            .write_all(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+            .unwrap();
+
+        let mut request_line = String::new();
+        BufReader::new(&stream)
+            .read_line(&mut request_line)
+            .unwrap();
+        stream
+            .write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+            .unwrap();
+        (connect_line, request_line)
+    });
+
+    let testenv = TestEnv::new();
+    testenv.append_to_config("updates.archive_source = 'http://tealdeer-proxy.invalid'\n");
+    testenv
+        .command()
+        .args(["--update"])
+        .env_remove("http_proxy")
+        .env_remove("HTTPS_PROXY")
+        .env_remove("https_proxy")
+        .env_remove("ALL_PROXY")
+        .env_remove("all_proxy")
+        .env_remove("NO_PROXY")
+        .env_remove("no_proxy")
+        .env("HTTP_PROXY", proxy_url)
+        .assert()
+        .success()
+        .stderr(contains("Successfully updated cache."));
+
+    assert_eq!(
+        proxy.join().unwrap(),
+        (
+            "CONNECT tealdeer-proxy.invalid:80 HTTP/1.1\r\n".to_owned(),
+            "GET /tldr-pages.en.zip HTTP/1.1\r\n".to_owned(),
+        )
+    );
+}
+
+#[test]
+fn test_update_uses_https_proxy() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let proxy_url = format!("http://{}", listener.local_addr().unwrap());
+    let proxy = std::thread::spawn(move || {
+        let mut stream = accept_proxy_connection(listener);
+        let mut request_line = String::new();
+        BufReader::new(&stream)
+            .read_line(&mut request_line)
+            .unwrap();
+        stream
+            .write_all(
+                b"HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+            )
+            .unwrap();
+        request_line
+    });
+
+    let testenv = TestEnv::new();
+    testenv.append_to_config("updates.archive_source = 'https://tealdeer-proxy.invalid'\n");
+    testenv
+        .command()
+        .args(["--update"])
+        .env_remove("HTTP_PROXY")
+        .env_remove("http_proxy")
+        .env_remove("https_proxy")
+        .env_remove("ALL_PROXY")
+        .env_remove("all_proxy")
+        .env_remove("NO_PROXY")
+        .env_remove("no_proxy")
+        .env("HTTPS_PROXY", proxy_url)
+        .assert()
+        .failure()
+        .stderr(contains("Could not download tldr pages"));
+
+    assert_eq!(
+        proxy.join().unwrap(),
+        "CONNECT tealdeer-proxy.invalid:443 HTTP/1.1\r\n"
+    );
 }
 
 #[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
