@@ -21,6 +21,14 @@ use crate::{
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
 
+/// Upper bound for a downloaded page archive. Real archives are a few MiB; a
+/// compressed archive much larger than this is not a tldr-pages release.
+const MAX_ARCHIVE_DOWNLOAD_BYTES: u64 = 64 * 1024 * 1024;
+
+/// Upper bound for the declared uncompressed size of one page archive. Guards
+/// against zip bombs that fit into [`MAX_ARCHIVE_DOWNLOAD_BYTES`] compressed.
+const MAX_ARCHIVE_UNCOMPRESSED_BYTES: u64 = 256 * 1024 * 1024;
+
 #[derive(Clone)]
 pub struct CacheConfig<'a> {
     pub pages_directory: &'a Path,
@@ -247,6 +255,7 @@ impl<'a> Cache<'a> {
         for (lang, archive) in &mut archives {
             if let Some(archive) = archive {
                 info!("Extracting archive for {lang:?}");
+                ensure_archive_size_is_sane(archive)?;
                 archive.extract(self.config.pages_directory.join(lang.directory_name()))?;
             } else {
                 info!("No archive found for {lang:?}");
@@ -361,8 +370,10 @@ impl Cache<'_> {
         let response = client.get(archive_url).call();
         match response {
             Ok(response) if response.status().is_success() => {
-                let mut buf: Vec<u8> = Vec::new();
-                response.into_body().into_reader().read_to_end(&mut buf)?;
+                let buf = read_with_limit(
+                    response.into_body().into_reader(),
+                    MAX_ARCHIVE_DOWNLOAD_BYTES,
+                )?;
                 debug!("{} bytes downloaded", buf.len());
                 Ok(Some(buf))
             }
@@ -374,6 +385,48 @@ impl Cache<'_> {
     }
 }
 
+/// Read at most `limit` bytes from `reader`, failing instead of silently
+/// truncating. Used to keep a malicious or broken mirror from streaming an
+/// unbounded archive into memory.
+fn read_with_limit(reader: impl Read, limit: u64) -> Result<Vec<u8>> {
+    let mut buf: Vec<u8> = Vec::new();
+    reader
+        .take(limit + 1)
+        .read_to_end(&mut buf)
+        .context("Could not read downloaded tldr archive")?;
+    ensure!(
+        buf.len() as u64 <= limit,
+        "Downloaded tldr archive is larger than the {limit} byte limit"
+    );
+    Ok(buf)
+}
+
+/// Check the declared uncompressed size of every entry in `archive` before
+/// extracting it, so a zip bomb cannot fill the disk.
+fn ensure_archive_size_is_sane<F: Read + std::io::Seek>(archive: &mut ZipArchive<F>) -> Result<()> {
+    ensure_archive_size_is_sane_with_limit(archive, MAX_ARCHIVE_UNCOMPRESSED_BYTES)
+}
+
+fn ensure_archive_size_is_sane_with_limit<F: Read + std::io::Seek>(
+    archive: &mut ZipArchive<F>,
+    limit: u64,
+) -> Result<()> {
+    let mut total: u64 = 0;
+    for index in 0..archive.len() {
+        let entry = archive
+            .by_index(index)
+            .with_context(|| format!("Could not read tldr archive entry {index}"))?;
+        total = total
+            .checked_add(entry.size())
+            .context("tldr archive uncompressed size overflows u64")?;
+        ensure!(
+            total <= limit,
+            "tldr archive expands to more than the {limit} byte limit"
+        );
+    }
+    Ok(())
+}
+
 /// Unit Tests for cache module
 #[cfg(test)]
 mod tests {
@@ -383,6 +436,29 @@ mod tests {
         fs::File,
         io::{Read, Write},
     };
+
+    #[test]
+    fn read_with_limit_rejects_oversized_downloads() {
+        let data = vec![0u8; 10];
+        assert!(read_with_limit(Cursor::new(&data), 10).is_ok());
+        assert!(read_with_limit(Cursor::new(&data), 4).is_err());
+    }
+
+    #[test]
+    fn zip_bomb_guard_uses_declared_entry_sizes() {
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let options = zip::write::SimpleFileOptions::default();
+        writer.start_file("pages/one.md", options).unwrap();
+        writer.write_all(b"1234567890").unwrap();
+        writer.start_file("pages/two.md", options).unwrap();
+        writer.write_all(b"12345").unwrap();
+        let bytes = writer.finish().unwrap().into_inner();
+
+        let mut archive = ZipArchive::new(Cursor::new(bytes)).unwrap();
+        assert!(ensure_archive_size_is_sane_with_limit(&mut archive, 15).is_ok());
+        // 10 + 5 declared bytes do not fit into a 9 byte budget.
+        assert!(ensure_archive_size_is_sane_with_limit(&mut archive, 9).is_err());
+    }
 
     #[test]
     fn test_reader_with_patch() {
