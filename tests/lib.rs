@@ -2,9 +2,15 @@
 
 use std::{
     fs::{self, File, create_dir_all},
-    io::{self, Write},
+    io::{self, BufRead, BufReader, Write},
+    net::TcpListener,
     path::{Path, PathBuf},
     process::{Command, Stdio},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    thread,
     time::{Duration, SystemTime},
 };
 
@@ -15,8 +21,83 @@ use predicates::{
     prelude::predicate::str::{contains, diff, is_empty, is_match},
 };
 use tempfile::{Builder as TempfileBuilder, TempDir};
+use zip::{ZipWriter, write::SimpleFileOptions};
 
 pub static TLDR_PAGES_DIR: &str = "tldr-pages";
+
+struct LocalArchiveServer {
+    url: String,
+    stop: Arc<AtomicBool>,
+    thread: Option<thread::JoinHandle<()>>,
+}
+
+impl LocalArchiveServer {
+    fn new() -> Self {
+        let mut zip = ZipWriter::new(io::Cursor::new(Vec::new()));
+        zip.start_file("common/sl.md", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(b"# sl\n\n> A test page.\n\n- Run:\n\n`sl`\n")
+            .unwrap();
+        let archive = zip.finish().unwrap().into_inner();
+
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let stop = Arc::new(AtomicBool::new(false));
+        let thread_stop = Arc::clone(&stop);
+        let thread = thread::spawn(move || {
+            while !thread_stop.load(Ordering::Relaxed) {
+                match listener.accept() {
+                    Ok((mut stream, _)) => {
+                        stream.set_nonblocking(false).unwrap();
+                        stream
+                            .set_read_timeout(Some(Duration::from_secs(2)))
+                            .unwrap();
+                        let mut request = String::new();
+                        BufReader::new(&mut stream).read_line(&mut request).unwrap();
+                        let found = request.starts_with("GET /tldr-pages.en.zip ")
+                            || request.starts_with("GET /tldr-pages.it.zip ");
+                        let (status, body) = if found {
+                            ("200 OK", archive.as_slice())
+                        } else {
+                            ("404 Not Found", &[][..])
+                        };
+                        write!(
+                            stream,
+                            "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                            body.len()
+                        )
+                        .unwrap();
+                        stream.write_all(body).unwrap();
+                    }
+                    Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
+                        thread::sleep(Duration::from_millis(10));
+                    }
+                    Err(error) => panic!("local archive server failed: {error}"),
+                }
+            }
+        });
+        Self {
+            url,
+            stop,
+            thread: Some(thread),
+        }
+    }
+
+    fn configure(&self, testenv: &TestEnv) {
+        testenv.append_to_config(format!("updates.archive_source = '{}'\n", self.url));
+    }
+}
+
+impl Drop for LocalArchiveServer {
+    fn drop(&mut self) {
+        self.stop.store(true, Ordering::Relaxed);
+        let result = self.thread.take().unwrap().join();
+        if !thread::panicking() {
+            result.unwrap();
+        }
+    }
+}
 
 struct TestEnv {
     _test_dir: TempDir,
@@ -310,10 +391,11 @@ fn test_tealdeer_page_works_without_cache() {
         .stdout(contains("for your installed tealdeer version"));
 }
 
-#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_update_cache_default_features() {
     let testenv = TestEnv::new();
+    let server = LocalArchiveServer::new();
+    server.configure(&testenv);
 
     testenv
         .command()
@@ -329,10 +411,15 @@ fn test_update_cache_default_features() {
         .success()
         .stderr(contains("Successfully updated cache."));
 
-    testenv.command().args(["sl"]).assert().success();
+    testenv
+        .command()
+        .args(["sl"])
+        .assert()
+        .success()
+        .stdout(contains("A test page."));
 }
 
-#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
+#[ignore = "online test"]
 #[test]
 fn test_update_cache_rustls_webpki() {
     let testenv = TestEnv::new()
@@ -356,12 +443,13 @@ fn test_update_cache_rustls_webpki() {
     testenv.command().args(["sl"]).assert().success();
 }
 
-#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_update_cache_native_tls() {
     let testenv = TestEnv::new()
         .no_default_features()
         .with_feature("rustls-with-native-roots");
+    let server = LocalArchiveServer::new();
+    server.configure(&testenv);
 
     testenv
         .command()
@@ -380,10 +468,11 @@ fn test_update_cache_native_tls() {
     testenv.command().args(["sl"]).assert().success();
 }
 
-#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_quiet_cache() {
     let testenv = TestEnv::new();
+    let server = LocalArchiveServer::new();
+    server.configure(&testenv);
     testenv
         .command()
         .args(["--update", "--quiet"])
@@ -572,7 +661,6 @@ fn test_warn_cache_age_never() {
         .stderr(contains("The cache hasn't been updated for ").not());
 }
 
-#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_create_cache_directory_path() {
     let testenv = TestEnv::new().remove_initial_config();
@@ -582,6 +670,8 @@ fn test_create_cache_directory_path() {
         "directories.cache_dir = '{}'\n",
         internal_cache_dir.to_str().unwrap()
     ));
+    let server = LocalArchiveServer::new();
+    server.configure(&testenv);
 
     let mut command = testenv.command();
 
@@ -1178,10 +1268,11 @@ fn test_search_language_precedence() {
     run(env_cases);
 }
 
-#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_update_language_arg() {
     let testenv = TestEnv::new();
+    let server = LocalArchiveServer::new();
+    server.configure(&testenv);
     testenv
         .command()
         .env("LANG", "it")
@@ -1305,10 +1396,11 @@ fn test_multi_platform_list_flag_rendering() {
         .stdout("common\ndel\ndir\nls\nrm\nwinux\n");
 }
 
-#[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_autoupdate_cache() {
     let testenv = TestEnv::new();
+    let server = LocalArchiveServer::new();
+    server.configure(&testenv);
 
     // The first time, if automatic updates are disabled, the cache should not be found
     testenv
