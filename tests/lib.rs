@@ -1178,6 +1178,56 @@ fn test_search_language_precedence() {
     run(env_cases);
 }
 
+#[expect(clippy::type_complexity)]
+#[test]
+fn test_platform_and_language_precedence() {
+    let testenv = TestEnv::new();
+    testenv.append_to_config("search.languages = ['de', 'en']\n");
+
+    let cases: Vec<(&str, Vec<(&str, &str, &str)>, &str)> = vec![
+        (
+            "platform-before-language",
+            vec![("windows", "en", "windows-en"), ("linux", "de", "linux-de")],
+            "windows-en",
+        ),
+        (
+            "language-order-within-platform",
+            vec![("linux", "de", "linux-de"), ("linux", "en", "linux-en")],
+            "linux-de",
+        ),
+        (
+            "platform-order",
+            vec![("windows", "de", "windows-de"), ("linux", "de", "linux-de")],
+            "windows-de",
+        ),
+        (
+            "common-comes-after-platforms",
+            vec![("linux", "en", "linux-en"), ("common", "de", "common-de")],
+            "linux-en",
+        ),
+    ];
+
+    for (command, pages, expected) in cases {
+        for (platform, language, contents) in pages {
+            testenv.add_os_lang_entry(platform, language, command, contents);
+        }
+
+        testenv
+            .command()
+            .args([
+                "--raw",
+                "--platform",
+                "windows",
+                "--platform",
+                "linux",
+                command,
+            ])
+            .assert()
+            .success()
+            .stdout(contains(expected));
+    }
+}
+
 #[cfg_attr(feature = "ignore-online-tests", ignore = "online test")]
 #[test]
 fn test_update_language_arg() {
