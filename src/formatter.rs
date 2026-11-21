@@ -311,6 +311,7 @@ mod tests {
         use PageSnippet::*;
 
         #[test]
+        #[allow(clippy::assert_is_empty)]
         fn test_highlight_code_segment() {
             assert!(run("make", "").is_empty());
             assert_eq!(

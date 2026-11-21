@@ -173,6 +173,12 @@ impl<'a> Cache<'a> {
             append_all(custom_pages_dir, ".page.md")?;
         }
 
+        // The tealdeer page is embedded in the binary and is always available,
+        // even when it is not present in the cache. Make sure it shows up in
+        // `tldr --list` (used e.g. by shell completions), without duplicating
+        // an entry when a cached/custom page of the same name exists.
+        pages.push("tealdeer".to_string());
+
         pages.sort_unstable();
         pages.dedup();
         Ok(pages)
